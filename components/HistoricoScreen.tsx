@@ -1,6 +1,20 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { 
+  Calendar,
+  Filter,
+  Receipt,
+  User,
+  ShoppingCart,
+  CreditCard,
+  Banknote,
+  Smartphone,
+  TrendingUp,
+  BarChart3,
+  Eye,
+  X
+} from "lucide-react"
 import type { Venda, Cliente, Produto } from "../types"
 
 // Mock data para demonstração
@@ -320,20 +334,30 @@ export default function HistoricoScreen() {
   }
 
   return (
-    <div>
+    <div className="space-y-4">
       {/* Toggle entre Histórico e Relatórios */}
-      <div className="card mb-4">
-        <div className="flex" style={{ gap: "12px" }}>
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
+        <div className="flex gap-3">
           <button
-            className={`btn ${!mostrarRelatorios ? "btn-primary" : "btn-secondary"}`}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+              !mostrarRelatorios 
+                ? "bg-blue-600 text-white hover:bg-blue-700" 
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
             onClick={() => setMostrarRelatorios(false)}
           >
+            <Receipt className="w-4 h-4" />
             Histórico de Vendas
           </button>
           <button
-            className={`btn ${mostrarRelatorios ? "btn-primary" : "btn-secondary"}`}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+              mostrarRelatorios 
+                ? "bg-blue-600 text-white hover:bg-blue-700" 
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
             onClick={() => setMostrarRelatorios(true)}
           >
+            <BarChart3 className="w-4 h-4" />
             Relatórios
           </button>
         </div>
@@ -341,86 +365,110 @@ export default function HistoricoScreen() {
 
       {!mostrarRelatorios ? (
         // Tela de Histórico
-        <div>
-          <div className="card">
-            <div className="card-header">
-              <div className="flex-between">
-                <h2 className="card-title">Histórico de Vendas</h2>
-                <div style={{ fontSize: "18px", fontWeight: "600", color: "var(--primary-color)" }}>
-                  {vendasFiltradas.length} venda(s) - R$ {estatisticas.totalVendas.toFixed(2)}
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Receipt className="w-6 h-6 text-blue-600" />
+                <h2 className="text-xl font-semibold text-gray-900">Histórico de Vendas</h2>
+              </div>
+              <div className="text-lg font-semibold text-blue-600">
+                {vendasFiltradas.length} venda(s) - R$ {estatisticas.totalVendas.toFixed(2)}
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6">
+            {/* Filtros */}
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-2 mb-4">
+                <Filter className="w-4 h-4 text-gray-500" />
+                <h3 className="font-medium text-gray-700">Filtros</h3>
+              </div>
+              <div className="grid grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <Calendar className="w-4 h-4 inline mr-1" />
+                    Data Início
+                  </label>
+                  <input
+                    type="date"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={dataInicio}
+                    onChange={(e) => setDataInicio(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <Calendar className="w-4 h-4 inline mr-1" />
+                    Data Fim
+                  </label>
+                  <input
+                    type="date"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={dataFim}
+                    onChange={(e) => setDataFim(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <User className="w-4 h-4 inline mr-1" />
+                    Cliente
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={clienteFiltro}
+                    onChange={(e) => setClienteFiltro(e.target.value)}
+                  >
+                    <option value="">Todos os clientes</option>
+                    {mockClientes.map((cliente) => (
+                      <option key={cliente.id} value={cliente.id}>
+                        {cliente.nome}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <CreditCard className="w-4 h-4 inline mr-1" />
+                    Pagamento
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={formaPagamentoFiltro}
+                    onChange={(e) => setFormaPagamentoFiltro(e.target.value)}
+                  >
+                    <option value="">Todas as formas</option>
+                    <option value="dinheiro">Dinheiro</option>
+                    <option value="cartao">Cartão</option>
+                    <option value="pix">PIX</option>
+                    <option value="fiado">Fiado</option>
+                  </select>
                 </div>
               </div>
-            </div>
-
-            {/* Filtros */}
-            <div className="grid grid-4 mb-4">
-              <div className="form-group">
-                <label className="form-label">Data Início</label>
-                <input
-                  type="date"
-                  className="form-input"
-                  value={dataInicio}
-                  onChange={(e) => setDataInicio(e.target.value)}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Data Fim</label>
-                <input
-                  type="date"
-                  className="form-input"
-                  value={dataFim}
-                  onChange={(e) => setDataFim(e.target.value)}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Cliente</label>
-                <select
-                  className="form-select"
-                  value={clienteFiltro}
-                  onChange={(e) => setClienteFiltro(e.target.value)}
+              <div className="mt-4">
+                <button 
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors flex items-center gap-2"
+                  onClick={limparFiltros}
                 >
-                  <option value="">Todos os clientes</option>
-                  {mockClientes.map((cliente) => (
-                    <option key={cliente.id} value={cliente.id}>
-                      {cliente.nome}
-                    </option>
-                  ))}
-                </select>
+                  <X className="w-4 h-4" />
+                  Limpar Filtros
+                </button>
               </div>
-              <div className="form-group">
-                <label className="form-label">Pagamento</label>
-                <select
-                  className="form-select"
-                  value={formaPagamentoFiltro}
-                  onChange={(e) => setFormaPagamentoFiltro(e.target.value)}
-                >
-                  <option value="">Todas as formas</option>
-                  <option value="dinheiro">Dinheiro</option>
-                  <option value="cartao">Cartão</option>
-                  <option value="pix">PIX</option>
-                  <option value="fiado">Fiado</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="flex" style={{ gap: "12px", marginBottom: "20px" }}>
-              <button className="btn btn-secondary" onClick={limparFiltros}>
-                Limpar Filtros
-              </button>
             </div>
 
             {/* Lista de Vendas */}
-            <div style={{ overflowX: "auto" }}>
-              <table className="table">
+            <div className="overflow-x-auto">
+              <table className="w-full">
                 <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Data/Hora</th>
-                    <th>Cliente</th>
-                    <th>Itens</th>
-                    <th>Pagamento</th>
-                    <th>Total</th>
-                    <th>Ações</th>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 px-2 font-medium text-gray-700">ID</th>
+                    <th className="text-left py-3 px-2 font-medium text-gray-700">Data/Hora</th>
+                    <th className="text-left py-3 px-2 font-medium text-gray-700">Cliente</th>
+                    <th className="text-left py-3 px-2 font-medium text-gray-700">Itens</th>
+                    <th className="text-left py-3 px-2 font-medium text-gray-700">Pagamento</th>
+                    <th className="text-left py-3 px-2 font-medium text-gray-700">Total</th>
+                    <th className="text-left py-3 px-2 font-medium text-gray-700">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -428,51 +476,62 @@ export default function HistoricoScreen() {
                     <tr>
                       <td
                         colSpan={7}
-                        className="text-center"
-                        style={{ padding: "40px", color: "var(--text-secondary)" }}
+                        className="text-center py-12 text-gray-500"
                       >
-                        Nenhuma venda encontrada
+                        <Receipt className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                        <p>Nenhuma venda encontrada</p>
                       </td>
                     </tr>
                   ) : (
                     vendasFiltradas.map((venda) => (
-                      <tr key={venda.id}>
-                        <td>
-                          <strong>#{venda.id}</strong>
+                      <tr key={venda.id} className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="py-3 px-2">
+                          <div className="flex items-center gap-2">
+                            <Receipt className="w-4 h-4 text-blue-600" />
+                            <span className="font-medium">#{venda.id}</span>
+                          </div>
                         </td>
-                        <td>{formatarDataHora(venda.data)}</td>
-                        <td>{venda.cliente ? venda.cliente.nome : "Cliente não identificado"}</td>
-                        <td>{venda.itens.length} item(s)</td>
-                        <td>
+                        <td className="py-3 px-2 text-gray-600">{formatarDataHora(venda.data)}</td>
+                        <td className="py-3 px-2">
+                          <div className="flex items-center gap-2">
+                            <User className="w-4 h-4 text-gray-400" />
+                            <span>{venda.cliente ? venda.cliente.nome : "Cliente não identificado"}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-2">
+                          <div className="flex items-center gap-2">
+                            <ShoppingCart className="w-4 h-4 text-gray-400" />
+                            <span>{venda.itens.length} item(s)</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-2">
                           <span
-                            style={{
-                              padding: "4px 8px",
-                              borderRadius: "4px",
-                              fontSize: "12px",
-                              fontWeight: "600",
-                              backgroundColor:
-                                venda.formaPagamento === "dinheiro"
-                                  ? "var(--success-color)"
-                                  : venda.formaPagamento === "cartao"
-                                    ? "var(--primary-color)"
-                                    : venda.formaPagamento === "pix"
-                                      ? "var(--secondary-color)"
-                                      : "var(--warning-color)",
-                              color: "white",
-                            }}
+                            className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 w-fit ${
+                              venda.formaPagamento === "dinheiro"
+                                ? "bg-green-100 text-green-800"
+                                : venda.formaPagamento === "cartao"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : venda.formaPagamento === "pix"
+                                    ? "bg-purple-100 text-purple-800"
+                                    : "bg-yellow-100 text-yellow-800"
+                            }`}
                           >
+                            {venda.formaPagamento === "dinheiro" && <Banknote className="w-3 h-3" />}
+                            {venda.formaPagamento === "cartao" && <CreditCard className="w-3 h-3" />}
+                            {venda.formaPagamento === "pix" && <Smartphone className="w-3 h-3" />}
+                            {venda.formaPagamento === "fiado" && <User className="w-3 h-3" />}
                             {venda.formaPagamento.toUpperCase()}
                           </span>
                         </td>
-                        <td style={{ color: "var(--success-color)", fontWeight: "600" }}>
+                        <td className="py-3 px-2 font-semibold text-green-600">
                           R$ {venda.valorTotal.toFixed(2)}
                         </td>
-                        <td>
+                        <td className="py-3 px-2">
                           <button
-                            className="btn btn-secondary"
-                            style={{ padding: "6px 12px", fontSize: "12px" }}
+                            className="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm flex items-center gap-1"
                             onClick={() => setVendaSelecionada(venda)}
                           >
+                            <Eye className="w-3 h-3" />
                             Detalhes
                           </button>
                         </td>
@@ -486,110 +545,117 @@ export default function HistoricoScreen() {
         </div>
       ) : (
         // Tela de Relatórios
-        <div>
-          <div className="card">
-            <div className="card-header">
-              <h2 className="card-title">Relatórios de Vendas</h2>
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center gap-3">
+              <BarChart3 className="w-6 h-6 text-blue-600" />
+              <h2 className="text-xl font-semibold text-gray-900">Relatórios de Vendas</h2>
             </div>
+          </div>
 
+          <div className="p-6">
             {/* Cards de Estatísticas */}
-            <div className="grid grid-3 mb-4">
-              <div className="card" style={{ textAlign: "center" }}>
-                <h3 style={{ color: "var(--success-color)", fontSize: "2rem", margin: "0 0 8px 0" }}>
+            <div className="grid grid-cols-3 gap-6 mb-8">
+              <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-6 text-center border border-green-200">
+                <div className="flex items-center justify-center mb-3">
+                  <TrendingUp className="w-8 h-8 text-green-600" />
+                </div>
+                <h3 className="text-3xl font-bold text-green-600 mb-2">
                   R$ {estatisticas.totalVendas.toFixed(2)}
                 </h3>
-                <p style={{ color: "var(--text-secondary)", margin: 0 }}>Faturamento Total</p>
+                <p className="text-green-700 font-medium">Faturamento Total</p>
               </div>
-              <div className="card" style={{ textAlign: "center" }}>
-                <h3 style={{ color: "var(--primary-color)", fontSize: "2rem", margin: "0 0 8px 0" }}>
+              <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-6 text-center border border-blue-200">
+                <div className="flex items-center justify-center mb-3">
+                  <ShoppingCart className="w-8 h-8 text-blue-600" />
+                </div>
+                <h3 className="text-3xl font-bold text-blue-600 mb-2">
                   {estatisticas.quantidadeVendas}
                 </h3>
-                <p style={{ color: "var(--text-secondary)", margin: 0 }}>Total de Vendas</p>
+                <p className="text-blue-700 font-medium">Total de Vendas</p>
               </div>
-              <div className="card" style={{ textAlign: "center" }}>
-                <h3 style={{ color: "var(--secondary-color)", fontSize: "2rem", margin: "0 0 8px 0" }}>
+              <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg p-6 text-center border border-purple-200">
+                <div className="flex items-center justify-center mb-3">
+                  <Receipt className="w-8 h-8 text-purple-600" />
+                </div>
+                <h3 className="text-3xl font-bold text-purple-600 mb-2">
                   R$ {estatisticas.ticketMedio.toFixed(2)}
                 </h3>
-                <p style={{ color: "var(--text-secondary)", margin: 0 }}>Ticket Médio</p>
+                <p className="text-purple-700 font-medium">Ticket Médio</p>
               </div>
             </div>
 
-            <div className="grid grid-2" style={{ gap: "24px" }}>
+            <div className="grid grid-cols-2 gap-8">
               {/* Vendas por Forma de Pagamento */}
-              <div className="card">
-                <div className="card-header">
-                  <h3 className="card-title">Vendas por Forma de Pagamento</h3>
+              <div className="bg-gray-50 rounded-lg p-6">
+                <div className="flex items-center gap-2 mb-6">
+                  <CreditCard className="w-5 h-5 text-gray-600" />
+                  <h3 className="text-lg font-semibold text-gray-900">Vendas por Forma de Pagamento</h3>
                 </div>
-                <div>
+                <div className="space-y-4">
                   {Object.entries(estatisticas.vendasPorPagamento).map(([forma, valor]) => (
                     <div
                       key={forma}
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        padding: "12px 0",
-                        borderBottom: "1px solid var(--border-color)",
-                      }}
+                      className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200"
                     >
-                      <div>
+                      <div className="flex items-center gap-3">
+                        {forma === "dinheiro" && <Banknote className="w-5 h-5 text-green-600" />}
+                        {forma === "cartao" && <CreditCard className="w-5 h-5 text-blue-600" />}
+                        {forma === "pix" && <Smartphone className="w-5 h-5 text-purple-600" />}
+                        {forma === "fiado" && <User className="w-5 h-5 text-yellow-600" />}
                         <span
-                          style={{
-                            padding: "4px 8px",
-                            borderRadius: "4px",
-                            fontSize: "12px",
-                            fontWeight: "600",
-                            backgroundColor:
-                              forma === "dinheiro"
-                                ? "var(--success-color)"
-                                : forma === "cartao"
-                                  ? "var(--primary-color)"
-                                  : forma === "pix"
-                                    ? "var(--secondary-color)"
-                                    : "var(--warning-color)",
-                            color: "white",
-                            marginRight: "8px",
-                          }}
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            forma === "dinheiro"
+                              ? "bg-green-100 text-green-800"
+                              : forma === "cartao"
+                                ? "bg-blue-100 text-blue-800"
+                                : forma === "pix"
+                                  ? "bg-purple-100 text-purple-800"
+                                  : "bg-yellow-100 text-yellow-800"
+                          }`}
                         >
                           {forma.toUpperCase()}
                         </span>
                       </div>
-                      <div style={{ fontWeight: "600", color: "var(--success-color)" }}>R$ {valor.toFixed(2)}</div>
+                      <div className="font-semibold text-green-600">R$ {valor.toFixed(2)}</div>
                     </div>
                   ))}
                 </div>
               </div>
 
               {/* Produtos Mais Vendidos */}
-              <div className="card">
-                <div className="card-header">
-                  <h3 className="card-title">Produtos Mais Vendidos</h3>
+              <div className="bg-gray-50 rounded-lg p-6">
+                <div className="flex items-center gap-2 mb-6">
+                  <BarChart3 className="w-5 h-5 text-gray-600" />
+                  <h3 className="text-lg font-semibold text-gray-900">Produtos Mais Vendidos</h3>
                 </div>
-                <div>
+                <div className="space-y-4">
                   {estatisticas.topProdutos.map((item, index) => (
                     <div
                       key={item.produto.id}
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        padding: "12px 0",
-                        borderBottom: "1px solid var(--border-color)",
-                      }}
+                      className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200"
                     >
-                      <div>
-                        <div style={{ fontWeight: "600" }}>
-                          {index + 1}. {item.produto.nome}
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
+                          index === 0 ? "bg-yellow-500" : 
+                          index === 1 ? "bg-gray-400" : 
+                          index === 2 ? "bg-yellow-600" : "bg-gray-300"
+                        }`}>
+                          {index + 1}
                         </div>
-                        <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-                          {item.quantidade} unidades vendidas
+                        <div>
+                          <div className="font-semibold text-gray-900">{item.produto.nome}</div>
+                          <div className="text-sm text-gray-500">
+                            <ShoppingCart className="w-3 h-3 inline mr-1" />
+                            {item.quantidade} unidades vendidas
+                          </div>
                         </div>
                       </div>
-                      <div style={{ textAlign: "right" }}>
-                        <div style={{ fontWeight: "600", color: "var(--success-color)" }}>
+                      <div className="text-right">
+                        <div className="font-semibold text-green-600">
                           R$ {item.valorTotal.toFixed(2)}
                         </div>
-                        <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+                        <div className="text-sm text-gray-500">
                           R$ {(item.valorTotal / item.quantidade).toFixed(2)}/un
                         </div>
                       </div>
@@ -604,84 +670,113 @@ export default function HistoricoScreen() {
 
       {/* Modal de Detalhes da Venda */}
       {vendaSelecionada && (
-        <div className="modal-overlay" onClick={() => setVendaSelecionada(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Detalhes da Venda #{vendaSelecionada.id}</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setVendaSelecionada(null)}>
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Receipt className="w-6 h-6 text-blue-600" />
+                  <h3 className="text-xl font-semibold text-gray-900">Detalhes da Venda #{vendaSelecionada.id}</h3>
+                </div>
+                <button
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  onClick={() => setVendaSelecionada(null)}
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
             </div>
-            <div className="modal-body">
-              <div className="grid grid-2" style={{ gap: "16px", marginBottom: "20px" }}>
-                <div>
-                  <strong>Data/Hora:</strong>
-                  <div>{formatarDataHora(vendaSelecionada.data)}</div>
-                </div>
-                <div>
-                  <strong>Forma de Pagamento:</strong>
-                  <div>
-                    <span
-                      style={{
-                        padding: "4px 8px",
-                        borderRadius: "4px",
-                        fontSize: "12px",
-                        fontWeight: "600",
-                        backgroundColor:
-                          vendaSelecionada.formaPagamento === "dinheiro"
-                            ? "var(--success-color)"
-                            : vendaSelecionada.formaPagamento === "cartao"
-                              ? "var(--primary-color)"
-                              : vendaSelecionada.formaPagamento === "pix"
-                                ? "var(--secondary-color)"
-                                : "var(--warning-color)",
-                        color: "white",
-                      }}
-                    >
-                      {vendaSelecionada.formaPagamento.toUpperCase()}
-                    </span>
+            
+            <div className="p-6">
+              <div className="grid grid-cols-2 gap-6 mb-8">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calendar className="w-4 h-4 text-gray-500" />
+                    <span className="font-medium text-gray-700">Data/Hora:</span>
                   </div>
+                  <div className="text-gray-900">{formatarDataHora(vendaSelecionada.data)}</div>
                 </div>
-                <div>
-                  <strong>Cliente:</strong>
-                  <div>{vendaSelecionada.cliente ? vendaSelecionada.cliente.nome : "Cliente não identificado"}</div>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CreditCard className="w-4 h-4 text-gray-500" />
+                    <span className="font-medium text-gray-700">Forma de Pagamento:</span>
+                  </div>
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 w-fit ${
+                      vendaSelecionada.formaPagamento === "dinheiro"
+                        ? "bg-green-100 text-green-800"
+                        : vendaSelecionada.formaPagamento === "cartao"
+                          ? "bg-blue-100 text-blue-800"
+                          : vendaSelecionada.formaPagamento === "pix"
+                            ? "bg-purple-100 text-purple-800"
+                            : "bg-yellow-100 text-yellow-800"
+                    }`}
+                  >
+                    {vendaSelecionada.formaPagamento === "dinheiro" && <Banknote className="w-3 h-3" />}
+                    {vendaSelecionada.formaPagamento === "cartao" && <CreditCard className="w-3 h-3" />}
+                    {vendaSelecionada.formaPagamento === "pix" && <Smartphone className="w-3 h-3" />}
+                    {vendaSelecionada.formaPagamento === "fiado" && <User className="w-3 h-3" />}
+                    {vendaSelecionada.formaPagamento.toUpperCase()}
+                  </span>
                 </div>
-                <div>
-                  <strong>Total:</strong>
-                  <div style={{ fontSize: "18px", fontWeight: "600", color: "var(--success-color)" }}>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <User className="w-4 h-4 text-gray-500" />
+                    <span className="font-medium text-gray-700">Cliente:</span>
+                  </div>
+                  <div className="text-gray-900">{vendaSelecionada.cliente ? vendaSelecionada.cliente.nome : "Cliente não identificado"}</div>
+                </div>
+                <div className="bg-green-50 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className="w-4 h-4 text-green-600" />
+                    <span className="font-medium text-gray-700">Total:</span>
+                  </div>
+                  <div className="text-2xl font-bold text-green-600">
                     R$ {vendaSelecionada.valorTotal.toFixed(2)}
                   </div>
                 </div>
               </div>
 
               <div>
-                <h4 style={{ marginBottom: "16px" }}>Itens da Venda</h4>
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Produto</th>
-                      <th>Qtd</th>
-                      <th>Preço Unit.</th>
-                      <th>Subtotal</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {vendaSelecionada.itens.map((item) => (
-                      <tr key={item.id}>
-                        <td>
-                          <strong>{item.produto.nome}</strong>
-                          <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-                            {item.produto.categoria}
-                          </div>
-                        </td>
-                        <td>{item.quantidade}</td>
-                        <td>R$ {item.precoUnitario.toFixed(2)}</td>
-                        <td style={{ fontWeight: "600" }}>R$ {item.subtotal.toFixed(2)}</td>
+                <div className="flex items-center gap-2 mb-4">
+                  <ShoppingCart className="w-5 h-5 text-gray-600" />
+                  <h4 className="text-lg font-semibold text-gray-900">Itens da Venda</h4>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-3 px-2 font-medium text-gray-700">Produto</th>
+                        <th className="text-left py-3 px-2 font-medium text-gray-700">Qtd</th>
+                        <th className="text-left py-3 px-2 font-medium text-gray-700">Preço Unit.</th>
+                        <th className="text-left py-3 px-2 font-medium text-gray-700">Subtotal</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {vendaSelecionada.itens.map((item) => (
+                        <tr key={item.id} className="border-b border-gray-100">
+                          <td className="py-3 px-2">
+                            <div>
+                              <div className="font-medium text-gray-900">{item.produto.nome}</div>
+                              <div className="text-sm text-gray-500">{item.produto.categoria}</div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-2 text-gray-600">{item.quantidade}</td>
+                          <td className="py-3 px-2 text-gray-600">R$ {item.precoUnitario.toFixed(2)}</td>
+                          <td className="py-3 px-2 font-semibold text-gray-900">R$ {item.subtotal.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setVendaSelecionada(null)}>
+            
+            <div className="p-6 border-t border-gray-200">
+              <button 
+                className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                onClick={() => setVendaSelecionada(null)}
+              >
                 Fechar
               </button>
             </div>
