@@ -99,6 +99,7 @@ export default function VendasPage() {
                 )}
   const sumPagamentosRaw = pagamentos.reduce((s, p) => s + (Number.parseFloat(p.valor || "0") || 0), 0)
   const sumPagamentos = roundCents(sumPagamentosRaw)
+  const restante = Math.max(0, roundCents(totalRounded - sumPagamentos))
   const troco = Math.max(0, roundCents(sumPagamentos - totalRounded))
 
   useEffect(() => {
@@ -416,20 +417,6 @@ export default function VendasPage() {
       setCupomTexto(null)
     }
   }
-
-  // Função para adicionar outra forma de pagamento automaticamente quando o valor for menor
-  useEffect(() => {
-    // se modal aberto e soma dos pagamentos for menor que o total arredondado, adiciona mais uma forma automaticamente
-    if (showPagamentoModal && sumPagamentos < totalRounded && sumPagamentos > 0) {
-      // Se a soma é menor que o total, adiciona automaticamente outra forma
-      const remaining = total - sumPagamentos
-      const hasEmptyPayment = pagamentos.some(p => !p.valor || Number.parseFloat(p.valor) === 0)
-      
-      if (!hasEmptyPayment) {
-        setPagamentos(prev => [...prev, { tipo: "dinheiro", valor: (roundCents(remaining)).toFixed(2) }])
-      }
-    }
-  }, [sumPagamentos, totalRounded, showPagamentoModal])
 
   return (
     <div className="pdv-container">
@@ -1050,6 +1037,12 @@ export default function VendasPage() {
                         newPag[idx].valor = e.target.value
                         setPagamentos(newPag)
                       }}
+                      onBlur={() => {
+                        const newPag = [...pagamentos]
+                        const parsed = Math.max(0, Number.parseFloat(newPag[idx].valor || "0") || 0)
+                        newPag[idx].valor = parsed.toFixed(2)
+                        setPagamentos(newPag)
+                      }}
                       placeholder="0.00"
                       style={{ width: "35%" }}
                     />
@@ -1071,7 +1064,11 @@ export default function VendasPage() {
                   <button
                     type="button"
                     className="btn btn-sm btn-outline"
-                    onClick={() => setPagamentos([...pagamentos, { tipo: "dinheiro", valor: "" }])}
+                    onClick={() => {
+                      // Adicionar nova forma com o restante se houver, senão vazio
+                      const valorInicial = restante > 0 ? restante.toFixed(2) : ""
+                      setPagamentos([...pagamentos, { tipo: "dinheiro", valor: valorInicial }])
+                    }}
                   >
                     <Plus size={16} />
                     Adicionar forma de pagamento
@@ -1097,7 +1094,7 @@ export default function VendasPage() {
               {sumPagamentos < totalRounded && (
                 <div className="flex justify-between" style={{ color: "var(--danger-color)" }}>
                   <span>Falta pagar:</span>
-                  <span className="font-semibold">R$ {Number(Math.max(0, roundCents(totalRounded - sumPagamentos))).toFixed(2)}</span>
+                  <span className="font-semibold">R$ {Number(restante).toFixed(2)}</span>
                 </div>
               )}
             </div>
@@ -1224,8 +1221,8 @@ export default function VendasPage() {
                 type="button" 
                 className="btn btn-success" 
                 onClick={processarPagamento}
-                // usar comparação arredondada para permitir confirmar quando falta zero
-                disabled={loading || sumPagamentos < totalRounded}
+                // bloquear enquanto houver restante a pagar
+                disabled={loading || restante > 0}
               >
                 {loading ? (
                   <>

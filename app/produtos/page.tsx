@@ -342,6 +342,20 @@ export default function ProdutosPage() {
           </div>
         </div>
       )}
+
+      {/* Modal de confirmação para exclusão */}
+      {showConfirmExcluir && (
+        <ConfirmationModal
+          isOpen={showConfirmExcluir}
+          onClose={() => setShowConfirmExcluir(false)}
+          onConfirm={handleConfirmExcluir}
+          title="Confirmar exclusão"
+          message="Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita."
+          type="danger"
+          confirmText="Excluir"
+          cancelText="Cancelar"
+        />
+      )}
     </div>
   )
 }

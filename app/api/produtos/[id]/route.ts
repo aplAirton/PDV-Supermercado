@@ -28,11 +28,21 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     if (Number.isNaN(id)) return NextResponse.json({ error: "ID inválido" }, { status: 400 })
 
     const payload = await request.json()
-    const { nome, preco, categoria, estoque, codigo_barras, ativo } = payload
+
+    // aceitar estoque_minimo no payload e preservar 'ativo' quando não for enviado
+    const { nome, preco, categoria, estoque, codigo_barras, estoque_minimo, ativo } = payload
+
+    // buscar valor atual de 'ativo' para preservá-lo se o cliente não enviar esse campo
+    const existing: any = await executeQuery("SELECT ativo, estoque_minimo FROM produtos WHERE id = ?", [id])
+    const currentAtivo = Array.isArray(existing) && existing.length ? (existing[0].ativo ? 1 : 0) : 1
+    const currentEstoqueMinimo = Array.isArray(existing) && existing.length ? existing[0].estoque_minimo : null
+
+    const ativoToSet = typeof ativo !== "undefined" ? (ativo ? 1 : 0) : currentAtivo
+    const estoqueMinimoToSet = typeof estoque_minimo !== 'undefined' ? estoque_minimo : currentEstoqueMinimo
 
     await executeQuery(
-      "UPDATE produtos SET nome = ?, preco = ?, categoria = ?, estoque = ?, codigo_barras = ?, ativo = ? WHERE id = ?",
-      [nome, preco, categoria, estoque, codigo_barras, ativo ? 1 : 0, id],
+      "UPDATE produtos SET nome = ?, preco = ?, categoria = ?, estoque = ?, codigo_barras = ?, estoque_minimo = ?, ativo = ? WHERE id = ?",
+      [nome, preco, categoria, estoque, codigo_barras, estoqueMinimoToSet, ativoToSet, id],
     )
 
     return NextResponse.json({ success: true })

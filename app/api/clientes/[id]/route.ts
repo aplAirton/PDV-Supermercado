@@ -43,7 +43,8 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       return NextResponse.json({ error: "Cliente possui débito atual e não pode ser excluído" }, { status: 400 })
     }
 
-    await executeQuery("DELETE FROM clientes WHERE id = ?", [id])
+  // Soft-delete: marcar como inativo em vez de remover fisicamente
+  await executeQuery("UPDATE clientes SET ativo = 0 WHERE id = ?", [id])
 
     return NextResponse.json({ success: true })
   } catch (error) {

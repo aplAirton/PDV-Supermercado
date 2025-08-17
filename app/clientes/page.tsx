@@ -145,11 +145,16 @@ export default function ClientesPage() {
       })
 
       if (response.ok) {
-  await carregarClientes()
-  fecharModal()
-  toast({ title: editingCliente ? 'Cliente atualizado' : 'Cliente cadastrado', description: editingCliente ? 'Cliente atualizado!' : 'Cliente cadastrado!', variant: 'success' })
+        await carregarClientes()
+        fecharModal()
+        toast({ title: editingCliente ? 'Cliente atualizado' : 'Cliente cadastrado', description: editingCliente ? 'Cliente atualizado!' : 'Cliente cadastrado!', variant: 'success' })
       } else {
-        throw new Error("Erro ao salvar cliente")
+        // tentar extrair mensagem do servidor (por exemplo: 'CPF é obrigatório') e mostrar ao usuário
+        const errBody = await response.json().catch(() => null)
+        const message = errBody && errBody.error ? String(errBody.error) : 'Erro ao salvar cliente'
+        toast({ title: 'Erro', description: message, variant: 'destructive' })
+        setLoading(false)
+        return
       }
     } catch (error) {
   console.error("Erro ao salvar cliente:", error)
@@ -376,6 +381,20 @@ export default function ClientesPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Modal de confirmação para exclusão de cliente */}
+      {showConfirmExcluir && (
+        <ConfirmationModal
+          isOpen={showConfirmExcluir}
+          onClose={() => setShowConfirmExcluir(false)}
+          onConfirm={handleConfirmExcluir}
+          title="Confirmar exclusão"
+          message="Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita."
+          type="danger"
+          confirmText="Excluir"
+          cancelText="Cancelar"
+        />
       )}
     </div>
   )
