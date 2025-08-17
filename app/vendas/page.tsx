@@ -958,52 +958,7 @@ export default function VendasPage() {
         </div>
       )}
 
-      {/* Exibição do Cupom Fiscal */}
-      {vendaConcluida && cupomTexto && (
-        <div className="card" style={{ marginTop: "1rem", padding: "1rem", background: "var(--surface)" }}>
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-bold" style={{ margin: 0 }}>
-              Cupom Fiscal
-            </h2>
-            <button 
-              className="btn btn-sm btn-outline"
-              onClick={() => setVendaConcluida(false)}
-            >
-              <X size={16} />
-            </button>
-          </div>
-
-          <div className="text-sm" style={{ whiteSpace: "pre-line" }}>
-            {cupomTexto}
-          </div>
-
-          <div className="flex justify-end gap-2 mt-4">
-            <button
-              className="btn btn-primary"
-              onClick={() => {
-                // Lógica para impressão do cupom fiscal
-                window.print()
-              }}
-            >
-              Imprimir Cupom Fiscal
-            </button>
-            <button
-              className="btn btn-success"
-              onClick={() => {
-                // Nova venda: limpar carrinho e estados
-                setCarrinho([])
-                setCodigoBusca("")
-                setProdutos([])
-                setClienteSelecionado(null)
-                setPagamentos([{ tipo: "dinheiro", valor: "" }])
-                setVendaConcluida(false)
-              }}
-            >
-              Nova Venda
-            </button>
-          </div>
-        </div>
-      )}
+  {/* cupom fiscal agora é acessível via o botão na área de venda concluída; bloco removido para evitar redundância */}
     </div>
   )
 }

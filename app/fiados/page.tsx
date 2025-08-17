@@ -42,6 +42,8 @@ export default function FiadosPage() {
   const [pagamentosForm, setPagamentosForm] = useState<Array<{ tipo: string; valor: string }>>([{ tipo: 'dinheiro', valor: '' }])
   const [pagamentoLoading, setPagamentoLoading] = useState(false)
   const [fiadosComPagamentos, setFiadosComPagamentos] = useState<Record<number, any[]>>({})
+  const [fiadoPaymentsLoading, setFiadoPaymentsLoading] = useState<Record<number, boolean>>({})
+  const [resumoLoading, setResumoLoading] = useState(false)
 
   // Estados do formulário
   const [novoFiado, setNovoFiado] = useState({
@@ -197,21 +199,29 @@ export default function FiadosPage() {
   const abrirVisualizar = async (cliente: Cliente) => {
     setVisualizarCliente(cliente)
     setShowVisualizar(true)
-
     // Carregar fiados atualizados e filtrar por cliente
-    const fiadosData = await carregarFiados()
-    const fiadosCliente = (Array.isArray(fiadosData) ? fiadosData : fiados).filter((f: any) => f.cliente_id === cliente.id)
+    setResumoLoading(true)
+    try {
+      const fiadosData = await carregarFiados()
+      const fiadosCliente = (Array.isArray(fiadosData) ? fiadosData : fiados).filter((f: any) => f.cliente_id === cliente.id)
 
-    const map: Record<number, any[]> = {}
-    for (const f of fiadosCliente) {
-      try {
-        const pagamentos = await carregarPagamentosDoFiado(f.id)
-        map[f.id] = pagamentos
-      } catch (e) {
-        map[f.id] = []
+      const map: Record<number, any[]> = {}
+      for (const f of fiadosCliente) {
+        // marcar que os pagamentos deste fiado estão sendo carregados
+        setFiadoPaymentsLoading(prev => ({ ...prev, [f.id]: true }))
+        try {
+          const pagamentos = await carregarPagamentosDoFiado(f.id)
+          map[f.id] = pagamentos
+        } catch (e) {
+          map[f.id] = []
+        } finally {
+          setFiadoPaymentsLoading(prev => ({ ...prev, [f.id]: false }))
+        }
       }
+      setFiadosComPagamentos(map)
+    } finally {
+      setResumoLoading(false)
     }
-    setFiadosComPagamentos(map)
   }
 
   const abrirPagamento = (cliente: Cliente) => {
@@ -276,6 +286,51 @@ export default function FiadosPage() {
     }
   }
 
+  // Exibe cupom fiscal da venda (se houver) em nova janela
+  const viewCupomVenda = async (vendaId?: number) => {
+    if (!vendaId) {
+      alert('Comprovante não disponível para esta transação')
+      return
+    }
+    try {
+      const resp = await fetch(`/api/cupons/by-venda/${vendaId}`)
+      if (!resp.ok) {
+        alert('Cupom não encontrado')
+        return
+      }
+      const data = await resp.json()
+      const w = window.open('', '_blank')
+      if (w) {
+        w.document.write(`<pre style="font-family: 'Courier New', Courier, monospace; white-space: pre-wrap;">${(data.conteudo_texto || '').replace(/</g,'&lt;')}</pre>`)
+        w.document.close()
+        w.focus()
+      }
+    } catch (err) {
+      console.error('Erro ao buscar cupom:', err)
+      alert('Erro ao buscar cupom')
+    }
+  }
+
+  // Exibe comprovante simples para um pagamento (gerado a partir dos dados disponíveis)
+  const viewPagamentoComprovante = (p: any, fiadoId?: number) => {
+    const lines = []
+    lines.push('Comprovante de Pagamento')
+    lines.push('----------------------')
+    if (visualizarCliente) lines.push(`Cliente: ${visualizarCliente.nome}`)
+    if (fiadoId) lines.push(`Fiado ID: ${fiadoId}`)
+    lines.push(`Valor: R$ ${Number(p.valor_pagamento || p.valor || 0).toFixed(2)}`)
+    lines.push(`Forma: ${p.forma_pagamento || p.tipo || '—'}`)
+    if (p.data_pagamento) lines.push(`Data: ${new Date(p.data_pagamento).toLocaleString('pt-BR')}`)
+    if (p.observacoes) lines.push(`Observações: ${p.observacoes}`)
+
+    const w = window.open('', '_blank')
+    if (w) {
+      w.document.write(`<pre style="font-family: 'Courier New', Courier, monospace; white-space: pre-wrap;">${lines.join('\n')}</pre>`)
+      w.document.close()
+      w.focus()
+    }
+  }
+
   return (
     <div className="container p-8">
       <div className="flex justify-between items-center mb-6">
@@ -319,90 +374,77 @@ export default function FiadosPage() {
         <h2 className="text-xl font-bold mb-4">Resumo do Cliente</h2>
         {visualizarCliente ? (
           <div>
-            {/* Cabeçalho com informações principais e totais */}
+            {/* Cabeçalho simplificado: nome e apenas os valores essenciais */}
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', marginBottom: '1rem' }}>
               <div>
-                <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>{visualizarCliente.nome}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>{visualizarCliente.nome}</div>
+                  {resumoLoading && <div className="loading" style={{ width: '16px', height: '16px' }}></div>}
+                </div>
                 <div className="text-sm text-muted">{visualizarCliente.telefone}</div>
               </div>
 
               <div style={{ textAlign: 'right' }}>
                 <div>Débito atual: <strong>R$ {Number(visualizarCliente.debito_atual || 0).toFixed(2)}</strong></div>
                 <div>Limite crédito: <strong>R$ {Number(visualizarCliente.limite_credito || 0).toFixed(2)}</strong></div>
-                <div>Limite disponível: <strong>R$ {Number(Math.max(0, (visualizarCliente.limite_credito || 0) - (visualizarCliente.debito_atual || 0))).toFixed(2)}</strong></div>
               </div>
             </div>
 
-            {/* Totais consolidados */}
-            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-              {(() => {
-                const fiadosCliente = fiados.filter(f => f.cliente_id === visualizarCliente.id)
-                const totalOriginal = fiadosCliente.reduce((s, f) => s + Number(f.valor_original ?? f.valor_total ?? 0), 0)
-                const totalPago = fiadosCliente.reduce((s, f) => s + Number(f.valor_pago || 0), 0)
-                const totalRestante = fiadosCliente.reduce(
-                  (s, f) => s + Number((f.valor_restante != null) ? f.valor_restante : ((f.valor_original ?? 0) - (f.valor_pago || 0))),
-                  0,
-                )
-                return (
-                  <>
-                    <div style={{ flex: 1, padding: '0.75rem', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--surface)' }}>
-                      <div className="text-sm text-muted">Total Fiados</div>
-                      <div style={{ fontWeight: 700 }}>R$ {Number(totalOriginal).toFixed(2)}</div>
-                    </div>
-                    <div style={{ flex: 1, padding: '0.75rem', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--surface)' }}>
-                      <div className="text-sm text-muted">Total Pago</div>
-                      <div style={{ fontWeight: 700 }}>R$ {Number(totalPago).toFixed(2)}</div>
-                    </div>
-                    <div style={{ flex: 1, padding: '0.75rem', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--surface)' }}>
-                      <div className="text-sm text-muted">Restante</div>
-                      <div style={{ fontWeight: 700, color: totalRestante > 0 ? 'var(--warning-color)' : 'var(--success-color)' }}>R$ {Number(totalRestante).toFixed(2)}</div>
-                    </div>
-                  </>
-                )
-              })()}
-            </div>
-
             <div>
-              <h3 className="font-semibold">Lançamentos</h3>
-              <div className="space-y-3" style={{ marginTop: '0.5rem' }}>
-                {fiados.filter(f => f.cliente_id === visualizarCliente.id).map(f => (
-                  <div key={f.id} className="p-3 border rounded-lg" style={{ background: 'white' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <div style={{ fontWeight: 700 }}>R$ {Number(calcularValorFiado(f)).toFixed(2)} <span style={{ fontWeight: 500, color: '#666', marginLeft: '0.5rem' }}>{f.descricao}</span></div>
-                        <div className="text-sm text-muted">Venda ID: {f.venda_id ?? '—'}</div>
-                      </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '0.85rem' }}>Data: {f.data_criacao ? new Date(f.data_criacao).toLocaleDateString('pt-BR') : '—'}</div>
-                        <div style={{ marginTop: '0.25rem' }}>
-                          <span style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', background: f.status === 'quitado' ? 'var(--success-color)' : 'var(--surface)', color: f.status === 'quitado' ? 'white' : 'inherit', fontSize: '0.8rem' }}>{f.status}</span>
+              <h3 className="font-semibold">Histórico de Transações</h3>
+              <div className="space-y-2" style={{ marginTop: '0.5rem' }}>
+                {(() => {
+                  const lançamentos: Array<{ tipo: 'compra' | 'pagamento' | 'loading'; descricao?: string; valor?: number; data?: string; venda_id?: number; pagamentos?: any[]; fiadoId?: number }> = []
+                  const fiadosCliente = fiados.filter(f => f.cliente_id === visualizarCliente.id)
+
+                  for (const f of fiadosCliente) {
+                    // Lançamento de compra (fiado)
+                    lançamentos.push({ tipo: 'compra', descricao: f.descricao || 'Compra', valor: Number((f.valor_original ?? calcularValorFiado(f)) || 0), data: f.data_criacao, venda_id: f.venda_id, fiadoId: f.id })
+                    // Se os pagamentos ainda não foram carregados para este fiado, inserir um marcador de loading
+                    const pagamentos = fiadosComPagamentos[f.id]
+                    if (pagamentos === undefined) {
+                      lançamentos.push({ tipo: 'loading', fiadoId: f.id })
+                    } else if (Array.isArray(pagamentos) && pagamentos.length > 0) {
+                      for (const p of pagamentos) {
+                        lançamentos.push({ tipo: 'pagamento', descricao: `Pagamento ${p.forma_pagamento || p.tipo || ''}`, valor: Number(p.valor_pagamento || p.valor || 0), data: p.data_pagamento, fiadoId: f.id, pagamentos: [p] })
+                      }
+                    }
+                  }
+
+                  if (lançamentos.length === 0) return <div className="text-sm text-muted">Nenhum lançamento encontrado para esse cliente.</div>
+
+                  return lançamentos.map((l, idx) => {
+                    if (l.tipo === 'loading') {
+                      return (
+                        <div key={idx} className="p-2 border rounded-lg flex items-center justify-between">
+                          <div>
+                            <div style={{ fontWeight: 700 }}>Carregando transações...</div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <div className="loading" style={{ width: '14px', height: '14px' }}></div>
+                          </div>
+                        </div>
+                      )
+                    }
+
+                    return (
+                      <div key={idx} className="p-2 border rounded-lg flex items-center justify-between">
+                        <div>
+                          <div style={{ fontWeight: 700 }}>{l.tipo === 'compra' ? 'Compra' : 'Pagamento'} — R$ {Number(l.valor || 0).toFixed(2)} <span className="text-sm text-muted" style={{ marginLeft: '0.5rem' }}>{l.descricao}</span></div>
+                          <div className="text-sm text-muted">{l.data ? new Date(l.data).toLocaleString('pt-BR') : '—'}</div>
+                        </div>
+                        <div className="flex gap-2">
+                          {l.tipo === 'compra' && (
+                            <button className="btn btn-xs btn-outline" onClick={() => viewCupomVenda(l.venda_id)} title="Visualizar comprovante de venda"><Eye size={14} /></button>
+                          )}
+                          {l.tipo === 'pagamento' && (
+                            <button className="btn btn-xs btn-outline" onClick={() => viewPagamentoComprovante((l.pagamentos || [])[0], l.fiadoId)} title="Visualizar comprovante de pagamento"><Eye size={14} /></button>
+                          )}
                         </div>
                       </div>
-                    </div>
-
-                    <div style={{ marginTop: '0.75rem' }}>
-                      <div className="text-sm text-muted">Detalhes financeiros</div>
-                      <div style={{ display: 'flex', gap: '1rem', marginTop: '0.25rem' }}>
-                        <div>Original: <strong>R$ {Number(f.valor_original ?? f.valor_total ?? 0).toFixed(2)}</strong></div>
-                        <div>Pago: <strong>R$ {Number(f.valor_pago || 0).toFixed(2)}</strong></div>
-                        <div>Restante: <strong>R$ {Number(f.valor_restante != null ? f.valor_restante : ((f.valor_original ?? 0) - (f.valor_pago || 0))).toFixed(2)}</strong></div>
-                      </div>
-                    </div>
-
-                    <div style={{ marginTop: '0.75rem' }}>
-                      <strong>Pagamentos:</strong>
-                      <ul className="list-disc ml-5" style={{ marginTop: '0.25rem' }}>
-                        {(fiadosComPagamentos[f.id] || []).map((p, i) => (
-                          <li key={i}>R$ {Number(p.valor_pagamento).toFixed(2)} — {p.forma_pagamento} — {new Date(p.data_pagamento).toLocaleDateString('pt-BR')}</li>
-                        ))}
-                        {(fiadosComPagamentos[f.id] || []).length === 0 && <li className="text-sm text-muted">Nenhum pagamento registrado</li>}
-                      </ul>
-                    </div>
-                  </div>
-                ))}
-                {fiados.filter(f => f.cliente_id === visualizarCliente.id).length === 0 && (
-                  <div className="text-sm text-muted">Nenhum lançamento encontrado para esse cliente.</div>
-                )}
+                    )
+                  })
+                })()}
               </div>
             </div>
 

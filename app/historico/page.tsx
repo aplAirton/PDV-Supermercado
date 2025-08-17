@@ -19,6 +19,7 @@ interface Venda {
 
 export default function HistoricoPage() {
   const [vendas, setVendas] = useState<Venda[]>([])
+  const [loadingVendas, setLoadingVendas] = useState(false)
   const [filtros, setFiltros] = useState({
     data_inicio: "",
     data_fim: "",
@@ -33,7 +34,8 @@ export default function HistoricoPage() {
   }, [])
 
   const carregarVendas = async () => {
-    try {
+  setLoadingVendas(true)
+  try {
       const params = new URLSearchParams()
       Object.entries(filtros).forEach(([key, value]) => {
         if (value) params.append(key, value)
@@ -60,6 +62,11 @@ export default function HistoricoPage() {
       setVendas(sanitized as Venda[])
     } catch (error) {
       console.error("Erro ao carregar vendas:", error)
+    }
+    finally {
+      // garantir que o indicador de loading seja visível por um pequeno período
+      await new Promise((res) => setTimeout(res, 150))
+      setLoadingVendas(false)
     }
   }
 
@@ -193,49 +200,56 @@ export default function HistoricoPage() {
         </div>
 
         {/* Tabela de Vendas */}
-        <div style={{ overflowX: "auto" }}>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Data/Hora</th>
-                <th>Cliente</th>
-                <th>Total</th>
-                <th>Pagamento</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {vendas.map((venda) => (
-                <tr key={venda.id}>
-                  <td>#{venda.id}</td>
-                  <td>{formatarData(venda.data_venda)}</td>
-                  <td>{venda.cliente_nome || "Cliente Avulso"}</td>
-                  <td>R$ {(Number(venda.total) || 0).toFixed(2)}</td>
-                  <td>
-                    <span
-                      style={{
-                        padding: "0.25rem 0.5rem",
-                        borderRadius: "0.25rem",
-                        fontSize: "0.875rem",
-                        background: venda.forma_pagamento === "fiado" ? "var(--warning-color)" : "var(--success-color)",
-                        color: "white",
-                      }}
-                    >
-                      {formatarFormaPagamento(venda.forma_pagamento)}
-                    </span>
-                  </td>
-                  <td>
-                    <button className="btn btn-sm btn-outline" onClick={() => verDetalhes(venda)}>
-                      <Eye size={16} />
-                      Ver Detalhes
-                    </button>
-                  </td>
+        {loadingVendas ? (
+          <div className="p-6 text-center">
+            <div className="loading" style={{ width: '2rem', height: '2rem', margin: '0 auto' }}></div>
+            <div className="text-muted" style={{ marginTop: '0.75rem' }}>Carregando vendas...</div>
+          </div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Data/Hora</th>
+                  <th>Cliente</th>
+                  <th>Total</th>
+                  <th>Pagamento</th>
+                  <th>Ações</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {vendas.map((venda) => (
+                  <tr key={venda.id}>
+                    <td>#{venda.id}</td>
+                    <td>{formatarData(venda.data_venda)}</td>
+                    <td>{venda.cliente_nome || "Cliente Avulso"}</td>
+                    <td>R$ {(Number(venda.total) || 0).toFixed(2)}</td>
+                    <td>
+                      <span
+                        style={{
+                          padding: "0.25rem 0.5rem",
+                          borderRadius: "0.25rem",
+                          fontSize: "0.875rem",
+                          background: venda.forma_pagamento === "fiado" ? "var(--warning-color)" : "var(--success-color)",
+                          color: "white",
+                        }}
+                      >
+                        {formatarFormaPagamento(venda.forma_pagamento)}
+                      </span>
+                    </td>
+                    <td>
+                      <button className="btn btn-sm btn-outline" onClick={() => verDetalhes(venda)}>
+                        <Eye size={16} />
+                        Ver Detalhes
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Modal de Detalhes */}

@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
       texto += `VENDA: #${vendaId}  DATA: ${new Date().toLocaleString('pt-BR')}\n`
       texto += `CLIENTE: ${venda?.cliente_nome ?? 'AVULSO'}\n`
       texto += '----------------------------------------\n'
-      texto += pad('PRODUTO') + pad('QTD', 6) + pad('VL.UN', 10) + 'SUB\n'
+      texto += pad('PRODUTO') + pad('QTD', 2) + pad('VL.UN', 10) + 'SUB\n'
       texto += '----------------------------------------\n'
 
       for (const it of itensCupom) {
