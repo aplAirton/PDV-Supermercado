@@ -1,12 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ShoppingCart, Package, Users, History, CreditCard, Menu, X } from "lucide-react"
 import VendasPage from "./vendas/page"
 import ProdutosPage from "./produtos/page"
 import ClientesPage from "./clientes/page"
 import HistoricoPage from "./historico/page"
 import FiadosPage from "./fiados/page"
+import '../styles/components.css'
 
 type Page = "vendas" | "produtos" | "clientes" | "historico" | "fiados"
 

@@ -152,7 +152,6 @@
 .sidebar-header {
   padding: 2rem 1.5rem;
   border-bottom: 1px solid var(--sidebar-border);
-  background: linear-gradient(135deg, var(--sidebar-primary), #bae6fd);
 }
 
 .sidebar-title {

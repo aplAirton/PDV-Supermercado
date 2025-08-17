@@ -66,6 +66,24 @@ export default function ClientesPage() {
     return telefone.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3")
   }
 
+  // Validação simples do CPF (considera apenas dígitos e dígitos verificadores)
+  const isValidCPF = (rawCpf: string) => {
+    if (!rawCpf) return false
+    const cpf = rawCpf.replace(/\D/g, "")
+    if (cpf.length !== 11) return false
+    // rejeita CPFs com todos os dígitos iguais
+    if (/^(\d)\1{10}$/.test(cpf)) return false
+
+    const calc = (t: number) => {
+      let s = 0
+      for (let i = 0; i < t - 1; i++) s += Number(cpf.charAt(i)) * (t - i)
+      const r = 11 - (s % 11)
+      return r > 9 ? 0 : r
+    }
+
+    return calc(10) === Number(cpf.charAt(9)) && calc(11) === Number(cpf.charAt(10))
+  }
+
   const abrirModal = (cliente?: Cliente) => {
     if (cliente) {
       setEditingCliente(cliente)
@@ -99,16 +117,29 @@ export default function ClientesPage() {
     setLoading(true)
 
     try {
+      // Validação do CPF ao criar novo cliente
+      if (!editingCliente) {
+        if (!isValidCPF(formData.cpf)) {
+          alert("CPF inválido. Verifique e tente novamente.")
+          setLoading(false)
+          return
+        }
+      }
+
       const url = editingCliente ? `/api/clientes/${editingCliente.id}` : "/api/clientes"
       const method = editingCliente ? "PUT" : "POST"
+
+      // Em edição, garantimos que o CPF enviado seja o CPF original (não permitimos alteração do CPF)
+      const payload = {
+        ...formData,
+        limite_credito: Number.parseFloat(formData.limite_credito),
+        cpf: editingCliente ? editingCliente.cpf : formData.cpf,
+      }
 
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          limite_credito: Number.parseFloat(formData.limite_credito),
-        }),
+        body: JSON.stringify(payload),
       })
 
       if (response.ok) {
@@ -271,7 +302,11 @@ export default function ClientesPage() {
                     onChange={(e) => setFormData({ ...formData, cpf: e.target.value })}
                     placeholder="000.000.000-00"
                     required
+                    readOnly={!!editingCliente}
                   />
+                  {editingCliente && (
+                    <div className="text-sm text-muted mt-1">CPF não pode ser alterado ao editar um cliente.</div>
+                  )}
                 </div>
 
                 <div className="form-group">

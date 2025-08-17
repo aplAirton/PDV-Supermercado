@@ -33,12 +33,79 @@
   top: 0;
   display: flex;
   flex-direction: column;
-  transition: width 0.2s ease;
+  transition: all 0.3s ease;
   z-index: 40;
 }
 
 .sidebar.collapsed {
   width: 4rem;
+}
+
+.sidebar.open {
+  transform: translateX(0);
+}
+
+/* App Layout */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 16rem;
+  display: flex;
+  flex-direction: column;
+  transition: margin-left 0.3s ease;
+  min-height: 100vh;
+}
+
+.content-header {
+  background: var(--card-background);
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.mobile-menu-btn {
+  display: none;
+}
+
+.content-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.content-subtitle {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.content-body {
+  flex: 1;
+  padding: 2rem;
+  background: var(--surface);
+  min-height: calc(100vh - 5rem);
+}
+
+.card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  background: var(--primary-color);
+  color: white;
+  border-radius: 0.5rem;
+  flex-shrink: 0;
 }
 
 .sidebar-header {
@@ -47,6 +114,13 @@
   justify-content: space-between;
   padding: 1rem;
   border-bottom: 1px solid var(--border);
+}
+
+.sidebar-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
 }
 
 .sidebar-brand {
@@ -87,24 +161,33 @@
 }
 
 .nav-item {
+  margin: 0 0.5rem 0.25rem;
+}
+
+.nav-link {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
-  margin: 0 0.5rem;
   border-radius: 0.375rem;
   color: var(--text-secondary);
   text-decoration: none;
   transition: all 0.2s ease;
   cursor: pointer;
+  width: 100%;
+  background: none;
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: left;
 }
 
-.nav-item:hover {
+.nav-link:hover {
   background: var(--surface);
   color: var(--text-primary);
 }
 
-.nav-item.active {
+.nav-link.active {
   background: var(--primary-color);
   color: white;
 }
@@ -142,6 +225,43 @@
   padding: 0 1rem;
 }
 
+/* Container Full Width */
+.container-fluid {
+  width: 100%;
+  padding: 0 1rem;
+}
+
+/* Responsive Container */
+.container-responsive {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+@media (min-width: 640px) {
+  .container-responsive {
+    max-width: 640px;
+  }
+}
+
+@media (min-width: 768px) {
+  .container-responsive {
+    max-width: 768px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-responsive {
+    max-width: 1024px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .container-responsive {
+    max-width: 1200px;
+  }
+}
+
 .grid {
   display: grid;
 }
@@ -160,6 +280,25 @@
 
 .grid-cols-4 {
   grid-template-columns: repeat(4, 1fr);
+}
+
+/* Auto-fit Grid (Responsive) */
+.grid-auto-fit {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.grid-auto-fit-sm {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.grid-auto-fit-lg {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
 }
 
 .gap-1 {
@@ -662,6 +801,84 @@
   100% { transform: rotate(360deg); }
 }
 
+/* PDV Específico - Classes Responsivas */
+.pdv-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.pdv-item {
+  transition: background-color 0.2s ease;
+}
+
+.pdv-item:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.pdv-total-section {
+  background: var(--surface);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  border: 2px solid var(--primary-color);
+}
+
+.pdv-payment-section {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.pdv-button-group {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.pdv-button-group .btn {
+  flex: 1;
+  min-width: 120px;
+}
+
+/* Toast/Notification */
+.toast {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  max-width: 300px;
+  animation: slideInRight 0.3s ease;
+}
+
+.toast.success {
+  border-left: 4px solid var(--success-color);
+}
+
+.toast.error {
+  border-left: 4px solid var(--danger-color);
+}
+
+.toast.warning {
+  border-left: 4px solid var(--warning-color);
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
 /* Specific utility classes */
 .space-y-2 > * + * {
   margin-top: 0.5rem;
@@ -713,39 +930,495 @@
   transition-duration: 150ms;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
+/* Responsive Design */
+
+/* Breakpoints:
+   xs: 0-479px (mobile pequeno)
+   sm: 480-767px (mobile)  
+   md: 768-1023px (tablet)
+   lg: 1024-1279px (desktop pequeno)
+   xl: 1280px+ (desktop grande)
+*/
+
+/* Extra Small Devices - Mobile Pequeno (0-479px) */
+@media (max-width: 479px) {
+  .container {
+    padding: 0 0.25rem;
+    max-width: 100%;
+  }
+  
+  /* Cards compactos */
+  .card {
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .card-header {
+    padding-bottom: 0.25rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .card-title {
+    font-size: 1rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  
+  /* Botões menores */
+  .btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+    gap: 0.25rem;
+  }
+  
+  .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.625rem;
+  }
+  
+  .btn-xs {
+    padding: 0.125rem 0.375rem;
+    font-size: 0.5rem;
+  }
+  
+  /* Forms compactas */
+  .form-input,
+  .form-select {
+    padding: 0.375rem 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  .form-label {
+    font-size: 0.75rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  /* Tabelas scroll horizontal */
+  .table {
+    font-size: 0.75rem;
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  .table th,
+  .table td {
+    padding: 0.375rem 0.25rem;
+    min-width: 60px;
+  }
+  
+  /* Modal full screen */
+  .modal-overlay {
+    padding: 0.5rem;
+  }
+  
+  .modal {
+    padding: 1rem;
+    margin: 0;
+    max-width: 100%;
+    border-radius: 0.25rem;
+  }
+  
+  /* Grid sempre 1 coluna */
   .grid-cols-2,
   .grid-cols-3,
   .grid-cols-4 {
     grid-template-columns: 1fr;
+    gap: 0.5rem;
   }
   
+  /* Typography menor */
+  .text-2xl {
+    font-size: 1.25rem;
+    line-height: 1.5rem;
+  }
+  
+  .text-xl {
+    font-size: 1.125rem;
+    line-height: 1.5rem;
+  }
+  
+  .text-lg {
+    font-size: 1rem;
+    line-height: 1.25rem;
+  }
+}
+
+/* Small Devices - Mobile (480-767px) */
+@media (min-width: 480px) and (max-width: 767px) {
   .container {
     padding: 0 0.5rem;
+    max-width: 100%;
   }
   
+  /* Grid responsivo */
+  .grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+  
+  .grid-cols-3,
+  .grid-cols-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  /* Cards com mais espaço */
+  .card {
+    padding: 0.875rem;
+  }
+  
+  /* Tabelas com scroll */
+  .table {
+    font-size: 0.875rem;
+    overflow-x: auto;
+    display: block;
+  }
+  
+  .table th,
+  .table td {
+    padding: 0.5rem 0.375rem;
+    white-space: nowrap;
+  }
+  
+  /* Modal responsivo */
   .modal {
-    margin: 1rem;
+    margin: 0.5rem;
+    padding: 1.5rem;
+    max-width: calc(100% - 1rem);
+  }
+}
+
+/* Medium Devices - Tablet (768-1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .container {
+    padding: 0 1rem;
+    max-width: 100%;
+  }
+  
+  /* Grid para tablets */
+  .grid-cols-3,
+  .grid-cols-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  /* Sidebar adaptativa */
+  .sidebar {
+    width: 14rem;
+  }
+  
+  /* Cards otimizados */
+  .card {
     padding: 1rem;
   }
   
+  /* Tabelas normais */
   .table {
     font-size: 0.875rem;
   }
   
   .table th,
   .table td {
-    padding: 0.5rem;
+    padding: 0.625rem;
   }
   
+  /* Modal centralizado */
+  .modal {
+    margin: 1rem;
+    padding: 1.5rem;
+    max-width: 36rem;
+  }
+}
+
+/* Large Devices - Desktop (1024px+) */
+@media (min-width: 1024px) {
+  .container {
+    max-width: 1200px;
+    padding: 0 1rem;
+  }
+  
+  /* Grid completo */
+  .grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .grid-cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .grid-cols-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  /* Sidebar normal */
   .sidebar {
-    width: 100%;
-    transform: translateX(-100%);
+    width: 16rem;
   }
   
   .sidebar.collapsed {
+    width: 4rem;
+  }
+  
+  /* Modal grande */
+  .modal {
+    margin: 2rem;
+    padding: 2rem;
+    max-width: 32rem;
+  }
+}
+
+/* Sidebar Mobile Toggle */
+@media (max-width: 767px) {
+  .sidebar {
+    position: fixed;
     width: 100%;
+    height: 100vh;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 50;
+  }
+  
+  .sidebar.open {
     transform: translateX(0);
+  }
+  
+  .sidebar.collapsed {
+    transform: translateX(0);
+    width: 100%;
+  }
+  
+  .main-content {
+    margin-left: 0;
+  }
+  
+  .mobile-menu-btn {
+    display: inline-flex !important;
+  }
+  
+  .content-header {
+    padding: 1rem;
+    flex-wrap: wrap;
+  }
+  
+  .content-body {
+    padding: 1rem;
+  }
+  
+  /* Overlay para mobile */
+  .sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 40;
+    display: none;
+  }
+  
+  .sidebar-overlay.active {
+    display: block;
+  }
+}
+
+/* Tablet responsivo */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .sidebar {
+    width: 14rem;
+  }
+  
+  .main-content {
+    margin-left: 14rem;
+  }
+  
+  .content-header {
+    padding: 1rem 1.5rem;
+  }
+  
+  .content-body {
+    padding: 1.5rem;
+  }
+}
+
+/* PDV Específico - Carrinho Responsivo */
+@media (max-width: 1023px) {
+  /* Carrinho em coluna única */
+  .pdv-container {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .pdv-item {
+    padding: 0.5rem 0.75rem;
+  }
+  
+  /* Controles de quantidade menores */
+  .btn-qty {
+    padding: 0.125rem 0.375rem;
+  }
+  
+  /* Totais compactos */
+  .pdv-total {
+    font-size: 1.25rem;
+  }
+}
+
+/* Utility Classes Responsivas */
+
+/* Breakpoint-specific utilities */
+.sm-only { display: none; }
+.md-only { display: none; }
+.lg-only { display: none; }
+
+/* Hide/Show por breakpoint */
+.hidden-xs { display: block; }
+.hidden-sm { display: block; }
+.hidden-md { display: block; }
+.hidden-lg { display: block; }
+
+/* Mobile First - Extra Small (0-479px) */
+@media (max-width: 479px) {
+  .hidden-xs { display: none !important; }
+  .show-xs { display: block !important; }
+  .flex-xs { display: flex !important; }
+  .grid-xs { display: grid !important; }
+  
+  /* Text utilities */
+  .text-xs-center { text-align: center; }
+  .text-xs-left { text-align: left; }
+  .text-xs-right { text-align: right; }
+  
+  /* Spacing mobile */
+  .p-xs-2 { padding: 0.5rem; }
+  .p-xs-1 { padding: 0.25rem; }
+  .m-xs-0 { margin: 0; }
+  .mb-xs-2 { margin-bottom: 0.5rem; }
+  .mt-xs-2 { margin-top: 0.5rem; }
+}
+
+/* Small devices (480-767px) */
+@media (min-width: 480px) and (max-width: 767px) {
+  .hidden-sm { display: none !important; }
+  .show-sm { display: block !important; }
+  .sm-only { display: block !important; }
+  
+  /* Grid responsivo */
+  .grid-sm-1 { grid-template-columns: 1fr; }
+  .grid-sm-2 { grid-template-columns: repeat(2, 1fr); }
+  
+  /* Flex utilities */
+  .flex-sm-col { flex-direction: column; }
+  .flex-sm-row { flex-direction: row; }
+  .items-sm-center { align-items: center; }
+  .justify-sm-between { justify-content: space-between; }
+}
+
+/* Medium devices (768-1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .hidden-md { display: none !important; }
+  .show-md { display: block !important; }
+  .md-only { display: block !important; }
+  
+  /* Grid para tablets */
+  .grid-md-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-md-3 { grid-template-columns: repeat(3, 1fr); }
+  
+  /* Containers */
+  .container-md { max-width: 768px; margin: 0 auto; }
+}
+
+/* Large devices (1024px+) */
+@media (min-width: 1024px) {
+  .hidden-lg { display: none !important; }
+  .show-lg { display: block !important; }
+  .lg-only { display: block !important; }
+  
+  /* Remove mobile-only elements */
+  .sm-only, .md-only { display: none !important; }
+  
+  /* Full grid support */
+  .grid-lg-4 { grid-template-columns: repeat(4, 1fr); }
+  .grid-lg-auto { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+}
+
+/* Breakpoint visibility helpers */
+@media (min-width: 480px) {
+  .xs-only { display: none !important; }
+}
+
+@media (min-width: 768px) {
+  .sm-only { display: none !important; }
+}
+
+@media (min-width: 1024px) {
+  .md-only { display: none !important; }
+}
+
+/* Spacing Responsivo */
+@media (max-width: 767px) {
+  .p-mobile-2 { padding: 0.5rem; }
+  .p-mobile-1 { padding: 0.25rem; }
+  .mb-mobile-2 { margin-bottom: 0.5rem; }
+  .mb-mobile-1 { margin-bottom: 0.25rem; }
+  .px-mobile-1 { padding-left: 0.25rem; padding-right: 0.25rem; }
+  .py-mobile-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+}
+
+/* Flexbox Responsivo */
+@media (max-width: 767px) {
+  .flex-mobile-col {
+    flex-direction: column;
+  }
+  
+  .flex-mobile-wrap {
+    flex-wrap: wrap;
+  }
+  
+  .items-mobile-start {
+    align-items: flex-start;
+  }
+  
+  .justify-mobile-start {
+    justify-content: flex-start;
+  }
+  
+  .justify-mobile-center {
+    justify-content: center;
+  }
+  
+  .gap-mobile-2 {
+    gap: 0.5rem;
+  }
+  
+  .gap-mobile-1 {
+    gap: 0.25rem;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .sidebar,
+  .btn,
+  .modal-overlay {
+    display: none !important;
+  }
+  
+  .container {
+    max-width: 100%;
+    padding: 0;
+  }
+  
+  .card {
+    border: 1px solid #000;
+    box-shadow: none;
+    page-break-inside: avoid;
+  }
+  
+  .table {
+    font-size: 12px;
+  }
+  
+  .table th,
+  .table td {
+    padding: 0.25rem;
   }
 }
