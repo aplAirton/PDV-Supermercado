@@ -49,6 +49,10 @@ export default function VendasPage() {
   const [vendaConcluida, setVendaConcluida] = useState(false)
   const [cupomTexto, setCupomTexto] = useState<string | null>(null)
 
+  // Estados para modal de identificação de cliente
+  const [showClienteModal, setShowClienteModal] = useState(false)
+  const [buscarClienteQuery, setBuscarClienteQuery] = useState("")
+
   // Estados para confirmação de split automático de fiado
   const [showConfirmSplit, setShowConfirmSplit] = useState(false)
   const [pendingSplit, setPendingSplit] = useState<{ available: number; remaining: number } | null>(null)
@@ -71,6 +75,28 @@ export default function VendasPage() {
   const roundCents = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100
   const totalRounded = roundCents(total)
 
+  // disponibilidade do cliente selecionado (limite - débito atual)
+  const clienteAvailable = clienteSelecionado ? Math.max(0, clienteSelecionado.limite_credito - (clienteSelecionado.debito_atual || 0)) : 0
+  const clienteLimiteInsuficiente = clienteSelecionado ? clienteAvailable < totalRounded : false
+  // total pretendido em fiado (usado para avisos dentro do modal)
+  const totalFiadoSelected = pagamentos
+    .filter((p) => p.tipo === "fiado")
+    .reduce((s, p) => s + (Number.parseFloat(p.valor || "0") || 0), 0)
+
+                {/* Mensagem de limite do cliente selecionado (mostra erro no próprio card/modal) */}
+                {clienteSelecionado && pagamentos.some((p) => p.tipo === 'fiado') && (
+                  <div style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>
+                    {clienteLimiteInsuficiente ? (
+                      <div style={{ color: 'var(--danger-color)', fontWeight: 600 }}>
+                        Limite insuficiente: disponível R$ {clienteAvailable.toFixed(2)}. O restante será cobrado por outra forma de pagamento.
+                      </div>
+                    ) : (
+                      <div style={{ color: 'var(--success-color)' }}>
+                        Limite disponível: R$ {clienteAvailable.toFixed(2)}
+                      </div>
+                    )}
+                  </div>
+                )}
   const sumPagamentosRaw = pagamentos.reduce((s, p) => s + (Number.parseFloat(p.valor || "0") || 0), 0)
   const sumPagamentos = roundCents(sumPagamentosRaw)
   const troco = Math.max(0, roundCents(sumPagamentos - totalRounded))
@@ -248,6 +274,13 @@ export default function VendasPage() {
     // sempre abrir com um único campo; usar total arredondado
     setPagamentos([{ tipo: "dinheiro", valor: totalRounded.toFixed(2) }])
     setShowPagamentoModal(true)
+  }
+
+  const fecharModalPagamento = () => {
+    // Resetar modal e desfazer transação
+    setPagamentos([{ tipo: "dinheiro", valor: "" }])
+    setShowPagamentoModal(false)
+    // Note: não resetamos clienteSelecionado aqui pois pode ter sido selecionado via botão "Identificar Cliente"
   }
 
   const processarPagamento = async () => {
@@ -528,6 +561,46 @@ export default function VendasPage() {
               {carrinho.length} {carrinho.length === 1 ? "item" : "itens"}
             </div>
           </div>
+          
+          {/* Botão Identificar Cliente no topo do carrinho */}
+          <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border)' }}>
+            {!clienteSelecionado ? (
+              <button
+                type="button"
+                className="btn btn-outline"
+                style={{ width: '100%', fontSize: '0.9rem' }}
+                onClick={() => setShowClienteModal(true)}
+                disabled={carrinho.length === 0}
+              >
+                <Plus size={16} style={{ marginRight: '0.5rem' }} />
+                Identificar Cliente
+              </button>
+            ) : (
+              <div style={{ 
+                padding: '0.5rem', 
+                background: 'var(--surface)', 
+                borderRadius: '0.375rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}>
+                <div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>Cliente identificado:</div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    {clienteSelecionado.nome}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-xs btn-outline"
+                  onClick={() => setClienteSelecionado(null)}
+                  title="Remover identificação"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Lista de Itens */}
@@ -801,6 +874,124 @@ export default function VendasPage() {
         </div>
       </div>
 
+      {/* Modal de Busca de Cliente */}
+      {showClienteModal && (
+        <div
+          className="modal-backdrop"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'rgba(0,0,0,0.45)',
+            zIndex: 1100,
+            padding: '1rem'
+          }}
+          onClick={() => {
+            // fechar ao clicar no backdrop
+            setShowClienteModal(false)
+            setBuscarClienteQuery('')
+          }}
+        >
+          <div
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            style={{
+              maxWidth: '520px',
+              width: '100%',
+              background: 'var(--background)',
+              borderRadius: '0.5rem',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+              overflow: 'hidden'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header" style={{ padding: '1rem 1rem 0.5rem' }}>
+              <h3 style={{ margin: 0 }}>Identificar Cliente</h3>
+            </div>
+            <div className="modal-body" style={{ padding: '0 1rem 1rem' }}>
+              <div style={{ marginBottom: '1rem' }}>
+                <label className="form-label">Buscar cliente:</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Digite o nome do cliente para buscar..."
+                  value={buscarClienteQuery}
+                  onChange={(e) => setBuscarClienteQuery(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              
+              <div style={{ maxHeight: '300px', overflowY: 'auto', paddingBottom: '0.25rem' }}>
+                {clientes
+                  .filter(cliente => 
+                    buscarClienteQuery === '' || 
+                    cliente.nome.toLowerCase().includes(buscarClienteQuery.toLowerCase())
+                  )
+                  .map((cliente) => (
+                    <div
+                      key={cliente.id}
+                      className="card"
+                      style={{
+                        padding: '0.75rem',
+                        marginBottom: '0.5rem',
+                        cursor: 'pointer',
+                        border: '1px solid var(--border)',
+                        transition: 'all 0.2s ease',
+                        borderRadius: '0.375rem',
+                        background: 'transparent'
+                      }}
+                      onClick={() => {
+                        setClienteSelecionado(cliente)
+                        setShowClienteModal(false)
+                        setBuscarClienteQuery('')
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = 'var(--primary)'
+                        e.currentTarget.style.backgroundColor = 'var(--surface)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = 'var(--border)'
+                        e.currentTarget.style.backgroundColor = 'transparent'
+                      }}
+                    >
+                      <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>
+                        {cliente.nome}
+                      </div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                        ID: {cliente.id}
+                      </div>
+                    </div>
+                  ))}
+                
+                {clientes.filter(cliente => 
+                  buscarClienteQuery === '' || 
+                  cliente.nome.toLowerCase().includes(buscarClienteQuery.toLowerCase())
+                ).length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                    {buscarClienteQuery === '' ? 'Carregando clientes...' : 'Nenhum cliente encontrado'}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="modal-footer" style={{ padding: '0.5rem 1rem 1rem', display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={() => {
+                  setShowClienteModal(false)
+                  setBuscarClienteQuery('')
+                }}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal de Pagamento */}
       {showPagamentoModal && (
         <div className="modal-overlay">
@@ -809,7 +1000,7 @@ export default function VendasPage() {
               <h3 className="text-xl font-bold">Finalizar Pagamento</h3>
               <button 
                 className="btn btn-sm btn-outline"
-                onClick={() => setShowPagamentoModal(false)}
+                onClick={() => fecharModalPagamento()}
               >
                 <X size={16} />
               </button>
@@ -911,25 +1102,112 @@ export default function VendasPage() {
               )}
             </div>
 
+            {/* Aviso em card: saldo insuficiente (unificado para evitar redundância) */}
+            {clienteSelecionado && clienteAvailable < totalRounded && (
+              <div style={{
+                border: `1px solid rgba(255, 193, 7, 0.3)`,
+                background: 'rgba(255, 193, 7, 0.05)',
+                padding: '0.75rem',
+                borderRadius: '0.5rem',
+                marginBottom: '0.75rem'
+              }}>
+                <div style={{ fontWeight: 600, color: 'var(--warning-color)', marginBottom: '0.25rem', fontSize: '1rem' }}>⚠️ Crédito insuficiente</div>
+                <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+                  Cliente: <strong>{clienteSelecionado.nome}</strong>
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                  Crédito disponível: <strong>R$ {clienteAvailable.toFixed(2)}</strong> • Total da compra: <strong>R$ {totalRounded.toFixed(2)}</strong>
+                  {pagamentos.some((p) => p.tipo === 'fiado') && totalFiadoSelected > clienteAvailable && (
+                    <>
+                      <br />
+                      Valor solicitado em fiado: <strong>R$ {Number(totalFiadoSelected).toFixed(2)}</strong>. O sistema usará R$ {clienteAvailable.toFixed(2)} em fiado e cobrará R$ {Number(totalFiadoSelected - clienteAvailable).toFixed(2)} por outra forma automaticamente.
+                    </>
+                  )}
+                  {!pagamentos.some((p) => p.tipo === 'fiado') && (
+                    <>
+                      <br />
+                      É necessário utilizar outras formas de pagamento para completar a transação.
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Cliente (se houver qualquer parcela em fiado) */}
             {pagamentos.some((p) => p.tipo === "fiado") && (
               <div className="form-group mb-3">
-                <label className="form-label font-semibold">Cliente</label>
-                <select
-                  className="form-select"
-                  value={clienteSelecionado?.id || ""}
-                  onChange={(e) => {
-                    const cliente = clientes.find((c) => c.id === Number.parseInt(e.target.value))
-                    setClienteSelecionado(cliente || null)
-                  }}
-                >
-                  <option value="">Selecione um cliente</option>
-                  {clientes.map((cliente) => (
-                    <option key={cliente.id} value={cliente.id}>
-                      {cliente.nome} - Limite disponível: R$ {Number(Math.max(0, cliente.limite_credito - (cliente.debito_atual || 0))).toFixed(2)}
-                    </option>
-                  ))}
-                </select>
+                <label className="form-label font-semibold">Cliente para fiado</label>
+                {clienteSelecionado ? (
+                  <div style={{ 
+                    padding: '0.75rem', 
+                    background: 'var(--surface)', 
+                    borderRadius: '0.375rem', 
+                    border: '1px solid var(--border)' 
+                  }}>
+                    <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>
+                      {clienteSelecionado.nome}
+                    </div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                      Crédito disponível: R$ {clienteAvailable.toFixed(2)}
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-xs btn-outline"
+                      style={{ marginTop: '0.25rem' }}
+                      onClick={() => setClienteSelecionado(null)}
+                    >
+                      Alterar cliente
+                    </button>
+                  </div>
+                ) : (
+                  <select
+                    className="form-select"
+                    value=""
+                    onChange={(e) => {
+                      const cliente = clientes.find((c) => c.id === Number.parseInt(e.target.value))
+                      setClienteSelecionado(cliente || null)
+
+                      // Se houver parcela em fiado e o cliente selecionado tiver limite inferior
+                      // ao valor pedido em fiado, dividimos automaticamente
+                      if (cliente) {
+                        const totalFiado = pagamentos
+                          .filter((p) => p.tipo === "fiado")
+                          .reduce((s, p) => s + (Number.parseFloat(p.valor || "0") || 0), 0)
+
+                        const available = Math.max(0, cliente.limite_credito - (cliente.debito_atual || 0))
+                        if (totalFiado > 0 && totalFiado > available) {
+                          const remaining = roundCents(totalFiado - available)
+
+                          // Ajustar o primeiro pagamento fiado encontrado para o valor disponível
+                          let adjusted = false
+                          const newPagamentos = pagamentos.map((p) => {
+                            if (p.tipo === "fiado" && !adjusted) {
+                              adjusted = true
+                              return { ...p, valor: available.toFixed(2) }
+                            }
+                            return p
+                          })
+
+                          // Adiciona pagamento complementar (dinheiro) para o restante
+                          newPagamentos.push({ tipo: "dinheiro", valor: remaining.toFixed(2) })
+                          setPagamentos(newPagamentos)
+
+                          // Processar automaticamente com os pagamentos ajustados
+                          setTimeout(() => {
+                            processarPagamento()
+                          }, 80)
+                        }
+                      }
+                    }}
+                  >
+                    <option value="">Selecione um cliente</option>
+                    {clientes.map((cliente) => (
+                      <option key={cliente.id} value={cliente.id}>
+                        {cliente.nome} - Limite disponível: R$ {Number(Math.max(0, cliente.limite_credito - (cliente.debito_atual || 0))).toFixed(2)}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
             )}
 
@@ -938,7 +1216,7 @@ export default function VendasPage() {
               <button 
                 type="button" 
                 className="btn btn-outline" 
-                onClick={() => setShowPagamentoModal(false)}
+                onClick={() => fecharModalPagamento()}
               >
                 Cancelar
               </button>
