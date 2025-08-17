@@ -30,6 +30,8 @@ const toastVariants = cva(
     variants: {
       variant: {
         default: "border bg-background text-foreground",
+  success: "border bg-background text-foreground",
+  warning: "border bg-background text-foreground",
         destructive:
           "destructive group border-destructive bg-destructive text-destructive-foreground",
       },
@@ -45,10 +47,21 @@ const Toast = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> &
     VariantProps<typeof toastVariants>
 >(({ className, variant, ...props }, ref) => {
+  // Apply a colored left border for semantic variants (success/warning)
+  const variantBorderStyle: React.CSSProperties | undefined =
+    variant === "success"
+      ? { borderLeft: "4px solid var(--success-color)" }
+      : variant === "warning"
+      ? { borderLeft: "4px solid var(--warning-color)" }
+      : undefined
+
+  const mergedStyle = { ...(props as any).style, ...variantBorderStyle }
+
   return (
     <ToastPrimitives.Root
       ref={ref}
       className={cn(toastVariants({ variant }), className)}
+      style={mergedStyle}
       {...props}
     />
   )

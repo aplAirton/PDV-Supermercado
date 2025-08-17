@@ -4,6 +4,8 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import Loading from "@/components/loading"
+import ConfirmationModal from '@/components/confirmation-modal'
+import { toast } from '@/hooks/use-toast'
 import { Plus, Edit, Trash2, Search } from "lucide-react"
 
 interface Produto {
@@ -112,35 +114,45 @@ export default function ProdutosPage() {
       if (response.ok) {
         await carregarProdutos()
         fecharModal()
-        alert(editingProduto ? "Produto atualizado!" : "Produto cadastrado!")
+  toast({ title: editingProduto ? 'Produto atualizado' : 'Produto cadastrado', description: editingProduto ? 'Produto atualizado!' : 'Produto cadastrado!', variant: 'success' })
       } else {
         throw new Error("Erro ao salvar produto")
       }
     } catch (error) {
       console.error("Erro ao salvar produto:", error)
-      alert("Erro ao salvar produto!")
+      toast({ title: 'Erro', description: 'Erro ao salvar produto!', variant: 'destructive' })
     } finally {
       setLoading(false)
     }
   }
 
   const excluirProduto = async (id: number) => {
-    if (!confirm("Tem certeza que deseja excluir este produto?")) return
+    setConfirmExcluirId(id)
+    setShowConfirmExcluir(true)
+  }
 
+  const [showConfirmExcluir, setShowConfirmExcluir] = useState(false)
+  const [confirmExcluirId, setConfirmExcluirId] = useState<number | null>(null)
+
+  const handleConfirmExcluir = async () => {
+    if (confirmExcluirId === null) return
     try {
-      const response = await fetch(`/api/produtos/${id}`, {
+      const response = await fetch(`/api/produtos/${confirmExcluirId}`, {
         method: "DELETE",
       })
 
       if (response.ok) {
         await carregarProdutos()
-        alert("Produto excluído!")
+  toast({ title: 'Produto excluído', description: 'Produto excluído!', variant: 'success' })
       } else {
         throw new Error("Erro ao excluir produto")
       }
     } catch (error) {
       console.error("Erro ao excluir produto:", error)
-      alert("Erro ao excluir produto!")
+      toast({ title: 'Erro', description: 'Erro ao excluir produto!', variant: 'destructive' })
+    } finally {
+      setShowConfirmExcluir(false)
+      setConfirmExcluirId(null)
     }
   }
 

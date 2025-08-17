@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { toast } from '../../hooks/use-toast'
 import { Plus, CreditCard, Clock, CheckCircle } from 'lucide-react'
-import Modal from '@/components/modal'
+import Modal from '../../components/modal'
 import '../../styles/components.css'
 
 interface Cliente {
@@ -89,11 +90,11 @@ export default function FiadosPage() {
         setNovoFiado({ cliente_id: '', valor_total: '', descricao: '' })
         carregarFiados()
       } else {
-        alert('Erro ao adicionar fiado')
+        toast({ title: 'Erro', description: 'Erro ao adicionar fiado', variant: 'destructive' })
       }
     } catch (error) {
       console.error('Erro ao adicionar fiado:', error)
-      alert('Erro ao adicionar fiado')
+      toast({ title: 'Erro', description: 'Erro ao adicionar fiado', variant: 'destructive' })
     }
   }
 
@@ -112,11 +113,11 @@ export default function FiadosPage() {
       if (response.ok) {
         carregarFiados()
       } else {
-        alert('Erro ao marcar como pago')
+        toast({ title: 'Erro', description: 'Erro ao marcar como pago', variant: 'destructive' })
       }
     } catch (error) {
       console.error('Erro ao marcar como pago:', error)
-      alert('Erro ao marcar como pago')
+      toast({ title: 'Erro', description: 'Erro ao marcar como pago', variant: 'destructive' })
     }
   }
 

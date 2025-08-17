@@ -1,4 +1,5 @@
 import type React from "react"
+import { Toaster } from '@/components/ui/toaster'
 import type { Metadata } from "next"
 import "./globals.css"
 import "../styles/components.css"
@@ -16,7 +17,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body>{children}</body>
+      <body>
+        <Toaster />
+        {children}
+      </body>
     </html>
   )
 }

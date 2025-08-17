@@ -32,7 +32,7 @@
   --radius: 0.625rem;
   --sidebar: #ffffff;
   --sidebar-foreground: #0f172a;
-  --sidebar-primary: #004b4b;
+  --sidebar-primary: #3b82f6;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #06b6d4;
   --sidebar-accent-foreground: #ffffff;
@@ -155,7 +155,7 @@
 }
 
 .sidebar-title {
-  font-size: 1.5rem;
+  font-size: 3rem;
   font-weight: 700;
   color: var(--sidebar-primary-foreground);
   text-align: center;
@@ -251,7 +251,6 @@
 
 .card:hover {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  transform: translateY(-2px);
 }
 
 .card-header {
@@ -399,7 +398,7 @@
 }
 
 .table tbody tr:hover {
-  background: var(--sidebar-primary);
+  background: #daefff;
 }
 
 /* Modal styles */

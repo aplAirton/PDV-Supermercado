@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
+import { toast } from '../../hooks/use-toast'
 import { CreditCard, DollarSign } from "lucide-react"
 
 interface Fiado {
@@ -111,15 +112,15 @@ export default function FiadosPage() {
       })
 
       if (response.ok) {
-        await carregarFiados()
-        fecharModal()
-        alert("Pagamento processado com sucesso!")
+  await carregarFiados()
+  fecharModal()
+  toast({ title: 'Pagamento', description: 'Pagamento processado com sucesso!', variant: 'success' })
       } else {
         throw new Error("Erro ao processar pagamento")
       }
     } catch (error) {
-      console.error("Erro ao processar pagamento:", error)
-      alert("Erro ao processar pagamento!")
+  console.error("Erro ao processar pagamento:", error)
+  toast({ title: 'Erro', description: 'Erro ao processar pagamento!', variant: 'destructive' })
     } finally {
       setLoading(false)
     }

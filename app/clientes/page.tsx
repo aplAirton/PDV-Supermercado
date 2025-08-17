@@ -4,6 +4,8 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import Loading from "@/components/loading"
+import { toast } from '@/hooks/use-toast'
+import ConfirmationModal from '@/components/confirmation-modal'
 import { Plus, Edit, Trash2, Search, User } from "lucide-react"
 
 interface Cliente {
@@ -120,7 +122,7 @@ export default function ClientesPage() {
       // Validação do CPF ao criar novo cliente
       if (!editingCliente) {
         if (!isValidCPF(formData.cpf)) {
-          alert("CPF inválido. Verifique e tente novamente.")
+          toast({ title: 'CPF inválido', description: 'CPF inválido. Verifique e tente novamente.', variant: 'destructive' })
           setLoading(false)
           return
         }
@@ -143,37 +145,48 @@ export default function ClientesPage() {
       })
 
       if (response.ok) {
-        await carregarClientes()
-        fecharModal()
-        alert(editingCliente ? "Cliente atualizado!" : "Cliente cadastrado!")
+  await carregarClientes()
+  fecharModal()
+  toast({ title: editingCliente ? 'Cliente atualizado' : 'Cliente cadastrado', description: editingCliente ? 'Cliente atualizado!' : 'Cliente cadastrado!', variant: 'success' })
       } else {
         throw new Error("Erro ao salvar cliente")
       }
     } catch (error) {
-      console.error("Erro ao salvar cliente:", error)
-      alert("Erro ao salvar cliente!")
+  console.error("Erro ao salvar cliente:", error)
+  toast({ title: 'Erro', description: 'Erro ao salvar cliente!', variant: 'destructive' })
     } finally {
       setLoading(false)
     }
   }
 
   const excluirCliente = async (id: number) => {
-    if (!confirm("Tem certeza que deseja excluir este cliente?")) return
+    // abrir modal de confirmação
+    setConfirmExcluirId(id)
+    setShowConfirmExcluir(true)
+  }
 
+  const [showConfirmExcluir, setShowConfirmExcluir] = useState(false)
+  const [confirmExcluirId, setConfirmExcluirId] = useState<number | null>(null)
+
+  const handleConfirmExcluir = async () => {
+    if (confirmExcluirId === null) return
     try {
-      const response = await fetch(`/api/clientes/${id}`, {
+      const response = await fetch(`/api/clientes/${confirmExcluirId}`, {
         method: "DELETE",
       })
 
       if (response.ok) {
         await carregarClientes()
-        alert("Cliente excluído!")
+  toast({ title: 'Cliente excluído', description: 'Cliente excluído!', variant: 'success' })
       } else {
         throw new Error("Erro ao excluir cliente")
       }
     } catch (error) {
       console.error("Erro ao excluir cliente:", error)
-      alert("Erro ao excluir cliente!")
+      toast({ title: 'Erro', description: 'Erro ao excluir cliente!', variant: 'destructive' })
+    } finally {
+      setShowConfirmExcluir(false)
+      setConfirmExcluirId(null)
     }
   }
 

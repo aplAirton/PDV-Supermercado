@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { toast } from '@/hooks/use-toast'
+import ConfirmationModal from '@/components/confirmation-modal'
 import Loading from "@/components/loading"
 import SearchHint from "@/components/search-hint"
 import { Search, Plus, Minus, Trash2, ShoppingCart, X } from "lucide-react"
@@ -46,6 +48,10 @@ export default function VendasPage() {
   const [loadingClientes, setLoadingClientes] = useState(false)
   const [vendaConcluida, setVendaConcluida] = useState(false)
   const [cupomTexto, setCupomTexto] = useState<string | null>(null)
+
+  // Estados para confirmação de split automático de fiado
+  const [showConfirmSplit, setShowConfirmSplit] = useState(false)
+  const [pendingSplit, setPendingSplit] = useState<{ available: number; remaining: number } | null>(null)
 
   // Discount support: type can be 'none' | 'valor' | 'percent'
   const [discountType, setDiscountType] = useState<"none" | "valor" | "percent">("none")
@@ -173,7 +179,7 @@ export default function VendasPage() {
       setCodigoBusca("")
       setProdutos([])
     } else {
-      alert("Produto não encontrado!")
+      toast({ title: 'Produto não encontrado', description: 'Produto não encontrado!', variant: 'warning' })
     }
   }
 
@@ -189,8 +195,8 @@ export default function VendasPage() {
               : item,
           ),
         )
-      } else {
-        alert("Estoque insuficiente!")
+        } else {
+        toast({ title: 'Estoque insuficiente', description: 'Estoque insuficiente!' , variant: 'destructive'})
       }
     } else {
       if (produto.estoque > 0) {
@@ -203,7 +209,7 @@ export default function VendasPage() {
           },
         ])
       } else {
-        alert("Produto sem estoque!")
+        toast({ title: 'Produto sem estoque', description: 'Produto sem estoque!' , variant: 'destructive'})
       }
     }
   }
@@ -224,7 +230,7 @@ export default function VendasPage() {
         ),
       )
     } else {
-      alert("Quantidade excede o estoque disponível!")
+      toast({ title: 'Quantidade inválida', description: 'Quantidade excede o estoque disponível!', variant: 'destructive' })
     }
   }
 
@@ -234,7 +240,7 @@ export default function VendasPage() {
 
   const abrirModalPagamento = () => {
     if (carrinho.length === 0) {
-      alert("Carrinho vazio!")
+      toast({ title: 'Carrinho vazio', description: 'Carrinho vazio!' , variant: 'destructive'})
       return
     }
 
@@ -251,13 +257,13 @@ export default function VendasPage() {
       .reduce((s, p) => s + (Number.parseFloat(p.valor || "0") || 0), 0)
 
     if (totalFiado > 0 && !clienteSelecionado) {
-      alert("Selecione um cliente para venda fiado!")
+      toast({ title: 'Cliente necessário', description: 'Selecione um cliente para venda fiado!', variant: 'destructive' })
       return
     }
 
     // Validação: soma dos pagamentos deve cobrir o total (usar valores arredondados)
     if (sumPagamentos < totalRounded) {
-      alert("Valor pago insuficiente. Adicione outra forma de pagamento ou ajuste os valores.")
+      toast({ title: 'Pagamento insuficiente', description: 'Valor pago insuficiente. Adicione outra forma de pagamento ou ajuste os valores.', variant: 'destructive' })
       return
     }
 
@@ -269,30 +275,11 @@ export default function VendasPage() {
         const available = Math.max(0, clienteSelecionado.limite_credito - clienteSelecionado.debito_atual)
         if (totalFiado > available) {
           const remaining = totalFiado - available
-          const ok = confirm(
-            `Cliente tem disponível R$ ${available.toFixed(2)} para fiado. Deseja anotar R$ ${available.toFixed(
-              2,
-            )} no fiado e cobrar R$ ${remaining.toFixed(2)} por outra forma de pagamento?`,
-          )
-          if (!ok) {
-            setLoading(false)
-            return
-          }
-
-          // Ajustar pagamentos: reduzir fiado ao limite disponível e adicionar pagamento para o restante
-          let adjusted = false
-          const newPagamentos = pagamentos.map((p) => {
-            if (p.tipo === "fiado" && !adjusted) {
-              adjusted = true
-              return { ...p, valor: String(available.toFixed(2)) }
-            }
-            return p
-          })
-
-          // adicionar pagamento para remainder (usar dinheiro por padrão)
-          newPagamentos.push({ tipo: "dinheiro", valor: String(remaining.toFixed(2)) })
-          // atualizar estado local para refletir a divisão automática
-          setPagamentos(newPagamentos)
+          // abrir modal de confirmação (assíncrono)
+          setPendingSplit({ available, remaining })
+          setShowConfirmSplit(true)
+          setLoading(false)
+          return
         }
       }
 
@@ -315,8 +302,8 @@ export default function VendasPage() {
         body: JSON.stringify(vendaData),
       })
 
-      if (response.ok) {
-        alert("Venda finalizada com sucesso!")
+  if (response.ok) {
+  toast({ title: 'Venda finalizada', description: 'Venda finalizada com sucesso!', variant: 'success' })
         setCarrinho([])
         setClienteSelecionado(null)
         setPagamentos([{ tipo: "dinheiro", valor: "" }])
@@ -345,10 +332,36 @@ export default function VendasPage() {
        }
     } catch (error) {
       console.error("Erro ao finalizar venda:", error)
-      alert("Erro ao finalizar venda!")
+      toast({ title: 'Erro', description: 'Erro ao finalizar venda!', variant: 'destructive' })
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleConfirmSplit = () => {
+    if (!pendingSplit) return
+    const { available, remaining } = pendingSplit
+
+    // Ajustar pagamentos: reduzir fiado ao limite disponível e adicionar pagamento para o restante
+    let adjusted = false
+    const newPagamentos = pagamentos.map((p) => {
+      if (p.tipo === "fiado" && !adjusted) {
+        adjusted = true
+        return { ...p, valor: String(available.toFixed(2)) }
+      }
+      return p
+    })
+
+    // adicionar pagamento para remainder (usar dinheiro por padrão)
+    newPagamentos.push({ tipo: "dinheiro", valor: String(remaining.toFixed(2)) })
+    // atualizar estado local para refletir a divisão automática
+    setPagamentos(newPagamentos)
+
+    // limpar e prosseguir com o processamento
+    setPendingSplit(null)
+    setShowConfirmSplit(false)
+    // reabrir processamento agora que pagamentos foram ajustados
+    setTimeout(() => processarPagamento(), 50)
   }
 
   const buscarCupomFiscal = async () => {
@@ -406,6 +419,21 @@ export default function VendasPage() {
                     if (e.key === "Enter") {
                       e.preventDefault()
                       buscarProduto(true)
+    
+                        {/* Modal de confirmação para split automático de fiado */}
+                        {showConfirmSplit && pendingSplit && (
+                          <ConfirmationModal
+                            isOpen={showConfirmSplit}
+                            onClose={() => { setShowConfirmSplit(false); setPendingSplit(null) }}
+                            onConfirm={handleConfirmSplit}
+                            title="Confirmar divisão de pagamento"
+                            message={`Cliente tem disponível R$ ${pendingSplit.available.toFixed(2)} para fiado. Deseja anotar R$ ${pendingSplit.available.toFixed(2)} no fiado e cobrar R$ ${pendingSplit.remaining.toFixed(2)} por outra forma de pagamento?`}
+                            type="warning"
+                            confirmText="Dividir e continuar"
+                            cancelText="Cancelar"
+                          />
+                        )}
+
                     }
                   }}
                 />
@@ -473,20 +501,6 @@ export default function VendasPage() {
             <h3 className="font-bold">Venda concluída</h3>
             <p className="text-sm text-muted">A venda foi finalizada com sucesso.</p>
             <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-              <button className="btn btn-primary" onClick={() => {
-                // abrir nova janela com o texto do cupom e imprimir
-                if (cupomTexto) {
-                  const w = window.open('', '_blank')
-                  if (w) {
-                    w.document.write(`<pre style="font-family: 'Courier New', Courier, monospace; white-space: pre-wrap;">${cupomTexto.replace(/</g,'&lt;')}</pre>`)
-                    w.document.close()
-                    w.focus()
-                  }
-                } else {
-                  alert('Cupom ainda não disponível')
-                }
-              }}>Imprimir cupom fiscal</button>
-
               <button className="btn btn-outline" onClick={() => {
                 // reiniciar estado para nova venda
                 setVendaConcluida(false)
@@ -753,40 +767,34 @@ export default function VendasPage() {
               </div>
             </button>
           ) : (
-            <div className="flex gap-2">
+            <div>
               <button
                 className="btn btn-primary"
-                style={{ flex: 1, fontSize: "1rem", padding: "0.6rem" }}
+                style={{ width: '100%', fontSize: "1rem", padding: "0.6rem" }}
                 onClick={() => {
                   if (cupomTexto) {
-                    const w = window.open('', '_blank')
-                    if (w) {
-                      w.document.write(`<pre style="font-family: 'Courier New', Courier, monospace; white-space: pre-wrap;">${cupomTexto.replace(/</g,'&lt;')}</pre>`)
-                      w.document.close()
-                      w.focus()
+                      const w = window.open('', '_blank')
+                      if (w) {
+                        w.document.write(`<pre style="font-family: 'Courier New', Courier, monospace; white-space: pre-wrap;">${cupomTexto.replace(/</g,'&lt;')}</pre>`) 
+                        w.document.close()
+                        // Tenta abrir a janela de impressão automaticamente e fecha a janela ao final
+                        try {
+                          w.focus()
+                          // esperar o conteúdo renderizar antes de chamar print
+                          setTimeout(() => {
+                            try { w.print() } catch (e) { /* ignore */ }
+                            try { w.close() } catch (e) { /* ignore */ }
+                          }, 200)
+                        } catch (e) {
+                          // fallback: apenas focar
+                        }
+                      }
+                    } else {
+                      toast({ title: 'Cupom indisponível', description: 'Cupom ainda não disponível', variant: 'destructive' })
                     }
-                  } else {
-                    alert('Cupom ainda não disponível')
-                  }
                 }}
               >
                 Imprimir cupom fiscal
-              </button>
-
-              <button
-                className="btn btn-outline"
-                style={{ flex: 1, fontSize: "1rem", padding: "0.6rem" }}
-                onClick={() => {
-                  // Reiniciar estado para nova venda
-                  setVendaConcluida(false)
-                  setCupomTexto(null)
-                  setCarrinho([])
-                  setClienteSelecionado(null)
-                  setPagamentos([{ tipo: 'dinheiro', valor: '' }])
-                  setCodigoBusca('')
-                }}
-              >
-                Nova venda
               </button>
             </div>
           )}

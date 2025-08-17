@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, CreditCard, Clock, CheckCircle, Eye, DollarSign } from 'lucide-react'
 import Modal from '@/components/modal'
+import { toast } from '@/hooks/use-toast'
 import '../../styles/components.css'
 
 interface Cliente {
@@ -123,11 +124,11 @@ export default function FiadosPage() {
         setNovoFiado({ cliente_id: '', valor_total: '', descricao: '' })
         carregarFiados()
       } else {
-        alert('Erro ao adicionar fiado')
+        toast({ title: 'Erro', description: 'Erro ao adicionar fiado', variant: 'destructive' })
       }
     } catch (error) {
       console.error('Erro ao adicionar fiado:', error)
-      alert('Erro ao adicionar fiado')
+      toast({ title: 'Erro', description: 'Erro ao adicionar fiado', variant: 'destructive' })
     }
   }
 
@@ -136,7 +137,7 @@ export default function FiadosPage() {
       // Buscar venda atual para ler pagamentos e cliente
       const resp = await fetch(`/api/vendas/${fiadoId}`)
       if (!resp.ok) {
-        alert('Venda não encontrada')
+        toast({ title: 'Erro', description: 'Venda não encontrada', variant: 'destructive' })
         return
       }
       const venda: any = await resp.json()
@@ -164,11 +165,11 @@ export default function FiadosPage() {
       if (response.ok) {
         carregarFiados()
       } else {
-        alert('Erro ao marcar como pago')
+        toast({ title: 'Erro', description: 'Erro ao marcar como pago', variant: 'destructive' })
       }
     } catch (error) {
       console.error('Erro ao marcar como pago:', error)
-      alert('Erro ao marcar como pago')
+      toast({ title: 'Erro', description: 'Erro ao marcar como pago', variant: 'destructive' })
     }
   }
 
@@ -241,13 +242,13 @@ export default function FiadosPage() {
       const debitoCliente = Number(pagamentoCliente.debito_atual || 0)
 
       if (somaArred <= 0) {
-        alert('Informe um valor de pagamento válido maior que zero.')
+        toast({ title: 'Valor inválido', description: 'Informe um valor de pagamento válido maior que zero.', variant: 'destructive' })
         setPagamentoLoading(false)
         return
       }
 
       if (somaArred > debitoCliente) {
-        alert(`O valor total informado (R$ ${somaArred.toFixed(2)}) excede o débito atual do cliente (R$ ${debitoCliente.toFixed(2)}). Ajuste os valores para não pagar mais que o devido.`)
+        toast({ title: 'Valor excede débito', description: `O valor total informado (R$ ${somaArred.toFixed(2)}) excede o débito atual do cliente (R$ ${debitoCliente.toFixed(2)}). Ajuste os valores para não pagar mais que o devido.`, variant: 'destructive' })
         setPagamentoLoading(false)
         return
       }
@@ -263,14 +264,14 @@ export default function FiadosPage() {
         setPagamentoCliente(null)
         carregarClientes()
         carregarFiados()
-        alert('Pagamento registrado com sucesso')
+        toast({ title: 'Pagamento registrado', description: 'Pagamento registrado com sucesso' })
       } else {
         const err = await response.json()
-        alert(err?.error || 'Erro ao registrar pagamento')
+        toast({ title: 'Erro', description: err?.error || 'Erro ao registrar pagamento', variant: 'destructive' })
       }
     } catch (error) {
       console.error('Erro ao registrar pagamento:', error)
-      alert('Erro ao registrar pagamento')
+      toast({ title: 'Erro', description: 'Erro ao registrar pagamento', variant: 'destructive' })
     } finally {
       setPagamentoLoading(false)
     }
@@ -289,13 +290,13 @@ export default function FiadosPage() {
   // Exibe cupom fiscal da venda (se houver) em nova janela
   const viewCupomVenda = async (vendaId?: number) => {
     if (!vendaId) {
-      alert('Comprovante não disponível para esta transação')
+      toast({ title: 'Comprovante indisponível', description: 'Comprovante não disponível para esta transação', variant: 'destructive' })
       return
     }
     try {
       const resp = await fetch(`/api/cupons/by-venda/${vendaId}`)
       if (!resp.ok) {
-        alert('Cupom não encontrado')
+        toast({ title: 'Não encontrado', description: 'Cupom não encontrado', variant: 'destructive' })
         return
       }
       const data = await resp.json()
@@ -303,11 +304,19 @@ export default function FiadosPage() {
       if (w) {
         w.document.write(`<pre style="font-family: 'Courier New', Courier, monospace; white-space: pre-wrap;">${(data.conteudo_texto || '').replace(/</g,'&lt;')}</pre>`)
         w.document.close()
-        w.focus()
+        try {
+          w.focus()
+          setTimeout(() => {
+            try { w.print() } catch (e) { /* ignore */ }
+            try { w.close() } catch (e) { /* ignore */ }
+          }, 200)
+        } catch (e) {
+          // fallback: apenas focar
+        }
       }
     } catch (err) {
       console.error('Erro ao buscar cupom:', err)
-      alert('Erro ao buscar cupom')
+      toast({ title: 'Erro', description: 'Erro ao buscar cupom', variant: 'destructive' })
     }
   }
 
@@ -327,7 +336,15 @@ export default function FiadosPage() {
     if (w) {
       w.document.write(`<pre style="font-family: 'Courier New', Courier, monospace; white-space: pre-wrap;">${lines.join('\n')}</pre>`)
       w.document.close()
-      w.focus()
+      try {
+        w.focus()
+        setTimeout(() => {
+          try { w.print() } catch (e) { /* ignore */ }
+          try { w.close() } catch (e) { /* ignore */ }
+        }, 200)
+      } catch (e) {
+        // fallback
+      }
     }
   }
 
