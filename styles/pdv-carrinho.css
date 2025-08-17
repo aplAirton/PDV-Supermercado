@@ -1,0 +1,66 @@
+/* Estilos específicos para o carrinho do PDV */
+
+.pdv-item:hover {
+  background: rgba(var(--primary-color-rgb, 59, 130, 246), 0.05) !important;
+}
+
+.btn-qty:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.btn-qty:active {
+  background: rgba(0, 0, 0, 0.1);
+  transform: scale(0.95);
+}
+
+/* Animações suaves para adicionar/remover itens */
+.pdv-item {
+  transition: all 0.2s ease;
+}
+
+.pdv-item:last-child {
+  border-bottom: none !important;
+}
+
+/* Estilo para o loading no botão */
+.loading {
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsividade para telas menores */
+@media (max-width: 768px) {
+  .pdv-item {
+    padding: 0.5rem;
+  }
+  
+  .pdv-item .flex {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+/* Melhorar contraste para acessibilidade */
+.form-select, .form-input {
+  border: 2px solid var(--border);
+  transition: border-color 0.2s ease;
+}
+
+.form-select:focus, .form-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb, 59, 130, 246), 0.1);
+}
+
+/* Estilo para destaque do total */
+.total-destaque {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color, #10b981));
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}

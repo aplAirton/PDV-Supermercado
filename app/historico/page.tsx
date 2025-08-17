@@ -41,7 +41,23 @@ export default function HistoricoPage() {
 
       const response = await fetch(`/api/vendas?${params}`)
       const data = await response.json()
-      setVendas(data)
+      // Sanitizar e garantir que campos numéricos sejam Number
+      const sanitized = Array.isArray(data)
+        ? data.map((v: any) => ({
+            ...v,
+            total: Number(v.total ?? 0),
+            itens: Array.isArray(v.itens)
+              ? v.itens.map((it: any) => ({
+                  ...it,
+                  quantidade: Number(it.quantidade ?? 0),
+                  preco_unitario: Number(it.preco_unitario ?? 0),
+                  subtotal: Number(it.subtotal ?? 0),
+                }))
+              : [],
+          }))
+        : []
+
+      setVendas(sanitized as Venda[])
     } catch (error) {
       console.error("Erro ao carregar vendas:", error)
     }
@@ -80,7 +96,7 @@ export default function HistoricoPage() {
     setShowModal(true)
   }
 
-  const totalVendas = vendas.reduce((sum, venda) => sum + venda.total, 0)
+  const totalVendas = vendas.reduce((sum, venda) => sum + Number(venda.total || 0), 0)
 
   return (
     <div>
@@ -164,7 +180,7 @@ export default function HistoricoPage() {
           </div>
           <div className="card text-center">
             <div className="text-2xl font-bold" style={{ color: "var(--success-color)" }}>
-              R$ {totalVendas.toFixed(2)}
+              R$ {(Number(totalVendas) || 0).toFixed(2)}
             </div>
             <div className="text-muted">Valor Total</div>
           </div>
@@ -195,7 +211,7 @@ export default function HistoricoPage() {
                   <td>#{venda.id}</td>
                   <td>{formatarData(venda.data_venda)}</td>
                   <td>{venda.cliente_nome || "Cliente Avulso"}</td>
-                  <td>R$ {venda.total.toFixed(2)}</td>
+                  <td>R$ {(Number(venda.total) || 0).toFixed(2)}</td>
                   <td>
                     <span
                       style={{
@@ -248,7 +264,7 @@ export default function HistoricoPage() {
                 <strong>Total:</strong>
                 <br />
                 <span className="text-xl font-bold" style={{ color: "var(--success-color)" }}>
-                  R$ {vendaSelecionada.total.toFixed(2)}
+                  R$ {(Number(vendaSelecionada.total) || 0).toFixed(2)}
                 </span>
               </div>
             </div>

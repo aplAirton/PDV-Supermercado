@@ -16,6 +16,7 @@ const nextConfig = {
     "http://192.168.0.10:3001",
     "http://localhost:3000",
     "http://localhost:3001",
+    "http://127.0.0.1:3000",
   ],
 }
 
