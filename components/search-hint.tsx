@@ -9,7 +9,15 @@ interface Props {
 export default function SearchHint({ children, className = "" }: Props) {
   return (
     <div
-      className={`flex items-center gap-2 border border-[rgba(0,0,0,0.06)] bg-[rgba(0,0,0,0.02)] text-muted p-3 rounded-md ${className}`}
+      className={`flex items-center ${className}`}
+      style={{
+        gap: '0.5rem',
+        border: '1px solid rgba(0,0,0,0.06)',
+        background: 'rgba(0,0,0,0.02)',
+        color: 'var(--text-muted)',
+        padding: '0.75rem',
+        borderRadius: '0.375rem'
+      }}
       role="status"
     >
       <Search size={18} />

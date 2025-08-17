@@ -1,6 +1,7 @@
 import type React from "react"
 import type { Metadata } from "next"
 import "./globals.css"
+import "../styles/components.css"
 
 export const metadata: Metadata = {
   title: "PDV Budega Airton",
