@@ -13,7 +13,7 @@ type Page = "vendas" | "produtos" | "clientes" | "historico" | "fiados"
 
 const pageConfig = {
   vendas: {
-    title: "Vendas",
+    title: "Carrinho",
     subtitle: "Realize vendas e gerencie o carrinho de compras",
     icon: ShoppingCart,
   },
@@ -28,7 +28,7 @@ const pageConfig = {
     icon: Users,
   },
   historico: {
-    title: "Histórico",
+    title: "Vendas",
     subtitle: "Visualize o histórico de vendas realizadas",
     icon: History,
   },

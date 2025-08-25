@@ -6,10 +6,10 @@ import { usePathname } from "next/navigation"
 import { ShoppingCart, Package, Users, History, Settings, Menu, X } from "lucide-react"
 
 const menuItems = [
-  { href: "/", icon: ShoppingCart, label: "Vendas", description: "Realizar vendas" },
+  { href: "/", icon: ShoppingCart, label: "Carrinho", description: "Realizar vendas" },
   { href: "/produtos", icon: Package, label: "Produtos", description: "Gerenciar produtos" },
   { href: "/clientes", icon: Users, label: "Clientes", description: "Cadastro de clientes" },
-  { href: "/historico", icon: History, label: "Histórico", description: "Vendas realizadas" },
+  { href: "/historico", icon: History, label: "Vendas", description: "Vendas realizadas" },
 ]
 
 export default function Sidebar() {

@@ -285,6 +285,11 @@ export default function VendasPage() {
   }
 
   const processarPagamento = async () => {
+    // Proteção contra múltiplas execuções simultâneas
+    if (loading) {
+      return
+    }
+    
     // Se houver pagamento fiado, precisa ter cliente selecionado
     const totalFiado = pagamentos
       .filter((p) => p.tipo === "fiado")
@@ -336,8 +341,8 @@ export default function VendasPage() {
         body: JSON.stringify(vendaData),
       })
 
-  if (response.ok) {
-  toast({ title: 'Venda finalizada', description: 'Venda finalizada com sucesso!', variant: 'success' })
+      if (response.ok) {
+        toast({ title: 'Venda finalizada', description: 'Venda finalizada com sucesso!', variant: 'success' })
         setCarrinho([])
         setClienteSelecionado(null)
         setPagamentos([{ tipo: "dinheiro", valor: "" }])
@@ -372,8 +377,9 @@ export default function VendasPage() {
     }
   }
 
-  const handleConfirmSplit = () => {
+  const handleConfirmSplit = async () => {
     if (!pendingSplit) return
+    
     const { available, remaining } = pendingSplit
 
     // Ajustar pagamentos: reduzir fiado ao limite disponível e adicionar pagamento para o restante
@@ -388,14 +394,16 @@ export default function VendasPage() {
 
     // adicionar pagamento para remainder (usar dinheiro por padrão)
     newPagamentos.push({ tipo: "dinheiro", valor: String(remaining.toFixed(2)) })
+    
     // atualizar estado local para refletir a divisão automática
     setPagamentos(newPagamentos)
 
-    // limpar e prosseguir com o processamento
+    // limpar estados do modal
     setPendingSplit(null)
     setShowConfirmSplit(false)
-    // reabrir processamento agora que pagamentos foram ajustados
-    setTimeout(() => processarPagamento(), 50)
+    
+    // Processar novamente sem setTimeout para evitar duplicação
+    processarPagamento()
   }
 
   const buscarCupomFiscal = async () => {
@@ -1190,9 +1198,8 @@ export default function VendasPage() {
                           setPagamentos(newPagamentos)
 
                           // Processar automaticamente com os pagamentos ajustados
-                          setTimeout(() => {
-                            processarPagamento()
-                          }, 80)
+                          // Chamar diretamente - `processarPagamento` tem proteção contra chamadas simultâneas via `loading`.
+                          processarPagamento()
                         }
                       }
                     }}

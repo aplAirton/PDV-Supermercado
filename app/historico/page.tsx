@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Calendar, Filter, Eye } from "lucide-react"
+import { Calendar, Filter, Eye, Printer } from "lucide-react"
 
 interface Venda {
   id: number
@@ -103,6 +103,61 @@ export default function HistoricoPage() {
     setShowModal(true)
   }
 
+  const imprimirCupom = async (venda: Venda | null) => {
+    if (!venda) return
+
+    // Tentar buscar o cupom salvo no servidor (mesmo formato gerado ao concluir a venda)
+    try {
+      const resp = await fetch(`/api/cupons/by-venda/${venda.id}`)
+      if (resp.ok) {
+        const data = await resp.json()
+        const conteudo = data.conteudo_texto || data.conteudo || ''
+        if (conteudo) {
+          const w = window.open('', '_blank')
+          if (!w) return
+          w.document.write(`<html><head><title>Cupom Venda #${venda.id}</title></head><body><pre style="font-family: 'Courier New', Courier, monospace; white-space: pre-wrap;">${conteudo.replace(/</g,'&lt;')}</pre></body></html>`)
+          w.document.close()
+          try { w.focus() } catch (e) { /* ignore */ }
+          // esperar o conteúdo renderizar antes de chamar print
+          setTimeout(() => {
+            try { w.print() } catch (e) { /* ignore */ }
+            try { w.close() } catch (e) { /* ignore */ }
+          }, 200)
+          return
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao buscar cupom salvo:', err)
+      // fallback para geração local
+    }
+
+    // Fallback: gerar um cupom simples localmente caso não exista cupom salvo
+    const linhas: string[] = []
+    linhas.push('--- CUPOM FISCAL ---')
+    linhas.push(`Venda: #${venda.id}`)
+    linhas.push(`Data: ${formatarData(venda.data_venda)}`)
+    linhas.push(`Cliente: ${venda.cliente_nome || 'Cliente Avulso'}`)
+    linhas.push('')
+    linhas.push('Itens:')
+    venda.itens.forEach((it) => {
+      const nome = it.produto_nome
+      const qtd = Number(it.quantidade || 0)
+      const preco = Number(it.preco_unitario || 0)
+      const subtotal = Number(it.subtotal || qtd * preco)
+      linhas.push(`${nome}  x${qtd}  R$ ${preco.toFixed(2)}  -> R$ ${subtotal.toFixed(2)}`)
+    })
+    linhas.push('')
+    linhas.push(`TOTAL: R$ ${(Number(venda.total) || 0).toFixed(2)}`)
+
+    const texto = linhas.join('\n')
+    const w = window.open('', '_blank')
+    if (!w) return
+    w.document.write(`<html><head><title>Cupom Venda #${venda.id}</title></head><body><pre>${texto}</pre></body></html>`)
+    w.document.close()
+    try { w.focus() } catch (e) { /* ignore */ }
+    try { w.print() } catch (e) { /* ignore */ }
+  }
+
   const totalVendas = vendas.reduce((sum, venda) => sum + Number(venda.total || 0), 0)
 
   return (
@@ -111,7 +166,7 @@ export default function HistoricoPage() {
         <div className="card-header">
           <h2 className="card-title flex items-center gap-2">
             <Calendar size={24} />
-            Histórico de Vendas
+            Vendas
           </h2>
         </div>
 
@@ -305,7 +360,11 @@ export default function HistoricoPage() {
               </tbody>
             </table>
 
-            <div className="flex justify-end mt-4">
+            <div className="flex justify-end mt-4 gap-2">
+              <button className="btn btn-primary" onClick={() => imprimirCupom(vendaSelecionada)}>
+                <Printer size={16} />
+                Imprimir Cupom
+              </button>
               <button className="btn btn-outline" onClick={() => setShowModal(false)}>
                 Fechar
               </button>
