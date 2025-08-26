@@ -182,31 +182,65 @@ export async function POST(request: NextRequest) {
         const itensCupom = Array.isArray(itensRows) ? itensRows : []
 
         // Montar texto do cupom
-        const pad = (s: string, width = 32) => s.padEnd(width, ' ')
-        let texto = ''
-        texto += 'Budega Airton\n'
-        texto += 'CNPJ: 00.000.000/0000-00\n'
-        texto += 'ENDERECO: Povoado Jurema, 123\n'
-        texto += 'TEL: (00) 00000-0000\n'
-        texto += '\n'
-        texto += `VENDA: #${vendaId}  DATA: ${new Date().toLocaleString('pt-BR')}\n`
-        texto += `CLIENTE: ${venda?.cliente_nome ?? 'AVULSO'}\n`
-        texto += '----------------------------------------\n'
-        texto += pad('PRODUTO', 21) + pad('QTD', 7) + pad('VL.UN', 9) + 'SUB\n'
-        texto += '----------------------------------------\n'
-
-        for (const it of itensCupom) {
-          const nome = (it.produto_nome || '').substring(0, 20)
-          const qtd = Number(it.quantidade || 0).toFixed(0)
-          const vu = Number(it.preco_unitario || 0).toFixed(2)
-          const sub = Number(it.subtotal || 0).toFixed(2)
-          texto += pad(nome, 22) + pad(qtd, 6) + pad(vu, 7) + sub + '\n'
+        const pad = (s: string, width: number, align: 'left' | 'right' | 'center' = 'left') => {
+          if (align === 'right') return s.padStart(width, ' ')
+          if (align === 'center') {
+            const spaces = width - s.length
+            const left = Math.floor(spaces / 2)
+            const right = spaces - left
+            return ' '.repeat(left) + s + ' '.repeat(right)
+          }
+          return s.padEnd(width, ' ')
         }
 
-        texto += '----------------------------------------\n'
-        texto += `TOTAL: R$ ${Number(venda?.total || 0).toFixed(2)}\n`
+        let texto = ''
+        const linha = '========================================\n'
+        const linhaThin = '----------------------------------------\n'
+        
+        // Cabeçalho da empresa
+        texto += linha
+        texto += pad('BUDEGA AIRTON', 40, 'center') + '\n'
+        texto += pad('CNPJ: 00.000.000/0000-00', 40, 'center') + '\n'
+        texto += pad('Povoado Jurema, 123', 40, 'center') + '\n'
+        texto += pad('Tel: (00) 00000-0000', 40, 'center') + '\n'
+        texto += linha
         texto += '\n'
+        
+        // Informações da venda
+        texto += `VENDA: #${vendaId}\n`
+        texto += `DATA:  ${new Date().toLocaleString('pt-BR')}\n`
+        texto += `CLIENTE: ${venda?.cliente_nome ?? 'AVULSO'}\n`
+        texto += '\n'
+        texto += linhaThin
+        
+        // Cabeçalho dos itens - ajustado para melhor visual
+        texto += pad('PRODUTO', 18) + pad('QTD', 5, 'right') + pad('V.UNIT', 8, 'right') + pad('SOMA', 9, 'right') + '\n'
+        texto += linhaThin
+
+        // Itens da venda
+        for (const it of itensCupom) {
+          const nome = (it.produto_nome || '').substring(0, 17)
+          const qtd = Number(it.quantidade || 0).toFixed(0)
+          const vu = `${Number(it.preco_unitario || 0).toFixed(2)}`
+          const sub = `${Number(it.subtotal || 0).toFixed(2)}`
+          
+          texto += pad(nome, 18) + 
+                   pad(qtd, 5, 'right') + 
+                   pad(vu, 8, 'right') + 
+                   pad(sub, 9, 'right') + '\n'
+        }
+
+        texto += linhaThin
+        
+        // Total destacado
+        const totalFormatado = `R$ ${Number(venda?.total || 0).toFixed(2)}`
+        texto += pad('TOTAL GERAL:', 31, 'right') + pad(totalFormatado, 9, 'right') + '\n'
+        texto += linha
+        
+        // Formas de pagamento
         texto += 'FORMAS DE PAGAMENTO:\n'
+        texto += linhaThin
+        
         try {
           const formas = JSON.parse(venda?.forma_pagamento_json || '[]')
           const labelMap: Record<string, string> = {
@@ -220,15 +254,20 @@ export async function POST(request: NextRequest) {
           for (const f of formas) {
             const tipoRaw = (f.tipo || f.tipo_pagamento || '').toString()
             const label = labelMap[tipoRaw] || (tipoRaw ? tipoRaw.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) : (venda?.forma_pagamento || 'Desconhecida'))
-            texto += ` - ${label}: R$ ${Number(f.valor || 0).toFixed(2)}\n`
+            const valor = `R$ ${Number(f.valor || 0).toFixed(2)}`
+            texto += pad(`${label}:`, 25) + pad(valor, 15, 'right') + '\n'
           }
         } catch (e) {
-          texto += ` - ${venda?.forma_pagamento || 'Desconhecida'}\n`
+          const valor = `R$ ${Number(venda?.total || 0).toFixed(2)}`
+          texto += pad(`${venda?.forma_pagamento || 'Desconhecida'}:`, 25) + pad(valor, 15, 'right') + '\n'
         }
-
+        
+        texto += linha
         texto += '\n'
-        texto += 'Obrigado pela preferência!\n'
-        texto += '\n\n'
+        texto += pad('Obrigado pela preferência!', 40, 'center') + '\n'
+        texto += pad('Volte sempre!', 40, 'center') + '\n'
+        texto += '\n'
+        texto += linha
 
         await conn.execute('INSERT INTO cupons (venda_id, conteudo_texto) VALUES (?, ?)', [vendaId, texto])
       } catch (cupomErr) {
