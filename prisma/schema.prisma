@@ -1,0 +1,138 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model produtos {
+  id               Int           @id @default(autoincrement())
+  codigo_barras    String        @unique @db.VarChar(50)
+  nome             String        @db.VarChar(255)
+  categoria        String        @db.VarChar(100)
+  preco            Decimal       @db.Decimal(10, 2)
+  estoque          Int           @default(0)
+  estoque_minimo   Int           @default(5)
+  ativo            Boolean       @default(true)
+  data_cadastro    DateTime      @default(now())
+  data_atualizacao DateTime      @default(now())
+  itens            itens_venda[]
+
+  @@index([categoria], map: "idx_produtos_categoria")
+  @@index([codigo_barras], map: "idx_produtos_codigo")
+}
+
+model clientes {
+  id               Int      @id @default(autoincrement())
+  nome             String   @db.VarChar(255)
+  cpf              String   @unique @db.VarChar(14)
+  telefone         String?  @db.VarChar(20)
+  endereco         String?  @db.Text
+  limite_credito   Decimal  @default(0.00) @db.Decimal(10, 2)
+  debito_atual     Decimal  @default(0.00) @db.Decimal(10, 2)
+  ativo            Boolean  @default(true)
+  data_cadastro    DateTime @default(now())
+  data_atualizacao DateTime @default(now())
+  fiados           fiados[]
+  vendas           vendas[]
+
+  @@index([cpf], map: "idx_clientes_cpf")
+}
+
+model vendas {
+  id                   Int                    @id @default(autoincrement())
+  cliente_id           Int?
+  total                Decimal                @db.Decimal(10, 2)
+  desconto             Decimal                @default(0.00) @db.Decimal(10, 2)
+  forma_pagamento      vendas_forma_pagamento
+  valor_pago           Decimal?               @db.Decimal(10, 2)
+  troco                Decimal                @default(0.00) @db.Decimal(10, 2)
+  observacoes          String?                @db.Text
+  data_venda           DateTime               @default(now())
+  forma_pagamento_json String?                @db.Text
+  cupons               cupons[]
+  fiados               fiados[]
+  itens                itens_venda[]
+  cliente              clientes?              @relation(fields: [cliente_id], references: [id])
+
+  @@index([cliente_id], map: "idx_vendas_cliente")
+  @@index([data_venda], map: "idx_vendas_data")
+}
+
+model itens_venda {
+  id             Int      @id @default(autoincrement())
+  venda_id       Int
+  produto_id     Int
+  quantidade     Int
+  preco_unitario Decimal  @db.Decimal(10, 2)
+  subtotal       Decimal  @db.Decimal(10, 2)
+  produto        produtos @relation(fields: [produto_id], references: [id])
+  venda          vendas   @relation(fields: [venda_id], references: [id], onDelete: Cascade)
+
+  @@index([produto_id], map: "itens_venda_produto_id_fkey")
+  @@index([venda_id], map: "itens_venda_venda_id_fkey")
+}
+
+model fiados {
+  id               Int                @id @default(autoincrement())
+  cliente_id       Int
+  venda_id         Int
+  valor_original   Decimal            @db.Decimal(10, 2)
+  valor_pago       Decimal            @default(0.00) @db.Decimal(10, 2)
+  valor_restante   Decimal            @db.Decimal(10, 2)
+  status           fiados_status      @default(aberto)
+  data_fiado       DateTime           @default(now())
+  data_vencimento  DateTime?          @db.Date
+  cliente          clientes           @relation(fields: [cliente_id], references: [id], onDelete: Cascade)
+  vendas           vendas             @relation(fields: [venda_id], references: [id], onDelete: Cascade)
+  pagamentos_fiado pagamentos_fiado[]
+
+  @@index([venda_id], map: "fiados_venda_id_fkey")
+  @@index([cliente_id], map: "idx_fiados_cliente")
+  @@index([status], map: "idx_fiados_status")
+}
+
+model cupons {
+  id             Int       @id @default(autoincrement())
+  venda_id       Int
+  conteudo_texto String    @db.Text
+  data_criacao   DateTime? @default(now()) @db.Timestamp(0)
+  venda          vendas    @relation(fields: [venda_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "cupons_ibfk_1")
+
+  @@index([venda_id], map: "idx_cupons_venda")
+}
+
+model pagamentos_fiado {
+  id              Int                              @id @default(autoincrement())
+  fiado_id        Int
+  valor_pagamento Decimal                          @db.Decimal(10, 2)
+  forma_pagamento pagamentos_fiado_forma_pagamento
+  observacoes     String?                          @db.Text
+  data_pagamento  DateTime                         @default(now())
+  fiados          fiados                           @relation(fields: [fiado_id], references: [id], onDelete: Cascade)
+
+  @@index([fiado_id], map: "pagamentos_fiado_fiado_id_fkey")
+}
+
+enum pagamentos_fiado_forma_pagamento {
+  dinheiro
+  cartao_debito
+  cartao_credito
+  pix
+}
+
+enum vendas_forma_pagamento {
+  dinheiro
+  cartao_debito
+  cartao_credito
+  pix
+  fiado
+}
+
+enum fiados_status {
+  aberto
+  parcial
+  quitado
+}
