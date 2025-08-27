@@ -307,67 +307,184 @@ export default function HistoricoPage() {
         )}
       </div>
 
-      {/* Modal de Detalhes */}
+      {/* Modal de Detalhes da Venda - Formato Condensado */}
       {showModal && vendaSelecionada && (
         <div className="modal-overlay">
-          <div className="modal">
-            <h3 className="text-xl font-bold mb-4">Detalhes da Venda #{vendaSelecionada.id}</h3>
-
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <strong>Data/Hora:</strong>
-                <br />
-                {formatarData(vendaSelecionada.data_venda)}
-              </div>
-              <div>
-                <strong>Cliente:</strong>
-                <br />
-                {vendaSelecionada.cliente_nome || "Cliente Avulso"}
-              </div>
-              <div>
-                <strong>Forma de Pagamento:</strong>
-                <br />
-                {formatarFormaPagamento(vendaSelecionada.forma_pagamento)}
-              </div>
-              <div>
-                <strong>Total:</strong>
-                <br />
-                <span className="text-xl font-bold" style={{ color: "var(--success-color)" }}>
-                  R$ {(Number(vendaSelecionada.total) || 0).toFixed(2)}
-                </span>
+          <div className="modal" style={{ maxWidth: '500px', width: '90%' }}>
+            {/* Cabeçalho */}
+            <div style={{ 
+              background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))', 
+              color: 'black', 
+              padding: '12px 16px', 
+              borderRadius: '6px 6px 0 0',
+              marginBottom: '0'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Eye size={18} />
+                  <div>
+                    <h3 className="text-base font-bold margin-0">Venda #{vendaSelecionada.id.toString().padStart(6, '0')}</h3>
+                  </div>
+                </div>
+                <button 
+                  className="btn" 
+                  onClick={() => setShowModal(false)}
+                  style={{ 
+                    background: 'rgba(255, 255, 255, 0.1)', 
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    color: 'white',
+                    padding: '2px 6px',
+                    fontSize: '14px'
+                  }}
+                >
+                  ×
+                </button>
               </div>
             </div>
 
-            <h4 className="font-bold mb-2">Itens da Venda:</h4>
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Produto</th>
-                  <th>Qtd</th>
-                  <th>Preço Unit.</th>
-                  <th>Subtotal</th>
-                </tr>
-              </thead>
-              <tbody>
-                {vendaSelecionada.itens.map((item, index) => (
-                  <tr key={index}>
-                    <td>{item.produto_nome}</td>
-                    <td>{item.quantidade}</td>
-                    <td>R$ {item.preco_unitario.toFixed(2)}</td>
-                    <td>R$ {item.subtotal.toFixed(2)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div style={{ padding: '16px' }}>
+              {/* Seção: Informações da Venda */}
+              <div style={{ 
+                background: 'var(--surface)', 
+                padding: '12px', 
+                borderRadius: '6px',
+                border: '1px solid var(--border-light)',
+                marginBottom: '12px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Calendar size={14} style={{ color: 'var(--text-muted)' }} />
+                    <span className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>Data da Venda</span>
+                  </div>
+                  <span className="text-2xl font-bold" style={{ color: 'var(--success)' }}>
+                    R$ {(Number(vendaSelecionada.total) || 0).toFixed(2)}
+                  </span>
+                </div>
+                
+                <div style={{ fontSize: '14px', color: 'var(--text-primary)', marginBottom: '6px' }}>
+                  {formatarData(vendaSelecionada.data_venda)}
+                </div>
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div style={{ 
+                      width: '20px', 
+                      height: '20px', 
+                      borderRadius: '50%', 
+                      background: vendaSelecionada.cliente_nome ? 'var(--success)' : 'var(--text-muted)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white',
+                      fontWeight: 'bold',
+                      fontSize: '10px'
+                    }}>
+                      {vendaSelecionada.cliente_nome ? 
+                        vendaSelecionada.cliente_nome.charAt(0).toUpperCase() : 
+                        'A'
+                      }
+                    </div>
+                    <div>
+                      <div className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>
+                        {vendaSelecionada.cliente_nome || "Cliente Avulso"}
+                      </div>
+                      <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                        {formatarFormaPagamento(vendaSelecionada.forma_pagamento)}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div style={{ textAlign: 'right', fontSize: '12px', color: 'var(--text-muted)' }}>
+                    {vendaSelecionada.itens.length} produto{vendaSelecionada.itens.length !== 1 ? 's' : ''}
+                    <br />
+                    {vendaSelecionada.itens.reduce((sum, item) => sum + Number(item.quantidade || 0), 0)} iten{vendaSelecionada.itens.reduce((sum, item) => sum + Number(item.quantidade || 0), 0) !== 1 ? 's' : ''}
+                  </div>
+                </div>
+              </div>
 
-            <div className="flex justify-end mt-4 gap-2">
-              <button className="btn btn-primary" onClick={() => imprimirCupom(vendaSelecionada)}>
-                <Printer size={16} />
-                Imprimir Cupom
-              </button>
-              <button className="btn btn-outline" onClick={() => setShowModal(false)}>
-                Fechar
-              </button>
+              {/* Seção: Itens da Venda */}
+              <div style={{ marginBottom: '12px' }}>
+                <h4 className="text-sm font-semibold margin-0" style={{ 
+                  color: 'var(--text-primary)',
+                  marginBottom: '6px',
+                  paddingBottom: '3px',
+                  borderBottom: '1px solid var(--border-light)'
+                }}>
+                  Itens da Venda
+                </h4>
+                
+                <div style={{ maxHeight: '160px', overflowY: 'auto' }}>
+                  {vendaSelecionada.itens.map((item, index) => (
+                    <div key={index} style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '6px 8px',
+                      background: index % 2 === 0 ? 'var(--surface)' : 'transparent',
+                      borderRadius: '3px',
+                      marginBottom: '1px',
+                      fontSize: '13px'
+                    }}>
+                      <div style={{ flex: 1 }}>
+                        <div className="font-medium" style={{ color: 'var(--text-primary)', marginBottom: '2px' }}>
+                          {item.produto_nome}
+                        </div>
+                        <div style={{ color: 'var(--text-muted)', fontSize: '11px' }}>
+                          {item.quantidade}x R$ {item.preco_unitario.toFixed(2)}
+                        </div>
+                      </div>
+                      <div className="font-semibold" style={{ color: 'var(--success)' }}>
+                        R$ {item.subtotal.toFixed(2)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Seção: Resumo e Ações */}
+              <div style={{ 
+                borderTop: '1px solid var(--border-light)',
+                paddingTop: '12px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <div>
+                  <div className="text-xs" style={{ color: 'var(--text-muted)', marginBottom: '2px' }}>
+                    Total Geral
+                  </div>
+                  <div className="text-lg font-bold" style={{ color: 'var(--success)' }}>
+                    R$ {(Number(vendaSelecionada.total) || 0).toFixed(2)}
+                  </div>
+                </div>
+                
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button 
+                    className="btn btn-primary" 
+                    onClick={() => imprimirCupom(vendaSelecionada)}
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '4px',
+                      padding: '6px 10px',
+                      fontSize: '12px'
+                    }}
+                  >
+                    <Printer size={12} />
+                    Cupom
+                  </button>
+                  <button 
+                    className="btn btn-outline" 
+                    onClick={() => setShowModal(false)}
+                    style={{ 
+                      padding: '6px 10px',
+                      fontSize: '12px'
+                    }}
+                  >
+                    Fechar
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
