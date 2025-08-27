@@ -25,18 +25,19 @@ model produtos {
 }
 
 model clientes {
-  id               Int      @id @default(autoincrement())
-  nome             String   @db.VarChar(255)
-  cpf              String   @unique @db.VarChar(14)
-  telefone         String?  @db.VarChar(20)
-  endereco         String?  @db.Text
-  limite_credito   Decimal  @default(0.00) @db.Decimal(10, 2)
-  debito_atual     Decimal  @default(0.00) @db.Decimal(10, 2)
-  ativo            Boolean  @default(true)
-  data_cadastro    DateTime @default(now())
-  data_atualizacao DateTime @default(now())
+  id               Int               @id @default(autoincrement())
+  nome             String            @db.VarChar(255)
+  cpf              String            @unique @db.VarChar(14)
+  telefone         String?           @db.VarChar(20)
+  endereco         String?           @db.Text
+  limite_credito   Decimal           @default(0.00) @db.Decimal(10, 2)
+  debito_atual     Decimal           @default(0.00) @db.Decimal(10, 2)
+  ativo            Boolean           @default(true)
+  data_cadastro    DateTime          @default(now())
+  data_atualizacao DateTime          @default(now())
   fiados           fiados[]
   vendas           vendas[]
+  fiado_movimentos fiado_movimentos[]
 
   @@index([cpf], map: "idx_clientes_cpf")
 }
@@ -56,6 +57,7 @@ model vendas {
   fiados               fiados[]
   itens                itens_venda[]
   cliente              clientes?              @relation(fields: [cliente_id], references: [id])
+  fiado_movimentos     fiado_movimentos[]
 
   @@index([cliente_id], map: "idx_vendas_cliente")
   @@index([data_venda], map: "idx_vendas_data")
@@ -88,6 +90,7 @@ model fiados {
   cliente          clientes           @relation(fields: [cliente_id], references: [id], onDelete: Cascade)
   vendas           vendas             @relation(fields: [venda_id], references: [id], onDelete: Cascade)
   pagamentos_fiado pagamentos_fiado[]
+  fiado_movimentos fiado_movimentos[]
 
   @@index([venda_id], map: "fiados_venda_id_fkey")
   @@index([cliente_id], map: "idx_fiados_cliente")
@@ -114,6 +117,29 @@ model pagamentos_fiado {
   fiados          fiados                           @relation(fields: [fiado_id], references: [id], onDelete: Cascade)
 
   @@index([fiado_id], map: "pagamentos_fiado_fiado_id_fkey")
+}
+
+model fiado_movimentos {
+  id             Int       @id @default(autoincrement())
+  cliente_id     Int
+  fiado_id       Int?
+  venda_id       Int?
+  tipo           String    @db.VarChar(20)
+  direcao        String    @db.VarChar(10)
+  valor          Decimal   @db.Decimal(10,2)
+  saldo_after    Decimal?  @db.Decimal(10,2)
+  descricao      String?   @db.Text
+  referencia     String?   @db.VarChar(100)
+  criado_por     String?   @db.VarChar(100)
+  data_movimento DateTime  @default(now())
+
+  cliente        clientes  @relation(fields: [cliente_id], references: [id], onDelete: Cascade)
+  fiado          fiados?   @relation(fields: [fiado_id], references: [id])
+  venda          vendas?   @relation(fields: [venda_id], references: [id])
+
+  @@index([cliente_id], map: "idx_fiado_mov_cliente")
+  @@index([fiado_id], map: "idx_fiado_mov_fiado")
+  @@index([data_movimento], map: "idx_fiado_mov_data")
 }
 
 enum pagamentos_fiado_forma_pagamento {

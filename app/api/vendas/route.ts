@@ -34,10 +34,10 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  let requestId = `${Date.now()}-${Math.floor(Math.random() * 10000)}`
   try {
-  const body = await request.json()
-  const requestId = `${Date.now()}-${Math.floor(Math.random() * 10000)}`
-  console.log(`[vendas][${requestId}] Incoming request body:`, JSON.stringify(body))
+    const body = await request.json()
+    console.log(`[vendas][${requestId}] Incoming request body:`, JSON.stringify(body))
     const { cliente_id, itens, total, pagamentos, troco } = body
 
     // Validações básicas
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     // Calcular total fiado (se houver)
     const totalFiado = pagamentosNorm.filter((p: any) => (p.tipo || '').toString() === 'fiado').reduce((s: number, p: any) => s + (Number(p.valor) || 0), 0)
 
-  // Executar transação com Prisma
+  // Executar transação com Prisma (timeout aumentado para 15s)
   console.log(`[vendas][${requestId}] Iniciando transação - cliente_id: ${cliente_id} total: ${total} troco: ${troco} totalFiado: ${totalFiado}`)
     const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const venda = await tx.vendas.create({
@@ -142,25 +142,54 @@ export async function POST(request: NextRequest) {
 
       // Se houve fiado, criar registro e atualizar débito do cliente
       if (totalFiado > 0 && cliente_id) {
-        console.log('[vendas] Criando fiado para cliente', cliente_id, 'valor:', totalFiado)
-        const fiadoCriado = await tx.fiados.create({
-          data: {
-            cliente_id,
-            venda_id: venda.id,
-            valor_original: totalFiado,
-            valor_pago: 0,
-            valor_restante: totalFiado,
-            status: 'aberto',
-          },
-        })
-        console.log('[vendas] Fiado criado id=', fiadoCriado.id)
+        try {
+          console.log('[vendas] Criando fiado para cliente', cliente_id, 'valor:', totalFiado)
+          const fiadoCriado = await tx.fiados.create({
+            data: {
+              cliente_id,
+              venda_id: venda.id,
+              valor_original: totalFiado,
+              valor_pago: 0,
+              valor_restante: totalFiado,
+              status: 'aberto',
+            },
+          })
+          console.log('[vendas] Fiado criado id=', fiadoCriado.id)
 
-        const clienteAtualizado = await tx.clientes.update({ where: { id: cliente_id }, data: { debito_atual: { increment: totalFiado } as any } })
-        console.log('[vendas] Cliente debito_atual depois:', clienteAtualizado.debito_atual)
+          const clienteAtualizado = await tx.clientes.update({ where: { id: cliente_id }, data: { debito_atual: { increment: totalFiado } as any } })
+          console.log('[vendas] Cliente debito_atual depois:', clienteAtualizado.debito_atual)
+
+          // Registrar movimento no extrato de fiado (raw SQL dentro da transação)
+          const descricaoMov = `Venda a fiado #${venda.id}`
+          const referenciaMov = `venda:${venda.id}`
+
+          await tx.$executeRaw`
+            INSERT INTO fiado_movimentos (cliente_id, fiado_id, venda_id, tipo, direcao, valor, descricao, referencia, criado_por, data_movimento)
+            VALUES (${cliente_id}, ${fiadoCriado.id}, ${venda.id}, ${'lancamento'}, ${'debito'}, ${totalFiado}, ${descricaoMov}, ${referenciaMov}, ${'PDV'}, NOW())
+          `
+
+          const [movimento]: any = await tx.$queryRaw`
+            SELECT * FROM fiado_movimentos WHERE id = LAST_INSERT_ID()
+          `
+          console.log('[vendas] Movimento de fiado criado id=', movimento?.id)
+        } catch (fiadoErr) {
+          console.error(`[vendas][${requestId}] Erro ao criar fiado/movimento:`, fiadoErr)
+          throw fiadoErr
+        }
       }
 
-      // Gerar cupom textual usando dados atuais (buscar itens com nomes)
-      const itensCriados = await tx.itens_venda.findMany({ where: { venda_id: venda.id }, include: { produto: true } })
+      console.log(`[vendas][${requestId}] Transação finalizada para venda id= ${venda.id}`)
+      return { vendaId: venda.id }
+    }, {
+      timeout: 15000 // 15 segundos timeout
+    })
+
+    // Gerar cupom FORA da transação (não crítico para consistência)
+    try {
+      const itensCriados = await prisma.itens_venda.findMany({ 
+        where: { venda_id: result.vendaId }, 
+        include: { produto: true } 
+      })
 
       const pad = (s: string, width: number, align: 'left' | 'right' | 'center' = 'left') => {
         if (align === 'right') return s.padStart(width, ' ')
@@ -184,7 +213,7 @@ export async function POST(request: NextRequest) {
       texto += pad('Tel: (00) 00000-0000', 40, 'center') + '\n'
       texto += linha + '\n'
 
-      texto += `VENDA: #${venda.id}\n`
+      texto += `VENDA: #${result.vendaId}\n`
       texto += `DATA:  ${new Date().toLocaleString('pt-BR')}\n`
       texto += `CLIENTE: ${cliente_id ? cliente_id : 'AVULSO'}\n`
       texto += '\n' + linhaThin
@@ -202,30 +231,30 @@ export async function POST(request: NextRequest) {
       }
 
       texto += linhaThin
-      texto += pad('TOTAL GERAL:', 31, 'right') + pad(`R$ ${Number(venda.total || 0).toFixed(2)}`, 9, 'right') + '\n'
+      texto += pad('TOTAL GERAL:', 31, 'right') + pad(`R$ ${Number(total || 0).toFixed(2)}`, 9, 'right') + '\n'
       texto += linha + '\n'
 
       texto += 'FORMAS DE PAGAMENTO:\n' + linhaThin
       try {
-        const formas = JSON.parse(venda.forma_pagamento_json || '[]')
-        for (const f of formas) {
+        const formasJson = pagamentosNorm || []
+        for (const f of formasJson) {
           const tipoRaw = (f.tipo || '').toString()
           const label = labelMap[tipoRaw] || tipoRaw.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
           const valor = `R$ ${Number(f.valor || 0).toFixed(2)}`
           texto += pad(`${label}:`, 25) + pad(valor, 15, 'right') + '\n'
         }
       } catch (e) {
-        texto += pad(`${venda.forma_pagamento || 'Desconhecida'}:`, 25) + pad(`R$ ${Number(venda.total || 0).toFixed(2)}`, 15, 'right') + '\n'
+        const valor = `R$ ${Number(total || 0).toFixed(2)}`
+        texto += pad('Dinheiro:', 25) + pad(valor, 15, 'right') + '\n'
       }
 
       texto += linha + '\n' + pad('Obrigado pela preferência!', 40, 'center') + '\n' + pad('Volte sempre!', 40, 'center') + '\n' + linha
 
-  const cupomCriado = await tx.cupons.create({ data: { venda_id: venda.id, conteudo_texto: texto } })
-  console.log('[vendas] Cupom criado id=', cupomCriado.id, 'venda_id=', cupomCriado.venda_id)
-
-      console.log(`[vendas][${requestId}] Transação finalizada para venda id= ${venda.id}`)
-  return { vendaId: venda.id }
-    })
+      const cupomCriado = await prisma.cupons.create({ data: { venda_id: result.vendaId, conteudo_texto: texto } })
+      console.log(`[vendas][${requestId}] Cupom criado id=`, cupomCriado.id, 'venda_id=', cupomCriado.venda_id)
+    } catch (cupomErr) {
+      console.error(`[vendas][${requestId}] Erro ao criar cupom (não crítico):`, cupomErr)
+    }
 
     // Checar estoque final fora da transação para detectar alterações concorrentes
     for (const pidStr of Object.keys(aggByProduct)) {
@@ -235,8 +264,9 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true, vendaId: result.vendaId })
-  } catch (error) {
-    console.error('Erro ao processar venda:', error)
-    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
+  } catch (error: any) {
+    console.error(`[vendas][${requestId}] Erro ao processar venda:`, error)
+    const message = error?.message || String(error)
+    return NextResponse.json({ error: 'Erro interno do servidor', requestId, details: message }, { status: 500 })
   }
 }
