@@ -16,3 +16,6 @@ nao remova arquivos quando for editar apenas reescreva-os
 nao use css inline
 
 nao crie modulos teste a mesmo que seja expressamente solicitado
+
+
+atente-se para nao incorrer neste tipo de erro: "[Error: You cannot use different slug names for the same dynamic path ('id' !== 'vendaId').]"

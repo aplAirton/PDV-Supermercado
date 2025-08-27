@@ -54,6 +54,7 @@ model vendas {
   data_venda           DateTime               @default(now())
   forma_pagamento_json String?                @db.Text
   cupons               cupons[]
+  cupom_links          cupom_links?
   fiados               fiados[]
   itens                itens_venda[]
   cliente              clientes?              @relation(fields: [cliente_id], references: [id])
@@ -105,6 +106,18 @@ model cupons {
   venda          vendas    @relation(fields: [venda_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "cupons_ibfk_1")
 
   @@index([venda_id], map: "idx_cupons_venda")
+}
+
+model cupom_links {
+  id           Int      @id @default(autoincrement())
+  venda_id     Int      @unique
+  public_token String   @unique @db.VarChar(128)
+  qr_data_url  String?  @db.Text
+  criado_em    DateTime @default(now())
+  venda        vendas   @relation(fields: [venda_id], references: [id], onDelete: Cascade)
+
+  @@index([public_token], map: "idx_cupom_links_token")
+  @@index([venda_id], map: "idx_cupom_links_venda")
 }
 
 model pagamentos_fiado {

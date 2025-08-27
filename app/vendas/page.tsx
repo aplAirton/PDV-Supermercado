@@ -48,6 +48,8 @@ export default function VendasPage() {
   const [loadingClientes, setLoadingClientes] = useState(false)
   const [vendaConcluida, setVendaConcluida] = useState(false)
   const [cupomTexto, setCupomTexto] = useState<string | null>(null)
+  const [ultimaVendaId, setUltimaVendaId] = useState<number | null>(null)
+  const [qrCodeData, setQrCodeData] = useState<{ qr_data_url: string; cupom_url: string } | null>(null)
 
   // Estados para modal de identificação de cliente
   const [showClienteModal, setShowClienteModal] = useState(false)
@@ -357,11 +359,30 @@ export default function VendasPage() {
         try {
           const respJson = await response.json()
           const vendaId = respJson.vendaId
+          setUltimaVendaId(vendaId)
+          
           const cupResp = await fetch(`/api/cupons/by-venda/${vendaId}`)
           if (cupResp.ok) {
             const cup = await cupResp.json()
             setCupomTexto(cup.conteudo_texto)
             setVendaConcluida(true)
+          }
+          
+          // Buscar QR code da venda
+          try {
+            const qrResp = await fetch(`/api/vendas/${vendaId}/qrcode`)
+            if (qrResp.ok) {
+              const qrData = await qrResp.json()
+              console.log('QR Code dados recebidos:', qrData)
+              setQrCodeData({
+                qr_data_url: qrData.qr_data_url,
+                cupom_url: qrData.cupom_url
+              })
+            } else {
+              console.log('QR Code não encontrado:', qrResp.status)
+            }
+          } catch (qrErr) {
+            console.error('Erro ao buscar QR code:', qrErr)
           }
         } catch (err) {
           console.error('Erro ao buscar cupom:', err)
@@ -528,6 +549,58 @@ export default function VendasPage() {
           <div style={{ textAlign: 'center' }}>
             <h3 className="font-bold">Venda concluída</h3>
             <p className="text-sm text-muted">A venda foi finalizada com sucesso.</p>
+            
+            {/* QR Code do cupom */}
+            {qrCodeData && (
+              <div style={{ marginTop: '1.5rem', marginBottom: '1.5rem' }}>
+                <div style={{ 
+                  padding: '1rem', 
+                  background: 'white', 
+                  borderRadius: '0.5rem',
+                  border: '2px solid var(--border)',
+                  display: 'inline-block'
+                }}>
+                  <img 
+                    src={qrCodeData.qr_data_url} 
+                    alt="QR Code do Cupom"
+                    style={{ 
+                      width: '120px', 
+                      height: '120px',
+                      display: 'block',
+                      margin: '0 auto'
+                    }}
+                  />
+                  <p style={{ 
+                    fontSize: '0.75rem', 
+                    color: 'var(--muted-foreground)',
+                    marginTop: '0.5rem',
+                    marginBottom: '0.5rem',
+                    maxWidth: '140px'
+                  }}>
+                    Escaneie para ver o cupom online
+                  </p>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(qrCodeData.cupom_url)
+                      .then(() => alert('URL copiada!'))
+                      .catch(() => alert('Erro ao copiar URL'))
+                    }}
+                    style={{
+                      fontSize: '0.7rem',
+                      padding: '0.25rem 0.5rem',
+                      background: 'var(--primary)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '0.25rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Copiar URL
+                  </button>
+                </div>
+              </div>
+            )}
+            
             <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
               <button className="btn btn-outline" onClick={() => {
                 // reiniciar estado para nova venda
@@ -537,6 +610,8 @@ export default function VendasPage() {
                 setClienteSelecionado(null)
                 setPagamentos([{ tipo: 'dinheiro', valor: '' }])
                 setCodigoBusca('')
+                setUltimaVendaId(null)
+                setQrCodeData(null)
               }}>Nova venda</button>
             </div>
           </div>

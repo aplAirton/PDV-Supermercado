@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Teste QR Code</title>
+</head>
+<body>
+    <h1>Teste de QR Code</h1>
+    
+    <h2>QR Code Local</h2>
+    <div id="qr-local"></div>
+    
+    <h2>QR Code Externo (fallback)</h2>
+    <div id="qr-externo"></div>
+    
+    <script>
+        // Testar endpoint local
+        fetch('/api/generate-qr?text=https://google.com&size=150')
+            .then(response => response.json())
+            .then(data => {
+                const img = document.createElement('img');
+                img.src = data.qr_data_url;
+                img.style.border = '1px solid #ccc';
+                img.alt = 'QR Code Local';
+                document.getElementById('qr-local').appendChild(img);
+                
+                const p = document.createElement('p');
+                p.textContent = 'Data URL: ' + data.qr_data_url.substring(0, 50) + '...';
+                document.getElementById('qr-local').appendChild(p);
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                document.getElementById('qr-local').innerHTML = '<p style="color: red;">Erro ao carregar QR code local</p>';
+            });
+        
+        // QR externo para comparação
+        const imgExterno = document.createElement('img');
+        imgExterno.src = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://google.com';
+        imgExterno.style.border = '1px solid #ccc';
+        imgExterno.alt = 'QR Code Externo';
+        document.getElementById('qr-externo').appendChild(imgExterno);
+        
+        const pExterno = document.createElement('p');
+        pExterno.textContent = 'QR Code gerado pela API externa para comparação';
+        document.getElementById('qr-externo').appendChild(pExterno);
+    </script>
+</body>
+</html>

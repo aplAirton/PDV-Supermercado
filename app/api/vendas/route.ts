@@ -1,6 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
 import prisma from '@/lib/prisma'
 import type { Prisma } from '@prisma/client'
+import crypto from 'crypto'
+import { generatePublicToken, generateQRCodeDataUrl, buildCupomPublicUrl } from '@/lib/cupom-utils'
+import { generateQRCodeCompactASCII } from '@/lib/qr-ascii'
 
 export async function GET(request: Request) {
   try {
@@ -353,8 +356,71 @@ export async function POST(request: NextRequest) {
 
       texto += linha + '\n' + pad('Obrigado pela preferência!', 40, 'center') + '\n' + pad('Volte sempre!', 40, 'center') + '\n' + linha
 
+      // Gerar token e QR code primeiro para incluir no cupom
+      let publicToken = ''
+      let qrDataUrl = ''
+      let qrCodeASCII = ''
+      try {
+        publicToken = generatePublicToken()
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+        const cupomPublicUrl = buildCupomPublicUrl(baseUrl, publicToken)
+        console.log(`[vendas][${requestId}] Gerando QR code para URL: ${cupomPublicUrl}`)
+        
+        // Gerar QR code data URL para exibição na tela
+        qrDataUrl = await generateQRCodeDataUrl(cupomPublicUrl)
+        console.log(`[vendas][${requestId}] QR code gerado: ${qrDataUrl.substring(0, 50)}...`)
+        
+        // Gerar QR code ASCII para cupom impresso
+        qrCodeASCII = await generateQRCodeCompactASCII(cupomPublicUrl)
+        console.log(`[vendas][${requestId}] QR code ASCII gerado com ${qrCodeASCII.split('\n').length} linhas`)
+        
+        // Adicionar QR code ASCII ao cupom impresso
+        texto += '\n' + pad('CUPOM DIGITAL', 40, 'center') + '\n'
+        texto += linhaThin
+        texto += pad('Escaneie o QR Code abaixo:', 40, 'center') + '\n'
+        texto += linhaThin
+        
+        // Inserir QR code ASCII centralizado
+        const qrLines = qrCodeASCII.split('\n').filter(line => line.trim().length > 0)
+        for (const line of qrLines) {
+          if (line.trim()) {
+            const paddedLine = line.length > 40 ? line.substring(0, 40) : line
+            texto += pad(paddedLine, 40, 'center') + '\n'
+          }
+        }
+        
+        texto += linhaThin
+        texto += pad('Ou acesse diretamente:', 40, 'center') + '\n'
+        const shortUrl = cupomPublicUrl.replace('http://localhost:3000', 'localhost:3000')
+        const lines = []
+        for (let i = 0; i < shortUrl.length; i += 38) {
+          lines.push(shortUrl.substring(i, i + 38))
+        }
+        for (const line of lines) {
+          texto += pad(line, 40, 'center') + '\n'
+        }
+        texto += linha
+      } catch (qrErr) {
+        console.warn(`[vendas][${requestId}] Erro ao gerar QR info para cupom:`, qrErr)
+        texto += '\n' + pad('CUPOM DIGITAL INDISPONÍVEL', 40, 'center') + '\n' + linha
+      }
+
       const cupomCriado = await prisma.cupons.create({ data: { venda_id: result.vendaId, conteudo_texto: texto } })
       console.log(`[vendas][${requestId}] Cupom criado id=`, cupomCriado.id, 'venda_id=', cupomCriado.venda_id)
+      
+      // Criar cupom_link com QR code para acesso público
+      if (publicToken && qrDataUrl) {
+        try {
+          // Usar raw SQL até regenerar o cliente Prisma
+          await prisma.$executeRaw`
+            INSERT INTO cupom_links (venda_id, public_token, qr_data_url)
+            VALUES (${result.vendaId}, ${publicToken}, ${qrDataUrl})
+          `
+          console.log(`[vendas][${requestId}] Cupom link criado - token: ${publicToken.substring(0,8)}...`)
+        } catch (linkErr) {
+          console.error(`[vendas][${requestId}] Erro ao criar cupom link (não crítico):`, linkErr)
+        }
+      }
     } catch (cupomErr) {
       console.error(`[vendas][${requestId}] Erro ao criar cupom (não crítico):`, cupomErr)
     }

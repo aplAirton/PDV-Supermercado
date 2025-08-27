@@ -1,11 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { executeQuery } from "@/lib/database"
 
-export async function GET(request: NextRequest, context: { params: { vendaId: string } }) {
+export async function GET(request: NextRequest, context: { params: { id: string } }) {
   try {
     // O Next pode fornecer `params` como uma Promise; aguardar params garante acesso seguro a suas propriedades
     const paramsResolved = await (context as any).params
-    const vendaId = Number(paramsResolved.vendaId)
+    const vendaId = Number(paramsResolved.id)
     if (Number.isNaN(vendaId)) return NextResponse.json({ error: 'vendaId inválido' }, { status: 400 })
 
     const rows: any = await executeQuery('SELECT * FROM cupons WHERE venda_id = ? ORDER BY data_criacao DESC LIMIT 1', [vendaId])
