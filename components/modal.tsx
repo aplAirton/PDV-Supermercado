@@ -26,13 +26,7 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
             </div>
           </div>
         )}
-        {!title && (
-          <div className="flex justify-end mb-4">
-            <button onClick={onClose} className="btn btn-outline btn-sm">
-              <X size={16} />
-            </button>
-          </div>
-        )}
+
         {children}
       </div>
     </div>

@@ -832,25 +832,7 @@ export default function FiadosPage() {
           )}
         </div>
 
-        {movimentosExtrato.length > 0 && (
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-            <div className="flex items-center justify-between text-sm">
-              <div className="text-gray-700">
-                <strong>Total de movimentações:</strong> {movimentosExtrato.length}
-              </div>
-              <div className="text-gray-700">
-                <strong>Saldo final:</strong> 
-                <span className={`ml-1 font-bold ${
-                  movimentosExtrato[movimentosExtrato.length - 1]?.saldo_corrente > 0 
-                    ? 'text-red-600' 
-                    : 'text-green-600'
-                }`}>
-                  R$ {movimentosExtrato[movimentosExtrato.length - 1]?.saldo_corrente?.toFixed(2) || '0,00'}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
+  {/* Total de movimentações e Saldo final removidos conforme solicitado */}
 
         <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
           <div className="text-xs text-gray-500">

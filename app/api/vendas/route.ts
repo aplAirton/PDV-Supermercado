@@ -2,15 +2,62 @@ import { type NextRequest, NextResponse } from "next/server"
 import prisma from '@/lib/prisma'
 import type { Prisma } from '@prisma/client'
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // Ler filtros da query string
+    const url = new URL(request.url)
+    const params = url.searchParams
+    const data_inicio = params.get('data_inicio')
+    const data_fim = params.get('data_fim')
+    const forma_pagamento = params.get('forma_pagamento')
+    const cliente = params.get('cliente')
+
+    const where: any = {}
+
+    // Filtro por período (assume data_venda é armazenada como datetime)
+    if (data_inicio || data_fim) {
+      where.data_venda = {}
+      if (data_inicio) {
+        // data_inicio inclusive at start of day
+        const d = new Date(data_inicio)
+        d.setHours(0,0,0,0)
+        where.data_venda.gte = d
+      }
+      if (data_fim) {
+        const d2 = new Date(data_fim)
+        d2.setHours(23,59,59,999)
+        where.data_venda.lte = d2
+      }
+    }
+
+    // Filtro por forma de pagamento (verifica campo forma_pagamento ou forma_pagamento_json)
+    if (forma_pagamento) {
+      // tentar filtrar pelo campo enum forma_pagamento
+      where.OR = [
+        { forma_pagamento: forma_pagamento },
+        // ou quando armazenado no JSON como parte das formas
+        { forma_pagamento_json: { contains: forma_pagamento } }
+      ]
+    }
+
+    // Filtro por cliente (aceita id numérico ou parte do nome)
+    if (cliente) {
+      const clienteId = Number(cliente)
+      if (!Number.isNaN(clienteId)) {
+        where.cliente_id = clienteId
+      } else {
+        where.cliente = { nome: { contains: cliente, mode: 'insensitive' } }
+      }
+    }
+
     const vendas = await prisma.vendas.findMany({
+      where,
       include: {
         cliente: true,
         itens: { include: { produto: true } },
       },
       orderBy: { data_venda: 'desc' },
-      take: 100,
+      take: 500,
     })
 
     const vendasComItens = vendas.map((v: any) => ({
@@ -97,7 +144,26 @@ export async function POST(request: NextRequest) {
 
   // Executar transação com Prisma (timeout aumentado para 15s)
   console.log(`[vendas][${requestId}] Iniciando transação - cliente_id: ${cliente_id} total: ${total} troco: ${troco} totalFiado: ${totalFiado}`)
-    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+
+  // Retry/backoff para P2028 (Transaction API error). Surface P1001 imediatamente (DB unreachable).
+  const maxAttempts = 3
+  let attempt = 0
+  let result: any = null
+  const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms))
+
+  // Garantir que o cliente Prisma esteja conectado; se a conexão falhar, surface imediatamente
+  try {
+    await prisma.$connect()
+  } catch (connectErr) {
+    console.error(`[vendas][${requestId}] Falha ao conectar ao DB antes da transação:`, connectErr)
+    throw connectErr
+  }
+
+  while (attempt < maxAttempts) {
+    attempt++
+    try {
+      console.log(`[vendas][${requestId}] Iniciando transação (tentativa ${attempt}/${maxAttempts})`)
+      result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const venda = await tx.vendas.create({
         data: {
           cliente_id: cliente_id || null,
@@ -180,9 +246,36 @@ export async function POST(request: NextRequest) {
 
       console.log(`[vendas][${requestId}] Transação finalizada para venda id= ${venda.id}`)
       return { vendaId: venda.id }
-    }, {
-      timeout: 15000 // 15 segundos timeout
-    })
+      }, {
+        timeout: 15000 // 15 segundos timeout
+      })
+      // Sucesso
+      break
+    } catch (err: any) {
+      console.error(`[vendas][${requestId}] Erro na transação (tentativa ${attempt}):`, err?.message || err)
+      // Prisma transaction invalid / race - retry
+      const code = err?.code || (err?.meta && err.meta.code)
+      if (code === 'P2028') {
+        if (attempt < maxAttempts) {
+          // backoff exponencial (máx 2000ms)
+          const backoff = Math.min(2000, 200 * Math.pow(2, attempt - 1))
+          console.warn(`[vendas][${requestId}] P2028 detectado — tentando novamente em ${backoff}ms`)
+          await sleep(backoff)
+          continue
+        }
+        // esgotou tentativas
+        console.error(`[vendas][${requestId}] Esgotadas tentativas por P2028`)
+        throw err
+      }
+      // DB unreachable
+      if (code === 'P1001') {
+        console.error(`[vendas][${requestId}] Erro P1001 - DB inacessível:`, err)
+        throw err
+      }
+      // outro erro — rethrow
+      throw err
+    }
+  }
 
     // Gerar cupom FORA da transação (não crítico para consistência)
     try {
@@ -215,7 +308,17 @@ export async function POST(request: NextRequest) {
 
       texto += `VENDA: #${result.vendaId}\n`
       texto += `DATA:  ${new Date().toLocaleString('pt-BR')}\n`
-      texto += `CLIENTE: ${cliente_id ? cliente_id : 'AVULSO'}\n`
+      // Se houver cliente_id, buscar nome do cliente para exibição no cupom
+      let clienteNomeForCupom = 'AVULSO'
+      if (cliente_id) {
+        try {
+          const clienteRec: any = await prisma.clientes.findUnique({ where: { id: Number(cliente_id) } })
+          if (clienteRec && clienteRec.nome) clienteNomeForCupom = clienteRec.nome
+        } catch (cliErr) {
+          console.warn(`[vendas][${requestId}] Não foi possível buscar nome do cliente para cupom:`, cliErr)
+        }
+      }
+      texto += `CLIENTE: ${clienteNomeForCupom}\n`
       texto += '\n' + linhaThin
 
       texto += pad('PRODUTO', 18) + pad('QTD', 5, 'right') + pad('V.UNIT', 8, 'right') + pad('SOMA', 9, 'right') + '\n'
