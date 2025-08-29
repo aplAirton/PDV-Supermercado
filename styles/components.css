@@ -91,7 +91,7 @@
 
 .content-body {
   flex: 1;
-  padding: 2rem;
+  padding: 0.5rem;
   background: var(--surface);
   min-height: calc(100vh - 5rem);
 }
