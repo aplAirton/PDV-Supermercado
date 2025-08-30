@@ -321,7 +321,7 @@ export async function POST(request: NextRequest) {
       texto += `CLIENTE: ${clienteNomeForCupom}\n`
       texto += '\n' + linhaThin
 
-      texto += pad('PRODUTO', 18) + pad('QTD', 5, 'right') + pad('V.UNIT', 8, 'right') + pad('SOMA', 9, 'right') + '\n'
+      texto += pad('PRODUTO', 18) + pad('QTD', 5, 'right') + pad('V.UNIT', 8, 'right') + pad('PARCIAL', 9, 'right') + '\n'
       texto += linhaThin
 
       for (const it of itensCriados) {
