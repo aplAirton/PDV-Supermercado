@@ -435,18 +435,19 @@ export default function VendasPage() {
             <h2 className="card-title">Adicionar Produtos</h2>
           </div>
 
-          <div className="form-group">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="Código de barras ou nome do produto"
-                  value={codigoBusca}
-                  onChange={(e) => setCodigoBusca(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault()
-                      buscarProduto(true)
+          <div className="card-content">
+            <div className="form-group" style={{ flexShrink: 0 }}>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Código de barras ou nome do produto"
+                    value={codigoBusca}
+                    onChange={(e) => setCodigoBusca(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault()
+                        buscarProduto(true)
     
                         {/* Modal de confirmação para split automático de fiado */}
                         {showConfirmSplit && pendingSplit && (
@@ -471,7 +472,7 @@ export default function VendasPage() {
               </div>
           </div>
 
-          <div style={{ maxHeight: "300px", overflowY: "auto" }}>
+          <div className="card-scrollable">
             {loadingProdutos ? (
               <div className="p-4">
                 <Loading />
@@ -522,6 +523,7 @@ export default function VendasPage() {
               </div>
             )}
           </div>
+          </div>
         </div>
       ) : (
         <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
@@ -544,7 +546,7 @@ export default function VendasPage() {
       )}
 
       {/* Carrinho PDV */}
-      <div className="card" style={{ height: "fit-content" }}>
+      <div className="card">
         {/* Header do Carrinho */}
         <div className="card-header" style={{ padding: "1rem", borderBottom: "2px solid var(--border)" }}>
           <div className="flex items-center justify-between">
@@ -571,28 +573,61 @@ export default function VendasPage() {
                 Identificar Cliente
               </button>
             ) : (
-              <div style={{ 
-                padding: '0.5rem', 
-                background: 'var(--surface)', 
-                borderRadius: '0.375rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between'
-              }}>
-                <div>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>Cliente identificado:</div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                    {clienteSelecionado.nome}
+              <div className="client-identified">
+                <div className="client-identified-header">
+                  <div style={{
+                    width: '1.25rem',
+                    height: '1.25rem',
+                    background: 'var(--primary)',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontSize: '0.75rem',
+                    fontWeight: 'bold'
+                  }}>
+                    ✓
+                  </div>
+                  Cliente Identificado
+                </div>
+                
+                <div className="client-identified-name">
+                  {clienteSelecionado.nome}
+                </div>
+                
+                <div className="client-identified-info">
+                  <div>
+                    <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>ID:</div>
+                    <div>{clienteSelecionado.id}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>Crédito:</div>
+                    <div style={{ 
+                      color: Math.max(0, clienteSelecionado.limite_credito - (clienteSelecionado.debito_atual || 0)) > 0 
+                        ? '#059669' : '#dc2626',
+                      fontWeight: '600'
+                    }}>
+                      R$ {Math.max(0, clienteSelecionado.limite_credito - (clienteSelecionado.debito_atual || 0)).toFixed(2)}
+                    </div>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  className="btn btn-xs btn-outline"
-                  onClick={() => setClienteSelecionado(null)}
-                  title="Remover identificação"
-                >
-                  <X size={12} />
-                </button>
+                
+                <div className="client-identified-actions">
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline"
+                    onClick={() => setClienteSelecionado(null)}
+                    title="Remover identificação"
+                    style={{
+                      padding: '0.5rem 1rem',
+                      fontSize: '0.8rem'
+                    }}
+                  >
+                    <X size={14} />
+                    Alterar
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -879,12 +914,12 @@ export default function VendasPage() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: 'rgba(0,0,0,0.45)',
+            background: 'rgba(0,0,0,0.6)',
             zIndex: 1100,
-            padding: '1rem'
+            padding: '1rem',
+            backdropFilter: 'blur(4px)'
           }}
           onClick={() => {
-            // fechar ao clicar no backdrop
             setShowClienteModal(false)
             setBuscarClienteQuery('')
           }}
@@ -894,84 +929,134 @@ export default function VendasPage() {
             role="dialog"
             aria-modal="true"
             style={{
-              maxWidth: '520px',
+              maxWidth: '600px',
               width: '100%',
-              background: 'var(--background)',
-              borderRadius: '0.5rem',
-              boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+              background: 'var(--card)',
+              borderRadius: '1rem',
+              boxShadow: '0 25px 50px rgba(0,0,0,0.25)',
               overflow: 'hidden'
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="modal-header" style={{ padding: '1rem 1rem 0.5rem' }}>
-              <h3 style={{ margin: 0 }}>Identificar Cliente</h3>
+            <div className="modal-header" style={{ 
+              padding: '1.5rem', 
+              borderBottom: '1px solid var(--border)',
+              background: 'var(--surface)'
+            }}>
+              <h3 style={{ 
+                margin: 0, 
+                fontSize: '1.5rem', 
+                fontWeight: '700',
+                color: 'var(--foreground)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem'
+              }}>
+                <div style={{
+                  width: '2.5rem',
+                  height: '2.5rem',
+                  background: 'var(--primary)',
+                  borderRadius: '0.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white'
+                }}>
+                  👤
+                </div>
+                Selecionar Cliente
+              </h3>
             </div>
-            <div className="modal-body" style={{ padding: '0 1rem 1rem' }}>
-              <div style={{ marginBottom: '1rem' }}>
-                <label className="form-label">Buscar cliente:</label>
+            
+            <div className="modal-body" style={{ padding: '1.5rem' }}>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label className="form-label" style={{ 
+                  fontWeight: '600', 
+                  marginBottom: '0.75rem',
+                  display: 'block'
+                }}>
+                  Buscar cliente:
+                </label>
                 <input
                   type="text"
-                  className="form-control"
-                  placeholder="Digite o nome do cliente para buscar..."
+                  className="form-input"
+                  placeholder="Digite o nome do cliente..."
                   value={buscarClienteQuery}
                   onChange={(e) => setBuscarClienteQuery(e.target.value)}
                   autoFocus
+                  style={{
+                    fontSize: '1rem',
+                    padding: '0.875rem'
+                  }}
                 />
               </div>
               
-              <div style={{ maxHeight: '300px', overflowY: 'auto', paddingBottom: '0.25rem' }}>
+              <div style={{ 
+                maxHeight: '400px', 
+                overflowY: 'auto', 
+                paddingRight: '0.5rem',
+                marginRight: '-0.5rem'
+              }}>
                 {clientes
                   .filter(cliente => 
                     buscarClienteQuery === '' || 
                     cliente.nome.toLowerCase().includes(buscarClienteQuery.toLowerCase())
                   )
-                  .map((cliente) => (
-                    <div
-                      key={cliente.id}
-                      className="card"
-                      style={{
-                        padding: '0.75rem',
-                        marginBottom: '0.5rem',
-                        cursor: 'pointer',
-                        border: '1px solid var(--border)',
-                        transition: 'all 0.2s ease',
-                        borderRadius: '0.375rem',
-                        background: 'transparent'
-                      }}
-                      onClick={() => {
-                        setClienteSelecionado(cliente)
-                        setShowClienteModal(false)
-                        setBuscarClienteQuery('')
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = 'var(--primary)'
-                        e.currentTarget.style.backgroundColor = 'var(--surface)'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = 'var(--border)'
-                        e.currentTarget.style.backgroundColor = 'transparent'
-                      }}
-                    >
-                      <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>
-                        {cliente.nome}
+                  .map((cliente) => {
+                    const creditoDisponivel = Math.max(0, cliente.limite_credito - (cliente.debito_atual || 0));
+                    return (
+                      <div
+                        key={cliente.id}
+                        className="client-card"
+                        onClick={() => {
+                          setClienteSelecionado(cliente)
+                          setShowClienteModal(false)
+                          setBuscarClienteQuery('')
+                        }}
+                      >
+                        <div className="client-card-name">
+                          {cliente.nome}
+                        </div>
+                        <div className="client-card-details">
+                          <span>ID: {cliente.id}</span>
+                          <div className={`client-card-credit ${creditoDisponivel > 0 ? 'positive' : 'negative'}`}>
+                            R$ {creditoDisponivel.toFixed(2)} disponível
+                          </div>
+                        </div>
                       </div>
-                      <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                        ID: {cliente.id}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 
                 {clientes.filter(cliente => 
                   buscarClienteQuery === '' || 
                   cliente.nome.toLowerCase().includes(buscarClienteQuery.toLowerCase())
                 ).length === 0 && (
-                  <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                    {buscarClienteQuery === '' ? 'Carregando clientes...' : 'Nenhum cliente encontrado'}
+                  <div style={{ 
+                    textAlign: 'center', 
+                    padding: '3rem 2rem', 
+                    color: 'var(--muted-foreground)' 
+                  }}>
+                    <div style={{ fontSize: '3rem', marginBottom: '1rem', opacity: '0.3' }}>🔍</div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+                      {buscarClienteQuery === '' ? 'Carregando clientes...' : 'Nenhum cliente encontrado'}
+                    </div>
+                    {buscarClienteQuery !== '' && (
+                      <div style={{ fontSize: '0.9rem' }}>
+                        Tente buscar com outro nome
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             </div>
-            <div className="modal-footer" style={{ padding: '0.5rem 1rem 1rem', display: 'flex', justifyContent: 'flex-end' }}>
+            
+            <div className="modal-footer" style={{ 
+              padding: '1rem 1.5rem', 
+              borderTop: '1px solid var(--border)',
+              background: 'var(--surface)',
+              display: 'flex', 
+              justifyContent: 'flex-end' 
+            }}>
               <button
                 type="button"
                 className="btn btn-outline"
