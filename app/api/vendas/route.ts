@@ -226,12 +226,11 @@ export async function POST(request: NextRequest) {
           console.log('[vendas] Cliente debito_atual depois:', clienteAtualizado.debito_atual)
 
           // Registrar movimento no extrato de fiado (raw SQL dentro da transação)
-          const descricaoMov = `Venda a fiado #${venda.id}`
-          const referenciaMov = `venda:${venda.id}`
+          const referenciaMov = `venda #${venda.id}`
 
           await tx.$executeRaw`
             INSERT INTO fiado_movimentos (cliente_id, fiado_id, venda_id, tipo, direcao, valor, descricao, referencia, criado_por, data_movimento)
-            VALUES (${cliente_id}, ${fiadoCriado.id}, ${venda.id}, ${'lancamento'}, ${'debito'}, ${totalFiado}, ${descricaoMov}, ${referenciaMov}, ${'PDV'}, NOW())
+            VALUES (${cliente_id}, ${fiadoCriado.id}, ${venda.id}, ${'lancamento'}, ${'debito'}, ${totalFiado}, ${referenciaMov}, ${referenciaMov}, ${'PDV'}, NOW())
           `
 
           const [movimento]: any = await tx.$queryRaw`

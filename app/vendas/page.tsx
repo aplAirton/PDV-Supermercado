@@ -107,6 +107,20 @@ export default function VendasPage() {
   const restante = Math.max(0, roundCents(totalRounded - sumPagamentos))
   const troco = Math.max(0, roundCents(sumPagamentos - totalRounded))
 
+  // Validação de troco: apenas dinheiro permite valor superior ao total
+  const pagamentosDinheiro = pagamentos.filter(p => p.tipo === "dinheiro")
+  const pagamentosNaoDinheiro = pagamentos.filter(p => p.tipo !== "dinheiro")
+  const totalDinheiro = pagamentosDinheiro.reduce((s, p) => s + (Number.parseFloat(p.valor || "0") || 0), 0)
+  const totalNaoDinheiro = pagamentosNaoDinheiro.reduce((s, p) => s + (Number.parseFloat(p.valor || "0") || 0), 0)
+  
+  // Verificar se há excesso em formas não-dinheiro
+  const excessoNaoDinheiro = totalNaoDinheiro > totalRounded
+  const valorExcedente = Math.max(0, totalNaoDinheiro - totalRounded)
+  
+  // Se há múltiplas formas, verificar se o excesso é coberto pelo dinheiro
+  const temMultiplasFormas = pagamentos.length > 1
+  const excessoNaoPermitido = excessoNaoDinheiro || (temMultiplasFormas && totalNaoDinheiro > (totalRounded - totalDinheiro) && totalDinheiro < troco)
+
   useEffect(() => {
     carregarClientes()
   }, [])
@@ -371,6 +385,18 @@ export default function VendasPage() {
     // Validação: soma dos pagamentos deve cobrir o total (usar valores arredondados)
     if (sumPagamentos < totalRounded) {
       toast({ title: 'Pagamento insuficiente', description: 'Valor pago insuficiente. Adicione outra forma de pagamento ou ajuste os valores.', variant: 'destructive' })
+      return
+    }
+
+    // Validação: troco apenas permitido em dinheiro
+    if (excessoNaoDinheiro) {
+      toast({ title: 'Valor superior não permitido', description: 'Formas de pagamento como cartão, PIX e fiado não permitem valores superiores ao total da compra.', variant: 'destructive' })
+      return
+    }
+
+    // Validação: se há troco, deve haver dinheiro suficiente para cobri-lo
+    if (troco > 0 && totalDinheiro < troco) {
+      toast({ title: 'Troco inválido', description: 'Apenas pagamentos em dinheiro permitem troco. Ajuste os valores ou adicione dinheiro suficiente.', variant: 'destructive' })
       return
     }
 
@@ -1239,6 +1265,44 @@ export default function VendasPage() {
               )}
             </div>
 
+            {/* Aviso: Troco apenas em dinheiro */}
+            {(excessoNaoDinheiro || (temMultiplasFormas && sumPagamentos > totalRounded && totalDinheiro === 0)) && (
+              <div style={{
+                border: `1px solid rgba(239, 68, 68, 0.3)`,
+                background: 'rgba(239, 68, 68, 0.05)',
+                padding: '0.75rem',
+                borderRadius: '0.5rem',
+                marginBottom: '0.75rem'
+              }}>
+                <div style={{ fontWeight: 600, color: 'var(--danger-color)', marginBottom: '0.25rem', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  🚫 Valor superior não permitido
+                </div>
+                <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                  {excessoNaoDinheiro ? (
+                    <>
+                      Formas de pagamento como <strong>cartão</strong>, <strong>PIX</strong> e <strong>fiado</strong> não permitem valores superiores ao total da compra.
+                      {valorExcedente > 0 && (
+                        <>
+                          <br />
+                          <strong>Valor excedente:</strong> R$ {valorExcedente.toFixed(2)}
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      Apenas pagamentos em <strong>dinheiro</strong> permitem troco. 
+                      {troco > 0 && (
+                        <>
+                          <br />
+                          Adicione R$ {troco.toFixed(2)} em dinheiro para cobrir o troco ou ajuste os valores.
+                        </>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Aviso em card: saldo insuficiente (unificado para evitar redundância) */}
             {clienteSelecionado && clienteAvailable < totalRounded && (
               <div style={{
@@ -1360,8 +1424,8 @@ export default function VendasPage() {
                 type="button" 
                 className="btn btn-success" 
                 onClick={processarPagamento}
-                // bloquear enquanto houver restante a pagar
-                disabled={loading || restante > 0}
+                // bloquear enquanto houver restante a pagar ou problemas de troco
+                disabled={loading || restante > 0 || excessoNaoDinheiro || (troco > 0 && totalDinheiro < troco)}
               >
                 {loading ? (
                   <>

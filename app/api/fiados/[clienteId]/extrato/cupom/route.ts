@@ -1,10 +1,9 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 
-export async function GET(request: NextRequest, context: any) {
+export async function GET(request: NextRequest, { params }: { params: { clienteId?: string } }) {
   try {
-    const ctx = await context
-    const clienteId = Number(ctx?.params?.clienteId)
+    const clienteId = Number(params?.clienteId)
     if (Number.isNaN(clienteId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
     // Buscar dados do cliente
@@ -205,9 +204,14 @@ export async function GET(request: NextRequest, context: any) {
           })
         }
 
-        // Referência se existir
+        // Referência se existir (somente imprimir se não estiver já na descrição)
         if (m.referencia) {
-          texto += pad(`  Ref: ${m.referencia}`, 48) + '\n'
+          const refStr = String(m.referencia || '').trim()
+          const descStr = String(m.descricao || '').trim()
+          // imprimir Ref somente se houver referência e ela não estiver já presente na descrição
+          if (refStr && (!descStr || !descStr.includes(refStr))) {
+            texto += pad(`  Ref: ${m.referencia}`, 48) + '\n'
+          }
         }
       })
     }

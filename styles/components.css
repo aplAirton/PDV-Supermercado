@@ -729,6 +729,11 @@
   color: var(--text-muted);
 }
 
+/* Inputs que possuem ícone posicionado à esquerda (espaçamento extra) */
+.input-with-icon {
+  padding-left: 2.5rem; /* recuo de 4rem para não sobrepor o ícone */
+}
+
 /* Tables */
 .table {
   width: 100%;
