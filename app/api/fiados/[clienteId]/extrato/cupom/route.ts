@@ -90,7 +90,7 @@ export async function GET(request: NextRequest, { params }: { params: { clienteI
 
     // Cabeçalho principal
     texto += linhaDupla
-    texto += pad('BUDEGA AIRTON', 48, 'center') + '\n'
+    texto += pad('PDV AIRTON', 48, 'center') + '\n'
     texto += pad('EXTRATO DETALHADO DE FIADO', 48, 'center') + '\n'
     texto += linhaDupla + '\n'
 
@@ -234,7 +234,7 @@ export async function GET(request: NextRequest, { params }: { params: { clienteI
     texto += linha + '\n'
 
     // Rodapé aprimorado
-    texto += pad('BUDEGA AIRTON', 48, 'center') + '\n'
+    texto += pad('PDV AIRTON', 48, 'center') + '\n'
     texto += pad('Este extrato possui validade de 30 dias', 48, 'center') + '\n'
     texto += pad('e serve para controle interno', 48, 'center') + '\n'
     texto += pad('Em caso de dúvidas, entre em contato', 48, 'center') + '\n'

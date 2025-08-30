@@ -5,7 +5,7 @@ import "./globals.css"
 import "../styles/components.css"
 
 export const metadata: Metadata = {
-  title: "PDV Budega Airton",
+  title: "PDV Airton",
   description: "Sistema de PDV para Supermercado com Gerenciamento de Fiado",
     generator: 'v0.app'
 }

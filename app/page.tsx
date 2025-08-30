@@ -67,7 +67,7 @@ export default function HomePage() {
     <div className="app-layout">
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <div className="sidebar-header">
-          <h1 className="sidebar-title">PDV Budega Airton</h1>
+          <h1 className="sidebar-title">PDV Airton</h1>
         </div>
 
         <nav className="sidebar-nav">

@@ -90,13 +90,13 @@ export default function VendasPage() {
 
                 {/* Mensagem de limite do cliente selecionado (mostra erro no próprio card/modal) */}
                 {clienteSelecionado && pagamentos.some((p) => p.tipo === 'fiado') && (
-                  <div style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>
+                  <div className="muted-small">
                     {clienteLimiteInsuficiente ? (
-                      <div style={{ color: 'var(--danger-color)', fontWeight: 600 }}>
+                      <div className="danger-strong">
                         Limite insuficiente: disponível R$ {clienteAvailable.toFixed(2)}. O restante será cobrado por outra forma de pagamento.
                       </div>
                     ) : (
-                      <div style={{ color: 'var(--success-color)' }}>
+                      <div className="success-strong">
                         Limite disponível: R$ {clienteAvailable.toFixed(2)}
                       </div>
                     )}
@@ -530,7 +530,7 @@ export default function VendasPage() {
           </div>
 
           <div className="card-content">
-            <div className="form-group" style={{ flexShrink: 0 }}>
+            <div className="form-group form-group-no-shrink">
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -620,11 +620,11 @@ export default function VendasPage() {
           </div>
         </div>
       ) : (
-        <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-          <div style={{ textAlign: 'center' }}>
+        <div className="card center-card">
+          <div className="center-text">
             <h3 className="font-bold">Venda concluída</h3>
             <p className="text-sm text-muted">A venda foi finalizada com sucesso.</p>
-            <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+            <div className="center-actions">
               <button className="btn btn-outline" onClick={() => {
                 // reiniciar estado para nova venda
                 setVendaConcluida(false)
@@ -642,9 +642,9 @@ export default function VendasPage() {
       {/* Carrinho PDV */}
       <div className="card">
         {/* Header do Carrinho */}
-        <div className="card-header" style={{ padding: "1rem", borderBottom: "2px solid var(--border)" }}>
+        <div className="card-header card-header-custom">
           <div className="flex items-center justify-between">
-            <h2 className="card-title flex items-center gap-2" style={{ margin: 0, fontSize: "1.25rem" }}>
+            <h2 className="card-title flex items-center gap-2 card-title-large">
               <ShoppingCart size={20} />
               PDV - Carrinho
             </h2>
@@ -654,35 +654,21 @@ export default function VendasPage() {
           </div>
           
           {/* Botão Identificar Cliente no topo do carrinho */}
-          <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border)' }}>
+          <div className="section-top-border">
             {!clienteSelecionado ? (
               <button
                 type="button"
-                className="btn btn-outline"
-                style={{ width: '100%', fontSize: '0.9rem' }}
+                className="btn btn-outline full-width-small"
                 onClick={() => setShowClienteModal(true)}
                 disabled={carrinho.length === 0}
               >
-                <Plus size={16} style={{ marginRight: '0.5rem' }} />
+                <Plus size={16} className="icon-margin-right" />
                 Identificar Cliente
               </button>
             ) : (
               <div className="client-identified">
                 <div className="client-identified-content">
-                  <div className="client-identified-icon" style={{
-                    width: '1.5rem',
-                    height: '1.5rem',
-                    background: 'var(--primary)',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                    fontSize: '0.875rem',
-                    fontWeight: 'bold'
-                  }}>
-                    ✓
-                  </div>
+                  <div className="client-identified-icon client-identified-icon-style">✓</div>
                   
                   <div className="client-identified-name">
                     Cliente: {clienteSelecionado.nome}
@@ -705,61 +691,34 @@ export default function VendasPage() {
         </div>
 
         {/* Lista de Itens */}
-        <div 
-          style={{ 
-            maxHeight: "280px", 
-            overflowY: "auto", 
-            background: "var(--background)",
-            borderBottom: "1px solid var(--border)"
-          }}
-        >
+  <div className="cart-list-scroll">
           {carrinho.length === 0 ? (
-            <div className="text-center p-8" style={{ color: "var(--text-muted)" }}>
-              <ShoppingCart size={48} style={{ opacity: 0.3, margin: "0 auto 1rem" }} />
-              <p style={{ margin: 0, fontSize: "1.1rem" }}>Carrinho vazio</p>
-              <p style={{ margin: "0.5rem 0 0", fontSize: "0.9rem" }}>Escaneie ou busque produtos para adicionar</p>
+            <div className="text-center p-8 empty-cart-muted">
+              <ShoppingCart size={48} className="empty-cart-icon" />
+              <p className="empty-cart-title">Carrinho vazio</p>
+              <p className="empty-cart-sub">Escaneie ou busque produtos para adicionar</p>
             </div>
           ) : (
-            <div style={{ padding: "0.5rem 0" }}>
+            <div className="section-padding-y">
               {carrinho.map((item, index) => (
                 <div 
                   key={item.produto.id} 
-                  className="pdv-item"
-                  style={{
-                    padding: "0.75rem 1rem",
-                    borderBottom: index < carrinho.length - 1 ? "1px solid var(--border)" : "none",
-                    background: index % 2 === 0 ? "transparent" : "rgba(0,0,0,0.02)"
-                  }}
+                  className="pdv-item list-item-row"
                 >
                   {/* Linha principal do produto */}
                   <div className="flex items-start justify-between mb-2">
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div className="font-semibold" style={{ 
-                        fontSize: "0.95rem", 
-                        lineHeight: "1.2",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap"
-                      }}>
+                    <div className="flex-grow-min">
+                      <div className="font-semibold list-item-title">
                         {item.produto.nome}
                       </div>
-                      <div style={{ 
-                        fontSize: "0.8rem", 
-                        color: "var(--text-muted)",
-                        fontFamily: "monospace"
-                      }}>
+                      <div className="list-item-sub muted-small monospace">
                         {item.produto.codigo_barras}
                       </div>
                     </div>
 
                     <button 
-                      className="btn btn-xs btn-danger" 
+                      className="btn btn-xs btn-danger btn-remove-item" 
                       onClick={() => removerDoCarrinho(item.produto.id)}
-                      style={{ 
-                        padding: "0.25rem", 
-                        minWidth: "auto",
-                        marginLeft: "0.5rem"
-                      }}
                       title="Remover item"
                     >
                       <Trash2 size={12} />
@@ -769,51 +728,22 @@ export default function VendasPage() {
                   {/* Linha de quantidade e valores */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
-                        R$ {Number(item.produto.preco).toFixed(2)} un
-                      </div>
+                      <div className="muted-small">R$ {Number(item.produto.preco).toFixed(2)} un</div>
                       
                       {/* Controles de quantidade */}
-                      <div className="flex items-center" style={{ 
-                        border: "1px solid var(--border)", 
-                        borderRadius: "0.25rem",
-                        background: "white"
-                      }}>
+                      <div className="flex items-center qty-control">
                         <button 
                           className="btn-qty" 
                           onClick={() => alterarQuantidade(item.produto.id, item.quantidade - 1)}
-                          style={{
-                            border: "none",
-                            background: "none",
-                            padding: "0.25rem 0.5rem",
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center"
-                          }}
                         >
                           <Minus size={12} />
                         </button>
-                        <div style={{ 
-                          padding: "0.25rem 0.75rem",
-                          borderLeft: "1px solid var(--border)",
-                          borderRight: "1px solid var(--border)",
-                          minWidth: "3rem",
-                          textAlign: "center",
-                          fontWeight: "600"
-                        }}>
+                        <div className="qty-value">
                           {item.quantidade}
                         </div>
                         <button 
                           className="btn-qty" 
                           onClick={() => alterarQuantidade(item.produto.id, item.quantidade + 1)}
-                          style={{
-                            border: "none",
-                            background: "none",
-                            padding: "0.25rem 0.5rem",
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center"
-                          }}
                         >
                           <Plus size={12} />
                         </button>
@@ -821,14 +751,7 @@ export default function VendasPage() {
                     </div>
 
                     {/* Subtotal do item */}
-                    <div className="font-bold" style={{ 
-                      fontSize: "1rem", 
-                      color: "var(--primary-color)",
-                      minWidth: "5rem",
-                      textAlign: "right"
-                    }}>
-                      R$ {Number(item.subtotal).toFixed(2)}
-                    </div>
+                    <div className="font-bold item-subtotal">R$ {Number(item.subtotal).toFixed(2)}</div>
                   </div>
                 </div>
               ))}
@@ -838,18 +761,13 @@ export default function VendasPage() {
 
         {/* Seção de Desconto */}
         {carrinho.length > 0 && (
-          <div style={{ 
-            padding: "1rem", 
-            background: "var(--surface)",
-            borderBottom: "1px solid var(--border)"
-          }}>
-            <div className="flex items-center gap-2 mb-2">
-              <label className="font-semibold" style={{ fontSize: "0.9rem" }}>Desconto:</label>
-              <select 
+          <div className="section-surface-1">
+              <div className="flex items-center gap-2 mb-2">
+              <label className="font-semibold label-small">Desconto:</label>
+                <select 
                 className="form-select" 
                 value={discountType} 
                 onChange={(e) => setDiscountType(e.target.value as any)}
-                style={{ fontSize: "0.85rem", padding: "0.25rem 0.5rem" }}
               >
                 <option value="none">Sem desconto</option>
                 <option value="valor">Valor (R$)</option>
@@ -860,12 +778,7 @@ export default function VendasPage() {
                 <input
                   type="number"
                   step="0.01"
-                  className="form-input"
-                  style={{ 
-                    width: "7rem", 
-                    fontSize: "0.85rem", 
-                    padding: "0.25rem 0.5rem" 
-                  }}
+                  className="form-input input-width-7"
                   value={discountValue}
                   onChange={(e) => setDiscountValue(e.target.value)}
                   placeholder={discountType === "percent" ? "0-100" : "0.00"}
@@ -874,11 +787,7 @@ export default function VendasPage() {
             </div>
 
             {discountAmount > 0 && (
-              <div style={{ 
-                fontSize: "0.85rem", 
-                color: "var(--warning-color)",
-                fontWeight: "500"
-              }}>
+              <div className="muted-small muted-warning fw-600">
                 Desconto aplicado: -R$ {Number(discountAmount).toFixed(2)}
               </div>
             )}
@@ -887,51 +796,31 @@ export default function VendasPage() {
 
         {/* Resumo de Totais */}
         {carrinho.length > 0 && (
-          <div style={{ 
-            padding: "1rem",
-            background: "var(--surface)",
-            borderBottom: "2px solid var(--border)"
-          }}>
-            <div className="flex justify-between mb-2" style={{ fontSize: "0.9rem" }}>
+          <div className="section-surface-2">
+            <div className="flex justify-between mb-2 muted-small">
               <span>Subtotal:</span>
               <span>R$ {Number(totalBeforeDiscount).toFixed(2)}</span>
             </div>
             
             {discountAmount > 0 && (
-              <div className="flex justify-between mb-2" style={{ 
-                fontSize: "0.9rem",
-                color: "var(--warning-color)"
-              }}>
+              <div className="flex justify-between mb-2 muted-small muted-warning">
                 <span>Desconto:</span>
                 <span>-R$ {Number(discountAmount).toFixed(2)}</span>
               </div>
             )}
 
-            <div className="flex justify-between" style={{ 
-              fontSize: "1.5rem",
-              fontWeight: "bold",
-              color: "var(--primary-color)",
-              borderTop: "1px solid var(--border)",
-              paddingTop: "0.5rem"
-            }}>
+            <div className="flex justify-between total-display">
               <span>TOTAL:</span>
               <span>R$ {Number(total).toFixed(2)}</span>
             </div>
           </div>
         )}
 
-        {/* Botão Finalizar / Estado de venda concluída */}
-        <div style={{ padding: "1rem" }}>
+    {/* Botão Finalizar / Estado de venda concluída */}
+        <div className="section-padding">
           {!vendaConcluida ? (
             <button
-              className="btn btn-success"
-              style={{ 
-                width: "100%", 
-                fontSize: "1.1rem",
-                padding: "0.75rem",
-                fontWeight: "bold",
-                borderRadius: "0.5rem"
-              }}
+              className="btn btn-success btn-full"
               onClick={abrirModalPagamento}
               disabled={carrinho.length === 0}
             >
@@ -943,8 +832,7 @@ export default function VendasPage() {
           ) : (
             <div>
               <button
-                className="btn btn-primary"
-                style={{ width: '100%', fontSize: "1rem", padding: "0.6rem" }}
+                className="btn btn-primary btn-full"
                 onClick={() => {
                   if (cupomTexto) {
                       const w = window.open('', '_blank')
@@ -977,75 +865,18 @@ export default function VendasPage() {
 
       {/* Modal de Busca de Cliente */}
       {showClienteModal && (
-        <div
-          className="modal-backdrop"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'rgba(0,0,0,0.6)',
-            zIndex: 1100,
-            padding: '1rem',
-            backdropFilter: 'blur(4px)'
-          }}
-          onClick={() => {
-            setShowClienteModal(false)
-            setBuscarClienteQuery('')
-          }}
-        >
-          <div
-            className="modal"
-            role="dialog"
-            aria-modal="true"
-            style={{
-              maxWidth: '600px',
-              width: '100%',
-              background: 'var(--card)',
-              borderRadius: '1rem',
-              boxShadow: '0 25px 50px rgba(0,0,0,0.25)',
-              overflow: 'hidden'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="modal-header" style={{ 
-              padding: '1.5rem', 
-              borderBottom: '1px solid var(--border)',
-              background: 'var(--surface)'
-            }}>
-              <h3 style={{ 
-                margin: 0, 
-                fontSize: '1.5rem', 
-                fontWeight: '700',
-                color: 'var(--foreground)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem'
-              }}>
-                <div style={{
-                  width: '2.5rem',
-                  height: '2.5rem',
-                  background: 'var(--primary)',
-                  borderRadius: '0.5rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white'
-                }}>
-                  👤
-                </div>
+        <div className="modal-backdrop" onClick={() => { setShowClienteModal(false); setBuscarClienteQuery('') }}>
+          <div className="modal modal-large" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">
+                <div className="modal-avatar">👤</div>
                 Selecionar Cliente
               </h3>
             </div>
             
-            <div className="modal-body" style={{ padding: '1.5rem' }}>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label className="form-label" style={{ 
-                  fontWeight: '600', 
-                  marginBottom: '0.75rem',
-                  display: 'block'
-                }}>
+            <div className="modal-body">
+              <div className="mb-2">
+                <label className="form-label">
                   Buscar cliente:
                 </label>
                 <input
@@ -1055,19 +886,10 @@ export default function VendasPage() {
                   value={buscarClienteQuery}
                   onChange={(e) => setBuscarClienteQuery(e.target.value)}
                   autoFocus
-                  style={{
-                    fontSize: '1rem',
-                    padding: '0.875rem'
-                  }}
                 />
               </div>
               
-              <div style={{ 
-                maxHeight: '400px', 
-                overflowY: 'auto', 
-                paddingRight: '0.5rem',
-                marginRight: '-0.5rem'
-              }}>
+              <div className="modal-list-container">
                 {clientes
                   .filter(cliente => 
                     buscarClienteQuery === '' || 
@@ -1102,32 +924,18 @@ export default function VendasPage() {
                   buscarClienteQuery === '' || 
                   cliente.nome.toLowerCase().includes(buscarClienteQuery.toLowerCase())
                 ).length === 0 && (
-                  <div style={{ 
-                    textAlign: 'center', 
-                    padding: '3rem 2rem', 
-                    color: 'var(--muted-foreground)' 
-                  }}>
-                    <div style={{ fontSize: '3rem', marginBottom: '1rem', opacity: '0.3' }}>🔍</div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.5rem' }}>
-                      {buscarClienteQuery === '' ? 'Carregando clientes...' : 'Nenhum cliente encontrado'}
-                    </div>
+                  <div className="empty-client-state">
+                    <div className="empty-client-icon">🔍</div>
+                    <div className="empty-client-title">{buscarClienteQuery === '' ? 'Carregando clientes...' : 'Nenhum cliente encontrado'}</div>
                     {buscarClienteQuery !== '' && (
-                      <div style={{ fontSize: '0.9rem' }}>
-                        Tente buscar com outro nome
-                      </div>
+                      <div className="empty-client-sub">Tente buscar com outro nome</div>
                     )}
                   </div>
                 )}
               </div>
             </div>
             
-            <div className="modal-footer" style={{ 
-              padding: '1rem 1.5rem', 
-              borderTop: '1px solid var(--border)',
-              background: 'var(--surface)',
-              display: 'flex', 
-              justifyContent: 'flex-end' 
-            }}>
+            <div className="modal-footer">
               <button
                 type="button"
                 className="btn btn-outline"
@@ -1148,26 +956,20 @@ export default function VendasPage() {
         <div className="modal-overlay">
           <div className="modal payment-modal">
             <div className="payment-content">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold">Finalizar Pagamento</h3>
-                <button 
-                  className="btn btn-sm btn-outline"
-                  onClick={() => fecharModalPagamento()}
-                >
-                  <X size={16} />
-                </button>
-              </div>
-
-              <div className="mb-4 p-4 rounded" style={{ background: "var(--surface)" }}>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">
-                    Total: R$ {Number(total).toFixed(2)}
-                  </div>
-                  <div className="text-sm text-muted mt-1">
-                    {carrinho.length} {carrinho.length === 1 ? "item" : "itens"}
-                  </div>
+                <div className="modal-header-row">
+                  <h3 className="modal-title-text">Finalizar Pagamento</h3>
+                  <button 
+                    className="btn btn-sm btn-outline modal-close-btn"
+                    onClick={() => fecharModalPagamento()}
+                  >
+                    <X size={16} />
+                  </button>
                 </div>
-              </div>
+
+                <div className="payment-summary-card payment-summary-center">
+                  <div className="payment-total-amount">Total: R$ {Number(total).toFixed(2)}</div>
+                  <div className="payment-items-count">{carrinho.length} {carrinho.length === 1 ? "item" : "itens"}</div>
+                </div>
 
             {/* Gerenciador de Múltiplas Formas de Pagamento */}
             <div className="form-group mb-3">
@@ -1176,14 +978,14 @@ export default function VendasPage() {
                 {pagamentos.map((p, idx) => (
                   <div key={idx} className="flex items-center gap-2">
                     <select
-                      className="form-select"
+                      className="form-select select-45"
                       value={p.tipo}
                       onChange={(e) => {
                         const newPag = [...pagamentos]
                         newPag[idx].tipo = e.target.value as any
                         setPagamentos(newPag)
                       }}
-                      style={{ width: "45%" }}
+                    
                     >
                       <option value="dinheiro">💵 Dinheiro</option>
                       <option value="cartao_debito">💳 Cartão Débito</option>
@@ -1194,7 +996,7 @@ export default function VendasPage() {
 
                     <input
                       type="text"
-                      className={`form-input ${activeInputIndex === idx ? 'keyboard-active' : ''}`}
+                      className={`form-input ${activeInputIndex === idx ? 'keyboard-active' : ''} input-35`}
                       value={p.valor}
                       onChange={(e) => {
                         const newPag = [...pagamentos]
@@ -1209,7 +1011,6 @@ export default function VendasPage() {
                         setPagamentos(newPag)
                       }}
                       placeholder="0,00"
-                      style={{ width: "35%", marginLeft: "0.5rem" }}
                       readOnly={activeInputIndex === idx}
                     />
 
@@ -1244,21 +1045,21 @@ export default function VendasPage() {
             </div>
 
             {/* Resumo de Pagamentos */}
-            <div className="mb-4 p-3 rounded" style={{ background: "var(--surface)" }}>
-              <div className="flex justify-between mb-2">
+            <div className="payment-summary-box">
+              <div className="summary-row">
                 <span>Total dos pagamentos:</span>
                 <span className="font-semibold">R$ {Number(sumPagamentos).toFixed(2)}</span>
               </div>
-              
+
               {sumPagamentos > total && (
-                <div className="flex justify-between mb-2" style={{ color: "var(--success-color)" }}>
+                <div className="summary-row text-success">
                   <span>Troco:</span>
                   <span className="font-semibold">R$ {Number(troco).toFixed(2)}</span>
                 </div>
               )}
-              
+
               {sumPagamentos < totalRounded && (
-                <div className="flex justify-between" style={{ color: "var(--danger-color)" }}>
+                <div className="summary-row text-danger">
                   <span>Falta pagar:</span>
                   <span className="font-semibold">R$ {Number(restante).toFixed(2)}</span>
                 </div>
@@ -1267,17 +1068,9 @@ export default function VendasPage() {
 
             {/* Aviso: Troco apenas em dinheiro */}
             {(excessoNaoDinheiro || (temMultiplasFormas && sumPagamentos > totalRounded && totalDinheiro === 0)) && (
-              <div style={{
-                border: `1px solid rgba(239, 68, 68, 0.3)`,
-                background: 'rgba(239, 68, 68, 0.05)',
-                padding: '0.75rem',
-                borderRadius: '0.5rem',
-                marginBottom: '0.75rem'
-              }}>
-                <div style={{ fontWeight: 600, color: 'var(--danger-color)', marginBottom: '0.25rem', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  🚫 Valor superior não permitido
-                </div>
-                <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+              <div className="alert-danger">
+                <div className="alert-title">🚫 Valor superior não permitido</div>
+                <div className="alert-body">
                   {excessoNaoDinheiro ? (
                     <>
                       Formas de pagamento como <strong>cartão</strong>, <strong>PIX</strong> e <strong>fiado</strong> não permitem valores superiores ao total da compra.
@@ -1305,18 +1098,12 @@ export default function VendasPage() {
 
             {/* Aviso em card: saldo insuficiente (unificado para evitar redundância) */}
             {clienteSelecionado && clienteAvailable < totalRounded && (
-              <div style={{
-                border: `1px solid rgba(255, 193, 7, 0.3)`,
-                background: 'rgba(255, 193, 7, 0.05)',
-                padding: '0.75rem',
-                borderRadius: '0.5rem',
-                marginBottom: '0.75rem'
-              }}>
-                <div style={{ fontWeight: 600, color: 'var(--warning-color)', marginBottom: '0.25rem', fontSize: '1rem' }}>⚠️ Crédito insuficiente</div>
-                <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+              <div className="alert-warning">
+                <div className="alert-title">⚠️ Crédito insuficiente</div>
+                <div className="alert-body mb-0-5">
                   Cliente: <strong>{clienteSelecionado.nome}</strong>
                 </div>
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                <div className="alert-body">
                   Crédito disponível: <strong>R$ {clienteAvailable.toFixed(2)}</strong> • Total da compra: <strong>R$ {totalRounded.toFixed(2)}</strong>
                   {pagamentos.some((p) => p.tipo === 'fiado') && totalFiadoSelected > clienteAvailable && (
                     <>
@@ -1339,22 +1126,16 @@ export default function VendasPage() {
               <div className="form-group mb-3">
                 <label className="form-label font-semibold">Cliente para fiado</label>
                 {clienteSelecionado ? (
-                  <div style={{ 
-                    padding: '0.75rem', 
-                    background: 'var(--surface)', 
-                    borderRadius: '0.375rem', 
-                    border: '1px solid var(--border)' 
-                  }}>
-                    <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>
+                  <div className="client-fiado-box">
+                    <div className="client-fiado-name">
                       {clienteSelecionado.nome}
                     </div>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    <div className="client-fiado-meta">
                       Crédito disponível: R$ {clienteAvailable.toFixed(2)}
                     </div>
                     <button
                       type="button"
-                      className="btn btn-xs btn-outline"
-                      style={{ marginTop: '0.25rem' }}
+                      className="btn btn-xs btn-outline mt-1"
                       onClick={() => setClienteSelecionado(null)}
                     >
                       Alterar cliente
@@ -1412,7 +1193,7 @@ export default function VendasPage() {
             )}
 
             {/* Botões do Modal */}
-            <div className="flex gap-2 justify-end mt-4">
+            <div className="payment-actions">
               <button 
                 type="button" 
                 className="btn btn-outline" 
@@ -1429,7 +1210,7 @@ export default function VendasPage() {
               >
                 {loading ? (
                   <>
-                    <div className="loading" style={{ width: "16px", height: "16px" }}></div>
+                    <div className="loading loading-small"></div>
                     Processando...
                   </>
                 ) : (
@@ -1443,7 +1224,7 @@ export default function VendasPage() {
             </div>
 
             {/* Teclado Virtual */}
-            <div className="payment-keyboard">
+            <div className="payment-keyboard-wrapper">
               <VirtualKeyboard
                 onKeyPress={handleKeyPress}
                 onBackspace={handleBackspace}

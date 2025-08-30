@@ -299,7 +299,7 @@ export async function POST(request: NextRequest) {
       const linhaThin = '----------------------------------------\n'
 
       texto += linha
-      texto += pad('BUDEGA AIRTON', 40, 'center') + '\n'
+      texto += pad('PDV AIRTON', 40, 'center') + '\n'
       texto += pad('CNPJ: 00.000.000/0000-00', 40, 'center') + '\n'
       texto += pad('Povoado Jurema, 123', 40, 'center') + '\n'
       texto += pad('Tel: (00) 00000-0000', 40, 'center') + '\n'
