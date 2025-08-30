@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { toast } from '@/hooks/use-toast'
 import ConfirmationModal from '@/components/confirmation-modal'
+import VirtualKeyboard from '@/components/virtual-keyboard'
 import Loading from "@/components/loading"
 import SearchHint from "@/components/search-hint"
 import { Search, Plus, Minus, Trash2, ShoppingCart, X } from "lucide-react"
@@ -60,6 +61,10 @@ export default function VendasPage() {
   // Discount support: type can be 'none' | 'valor' | 'percent'
   const [discountType, setDiscountType] = useState<"none" | "valor" | "percent">("none")
   const [discountValue, setDiscountValue] = useState("")
+
+  // Estados para teclado virtual
+  const [activeInputIndex, setActiveInputIndex] = useState<number | null>(null)
+  const [activeInputField, setActiveInputField] = useState<string>("")
 
   const totalBeforeDiscount = carrinho.reduce((sum, item) => sum + Number(item.subtotal), 0)
   const parsedDiscount = Math.max(0, Number.parseFloat(discountValue || "0")) || 0
@@ -281,7 +286,70 @@ export default function VendasPage() {
     // Resetar modal e desfazer transação
     setPagamentos([{ tipo: "dinheiro", valor: "" }])
     setShowPagamentoModal(false)
+    // Resetar teclado virtual
+    setActiveInputIndex(null)
+    setActiveInputField("")
     // Note: não resetamos clienteSelecionado aqui pois pode ter sido selecionado via botão "Identificar Cliente"
+  }
+
+  // Funções do teclado virtual
+  const handleInputFocus = (index: number, fieldName: string) => {
+    setActiveInputIndex(index)
+    setActiveInputField(fieldName)
+  }
+
+  const handleKeyPress = (key: string) => {
+    if (activeInputIndex === null) return
+
+    const currentPagamento = pagamentos[activeInputIndex]
+    if (!currentPagamento) return
+
+    let currentValue = currentPagamento.valor || ""
+    
+    if (key === ".") {
+      // Adicionar vírgula decimal se não existir
+      if (!currentValue.includes(",")) {
+        currentValue += ","
+      }
+    } else {
+      // Para números, simplesmente adicionar
+      currentValue += key
+    }
+
+    // Limitar a 2 casas decimais após a vírgula
+    if (currentValue.includes(",")) {
+      const parts = currentValue.split(",")
+      if (parts[1] && parts[1].length > 2) {
+        currentValue = parts[0] + "," + parts[1].substring(0, 2)
+      }
+    }
+
+    // Atualizar o valor
+    const newPagamentos = [...pagamentos]
+    newPagamentos[activeInputIndex].valor = currentValue
+    setPagamentos(newPagamentos)
+  }
+
+  const handleBackspace = () => {
+    if (activeInputIndex === null) return
+
+    const currentPagamento = pagamentos[activeInputIndex]
+    if (!currentPagamento) return
+
+    let currentValue = currentPagamento.valor || ""
+    currentValue = currentValue.slice(0, -1)
+
+    const newPagamentos = [...pagamentos]
+    newPagamentos[activeInputIndex].valor = currentValue
+    setPagamentos(newPagamentos)
+  }
+
+  const handleClear = () => {
+    if (activeInputIndex === null) return
+
+    const newPagamentos = [...pagamentos]
+    newPagamentos[activeInputIndex].valor = ""
+    setPagamentos(newPagamentos)
   }
 
   const processarPagamento = async () => {
@@ -1075,27 +1143,28 @@ export default function VendasPage() {
       {/* Modal de Pagamento */}
       {showPagamentoModal && (
         <div className="modal-overlay">
-          <div className="modal" style={{ maxWidth: "40rem" }}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold">Finalizar Pagamento</h3>
-              <button 
-                className="btn btn-sm btn-outline"
-                onClick={() => fecharModalPagamento()}
-              >
-                <X size={16} />
-              </button>
-            </div>
+          <div className="modal payment-modal">
+            <div className="payment-content">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold">Finalizar Pagamento</h3>
+                <button 
+                  className="btn btn-sm btn-outline"
+                  onClick={() => fecharModalPagamento()}
+                >
+                  <X size={16} />
+                </button>
+              </div>
 
-            <div className="mb-4 p-4 rounded" style={{ background: "var(--surface)" }}>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary">
-                  Total: R$ {Number(total).toFixed(2)}
-                </div>
-                <div className="text-sm text-muted mt-1">
-                  {carrinho.length} {carrinho.length === 1 ? "item" : "itens"}
+              <div className="mb-4 p-4 rounded" style={{ background: "var(--surface)" }}>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-primary">
+                    Total: R$ {Number(total).toFixed(2)}
+                  </div>
+                  <div className="text-sm text-muted mt-1">
+                    {carrinho.length} {carrinho.length === 1 ? "item" : "itens"}
+                  </div>
                 </div>
               </div>
-            </div>
 
             {/* Gerenciador de Múltiplas Formas de Pagamento */}
             <div className="form-group mb-3">
@@ -1121,23 +1190,24 @@ export default function VendasPage() {
                     </select>
 
                     <input
-                      type="number"
-                      step="0.01"
-                      className="form-input"
+                      type="text"
+                      className={`form-input ${activeInputIndex === idx ? 'keyboard-active' : ''}`}
                       value={p.valor}
                       onChange={(e) => {
                         const newPag = [...pagamentos]
                         newPag[idx].valor = e.target.value
                         setPagamentos(newPag)
                       }}
+                      onFocus={() => handleInputFocus(idx, `Pagamento ${idx + 1}`)}
                       onBlur={() => {
                         const newPag = [...pagamentos]
-                        const parsed = Math.max(0, Number.parseFloat(newPag[idx].valor || "0") || 0)
-                        newPag[idx].valor = parsed.toFixed(2)
+                        const parsed = Math.max(0, Number.parseFloat(newPag[idx].valor?.replace(',', '.') || "0") || 0)
+                        newPag[idx].valor = parsed.toFixed(2).replace('.', ',')
                         setPagamentos(newPag)
                       }}
-                      placeholder="0.00"
+                      placeholder="0,00"
                       style={{ width: "35%" }}
+                      readOnly={activeInputIndex === idx}
                     />
 
                     {pagamentos.length > 1 && (
@@ -1328,6 +1398,17 @@ export default function VendasPage() {
                   </>
                 )}
               </button>
+            </div>
+            </div>
+
+            {/* Teclado Virtual */}
+            <div className="payment-keyboard">
+              <VirtualKeyboard
+                onKeyPress={handleKeyPress}
+                onBackspace={handleBackspace}
+                onClear={handleClear}
+                activeInput={activeInputIndex !== null ? `Pagamento ${activeInputIndex + 1}` : undefined}
+              />
             </div>
           </div>
         </div>
