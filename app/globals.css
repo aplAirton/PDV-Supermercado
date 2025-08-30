@@ -462,6 +462,10 @@
   padding: 1rem;
   position: relative;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  justify-content: space-between;
 }
 
 .client-identified::before {
@@ -474,35 +478,27 @@
   background: linear-gradient(90deg, var(--primary), var(--accent));
 }
 
-.client-identified-header {
+.client-identified-content {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
-  font-weight: 700;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.client-identified-icon {
   color: var(--primary);
-  font-size: 1rem;
+  flex-shrink: 0;
 }
 
 .client-identified-name {
   font-weight: 700;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   color: var(--foreground);
-  margin-bottom: 0.25rem;
-}
-
-.client-identified-info {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-  font-size: 0.85rem;
-  color: var(--muted-foreground);
-  margin-bottom: 0.75rem;
+  margin: 0;
 }
 
 .client-identified-actions {
-  display: flex;
-  justify-content: flex-end;
+  flex-shrink: 0;
 }
 
 /* Modal enhancements */

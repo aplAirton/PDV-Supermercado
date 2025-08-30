@@ -642,42 +642,24 @@ export default function VendasPage() {
               </button>
             ) : (
               <div className="client-identified">
-                <div className="client-identified-header">
-                  <div style={{
-                    width: '1.25rem',
-                    height: '1.25rem',
+                <div className="client-identified-content">
+                  <div className="client-identified-icon" style={{
+                    width: '1.5rem',
+                    height: '1.5rem',
                     background: 'var(--primary)',
                     borderRadius: '50%',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     color: 'white',
-                    fontSize: '0.75rem',
+                    fontSize: '0.875rem',
                     fontWeight: 'bold'
                   }}>
                     ✓
                   </div>
-                  Cliente Identificado
-                </div>
-                
-                <div className="client-identified-name">
-                  {clienteSelecionado.nome}
-                </div>
-                
-                <div className="client-identified-info">
-                  <div>
-                    <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>ID:</div>
-                    <div>{clienteSelecionado.id}</div>
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>Crédito:</div>
-                    <div style={{ 
-                      color: Math.max(0, clienteSelecionado.limite_credito - (clienteSelecionado.debito_atual || 0)) > 0 
-                        ? '#059669' : '#dc2626',
-                      fontWeight: '600'
-                    }}>
-                      R$ {Math.max(0, clienteSelecionado.limite_credito - (clienteSelecionado.debito_atual || 0)).toFixed(2)}
-                    </div>
+                  
+                  <div className="client-identified-name">
+                    Cliente: {clienteSelecionado.nome}
                   </div>
                 </div>
                 
@@ -686,13 +668,8 @@ export default function VendasPage() {
                     type="button"
                     className="btn btn-sm btn-outline"
                     onClick={() => setClienteSelecionado(null)}
-                    title="Remover identificação"
-                    style={{
-                      padding: '0.5rem 1rem',
-                      fontSize: '0.8rem'
-                    }}
+                    title="Alterar cliente identificado"
                   >
-                    <X size={14} />
                     Alterar
                   </button>
                 </div>
@@ -1206,7 +1183,7 @@ export default function VendasPage() {
                         setPagamentos(newPag)
                       }}
                       placeholder="0,00"
-                      style={{ width: "35%" }}
+                      style={{ width: "35%", marginLeft: "0.5rem" }}
                       readOnly={activeInputIndex === idx}
                     />
 
