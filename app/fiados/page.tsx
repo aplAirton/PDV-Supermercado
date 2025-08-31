@@ -315,8 +315,8 @@ export default function FiadosPage() {
               <head>
                 <title>Extrato de Fiado - ${extratoCliente.nome}</title>
                 <style>
-                  body { font-family: 'Courier New', monospace; font-size: 12px; margin: 20px; }
-                  pre { white-space: pre-wrap; word-wrap: break-word; }
+                  body { font-size: 12px; margin: 20px; }
+                  pre { white-space: pre-wrap; word-wrap: break-word; font-family: monospace; }
                   .print-button { margin-bottom: 20px; }
                   @media print { .print-button { display: none; } }
                 </style>
@@ -326,7 +326,7 @@ export default function FiadosPage() {
                   <button onclick="window.print()">Imprimir</button>
                   <button onclick="window.close()">Fechar</button>
                 </div>
-                <pre>${data.cupom}</pre>
+                <pre class="cupom-pre">${data.cupom}</pre>
               </body>
             </html>
           `)
@@ -356,7 +356,7 @@ export default function FiadosPage() {
       const data = await resp.json()
       const w = window.open('', '_blank')
       if (w) {
-        w.document.write(`<pre style="font-family: 'Courier New', Courier, monospace; white-space: pre-wrap;">${(data.conteudo_texto || '').replace(/</g,'&lt;')}</pre>`)
+  w.document.write(`<pre class="cupom-pre">${(data.conteudo_texto || '').replace(/</g,'&lt;')}</pre>`)
         w.document.close()
         try {
           w.focus()
@@ -389,7 +389,7 @@ export default function FiadosPage() {
 
     const w = window.open('', '_blank')
     if (w) {
-      w.document.write(`<pre style="font-family: 'Courier New', Courier, monospace; white-space: pre-wrap;">${lines.join('\n')}</pre>`)
+  w.document.write(`<pre class="cupom-pre">${lines.join('\n')}</pre>`)
       w.document.close()
       try {
         w.focus()

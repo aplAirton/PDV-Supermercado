@@ -1,7 +1,4 @@
-@import "tailwindcss";
-@import "tw-animate-css";
-
-@custom-variant dark (&:is(.dark *));
+/* Tailwind imports removed — projeto usa CSS puro com utilitários definidos manualmente below */
 
 /* theme variables updated for PDV - light, friendly palette */
 :root {
@@ -11,7 +8,7 @@
   --card-foreground: #0f172a;
   --popover: #ffffff;
   --popover-foreground: #0f172a;
-  --primary: #0ea5a4; /* teal */
+  --primary: #196be6; /* teal */
   --primary-foreground: #ffffff;
   --secondary: #f59e0b; /* amber */
   --secondary-foreground: #0f172a;
@@ -76,55 +73,20 @@
   --sidebar-ring: rgba(6, 182, 212, 0.12);
 }
 
-@theme inline {
-  /* optional: --font-sans, --font-serif, --font-mono if they are applied in the layout.tsx */
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
+* {
+  border: var(--border);
+  outline: none;
+}
+body {
+  background: var(--background);
+  color: var(--foreground);
 }
 
-@layer base {
-  * {
-    border: var(--border);
-    outline: none;
-  }
-  body {
-    background: var(--background);
-    color: var(--foreground);
-  }
+/* Global system font for the whole application (inputs, buttons, selects inherit) */
+html, body, input, button, select, textarea {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* App layout structure */
@@ -401,6 +363,9 @@
   gap: 1.5rem;
   height: 100vh;
   padding: 0.5rem;
+  /* Fonte do sistema para área PDV */
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.4;
 }
 
 /* Client selection styles */
@@ -1260,6 +1225,16 @@
 .text-primary { color: var(--primary) }
 
 /* Payment modal semantic classes (replaces Tailwind-like utilities in modal) */
+/* Row / layout semantic helpers (used to replace generic flex utilities in vendas page) */
+.row { display: flex; }
+.row-between { display:flex; align-items:center; justify-content:space-between; }
+.row-gap { display:flex; gap:0.5rem; align-items:center; }
+.row-gap-lg { display:flex; gap:0.75rem; align-items:center; }
+.row-start-between { display:flex; align-items:flex-start; justify-content:space-between; }
+.title-row { display:flex; align-items:center; gap:0.5rem; }
+
+.center-justify { display:flex; align-items:center; justify-content:center; gap:0.5rem; }
+
 .modal-header-row {
   display: flex;
   align-items: center;
@@ -1299,4 +1274,11 @@
 .summary-row { display:flex; justify-content:space-between; margin-bottom:0.5rem }
 .payment-actions { display:flex; gap:0.5rem; justify-content:flex-end; margin-top:1rem }
 .payment-keyboard-wrapper { margin-top: 1rem }
+
+
+/* Cupom fiscal (substitui estilos inline usados ao abrir nova janela) */
+.cupom-pre {
+  font-family: 'Courier New', Courier, monospace;
+  white-space: pre-wrap;
+}
 

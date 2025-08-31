@@ -65,9 +65,10 @@ export default function VendasPage() {
   // Estados para teclado virtual
   const [activeInputIndex, setActiveInputIndex] = useState<number | null>(null)
   const [activeInputField, setActiveInputField] = useState<string>("")
+  const searchInputRef = useRef<HTMLInputElement | null>(null)
 
   const totalBeforeDiscount = carrinho.reduce((sum, item) => sum + Number(item.subtotal), 0)
-  const parsedDiscount = Math.max(0, Number.parseFloat(discountValue || "0")) || 0
+  const parsedDiscount = Math.max(0, parseCurrency(discountValue || "0")) || 0
   let discountAmount = 0
   if (discountType === "valor") {
     discountAmount = Math.min(parsedDiscount, totalBeforeDiscount)
@@ -77,7 +78,18 @@ export default function VendasPage() {
   const total = Math.max(0, totalBeforeDiscount - discountAmount)
 
   // Helper: arredonda para centavos (evita problemas de comparação float)
-  const roundCents = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100
+  function roundCents(n: number): number {
+    return Math.round((n + Number.EPSILON) * 100) / 100
+  }
+  // Helper: parseia string de moeda que pode usar vírgula como separador decimal
+  function parseCurrency(v?: string): number {
+    if (!v) return 0
+    // remover espaços e substituir vírgula por ponto
+    const cleaned = String(v).trim().replace(/\s+/g, '').replace(',', '.')
+    const num = Number.parseFloat(cleaned)
+    if (Number.isNaN(num)) return 0
+    return roundCents(num)
+  }
   const totalRounded = roundCents(total)
 
   // disponibilidade do cliente selecionado (limite - débito atual)
@@ -86,7 +98,7 @@ export default function VendasPage() {
   // total pretendido em fiado (usado para avisos dentro do modal)
   const totalFiadoSelected = pagamentos
     .filter((p) => p.tipo === "fiado")
-    .reduce((s, p) => s + (Number.parseFloat(p.valor || "0") || 0), 0)
+    .reduce((s, p) => s + parseCurrency(p.valor), 0)
 
                 {/* Mensagem de limite do cliente selecionado (mostra erro no próprio card/modal) */}
                 {clienteSelecionado && pagamentos.some((p) => p.tipo === 'fiado') && (
@@ -102,7 +114,7 @@ export default function VendasPage() {
                     )}
                   </div>
                 )}
-  const sumPagamentosRaw = pagamentos.reduce((s, p) => s + (Number.parseFloat(p.valor || "0") || 0), 0)
+  const sumPagamentosRaw = pagamentos.reduce((s, p) => s + parseCurrency(p.valor), 0)
   const sumPagamentos = roundCents(sumPagamentosRaw)
   const restante = Math.max(0, roundCents(totalRounded - sumPagamentos))
   const troco = Math.max(0, roundCents(sumPagamentos - totalRounded))
@@ -110,8 +122,8 @@ export default function VendasPage() {
   // Validação de troco: apenas dinheiro permite valor superior ao total
   const pagamentosDinheiro = pagamentos.filter(p => p.tipo === "dinheiro")
   const pagamentosNaoDinheiro = pagamentos.filter(p => p.tipo !== "dinheiro")
-  const totalDinheiro = pagamentosDinheiro.reduce((s, p) => s + (Number.parseFloat(p.valor || "0") || 0), 0)
-  const totalNaoDinheiro = pagamentosNaoDinheiro.reduce((s, p) => s + (Number.parseFloat(p.valor || "0") || 0), 0)
+  const totalDinheiro = pagamentosDinheiro.reduce((s, p) => s + parseCurrency(p.valor), 0)
+  const totalNaoDinheiro = pagamentosNaoDinheiro.reduce((s, p) => s + parseCurrency(p.valor), 0)
   
   // Verificar se há excesso em formas não-dinheiro
   const excessoNaoDinheiro = totalNaoDinheiro > totalRounded
@@ -123,6 +135,13 @@ export default function VendasPage() {
 
   useEffect(() => {
     carregarClientes()
+  }, [])
+
+  // manter foco no campo de busca por padrão
+  useEffect(() => {
+    if (searchInputRef.current) {
+      try { searchInputRef.current.focus() } catch (e) { /* ignore */ }
+    }
   }, [])
 
   // Nova função de busca de produtos mais robusta
@@ -224,6 +243,7 @@ export default function VendasPage() {
       adicionarAoCarrinho(produto)
       setCodigoBusca("")
       setProdutos([])
+      try { searchInputRef.current?.focus() } catch (e) { /* ignore */ }
     } else {
       toast({ title: 'Produto não encontrado', description: 'Produto não encontrado!', variant: 'warning' })
     }
@@ -304,6 +324,7 @@ export default function VendasPage() {
     setActiveInputIndex(null)
     setActiveInputField("")
     // Note: não resetamos clienteSelecionado aqui pois pode ter sido selecionado via botão "Identificar Cliente"
+  try { searchInputRef.current?.focus() } catch (e) { /* ignore */ }
   }
 
   // Funções do teclado virtual
@@ -375,7 +396,7 @@ export default function VendasPage() {
     // Se houver pagamento fiado, precisa ter cliente selecionado
     const totalFiado = pagamentos
       .filter((p) => p.tipo === "fiado")
-      .reduce((s, p) => s + (Number.parseFloat(p.valor || "0") || 0), 0)
+      .reduce((s, p) => s + parseCurrency(p.valor), 0)
 
     if (totalFiado > 0 && !clienteSelecionado) {
       toast({ title: 'Cliente necessário', description: 'Selecione um cliente para venda fiado!', variant: 'destructive' })
@@ -419,7 +440,7 @@ export default function VendasPage() {
       const vendaData = {
         cliente_id: clienteSelecionado?.id || null,
         total: totalRounded,
-        pagamentos: pagamentos.map((p) => ({ tipo_pagamento: p.tipo, valor: Number.parseFloat(p.valor || "0") })),
+        pagamentos: pagamentos.map((p) => ({ tipo_pagamento: p.tipo, valor: parseCurrency(p.valor) })),
         troco,
         itens: carrinho.map((item) => ({
           produto_id: item.produto.id,
@@ -439,8 +460,9 @@ export default function VendasPage() {
         toast({ title: 'Venda finalizada', description: 'Venda finalizada com sucesso!', variant: 'success' })
         setCarrinho([])
         setClienteSelecionado(null)
-        setPagamentos([{ tipo: "dinheiro", valor: "" }])
-        setShowPagamentoModal(false)
+  setPagamentos([{ tipo: "dinheiro", valor: "" }])
+  setShowPagamentoModal(false)
+  try { searchInputRef.current?.focus() } catch (e) { }
         // Atualiza a listagem atual (caso haja uma busca ativa)
         if (codigoBusca && codigoBusca.trim().length >= 2) {
           buscarProdutos(codigoBusca, 'search')
@@ -530,9 +552,10 @@ export default function VendasPage() {
           </div>
 
           <div className="card-content">
-            <div className="form-group form-group-no-shrink">
-                <div className="flex gap-2">
+      <div className="form-group form-group-no-shrink">
+        <div className="row row-gap">
                   <input
+                    ref={searchInputRef}
                     type="text"
                     className="form-input"
                     placeholder="Código de barras ou nome do produto"
@@ -642,9 +665,9 @@ export default function VendasPage() {
       {/* Carrinho PDV */}
       <div className="card">
         {/* Header do Carrinho */}
-        <div className="card-header card-header-custom">
-          <div className="flex items-center justify-between">
-            <h2 className="card-title flex items-center gap-2 card-title-large">
+          <div className="card-header card-header-custom">
+          <div className="row row-between">
+            <h2 className="card-title title-row card-title-large">
               <ShoppingCart size={20} />
               PDV - Carrinho
             </h2>
@@ -706,7 +729,7 @@ export default function VendasPage() {
                   className="pdv-item list-item-row"
                 >
                   {/* Linha principal do produto */}
-                  <div className="flex items-start justify-between mb-2">
+                  <div className="row-start-between mb-2">
                     <div className="flex-grow-min">
                       <div className="font-semibold list-item-title">
                         {item.produto.nome}
@@ -726,12 +749,12 @@ export default function VendasPage() {
                   </div>
 
                   {/* Linha de quantidade e valores */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+                  <div className="row row-start-between">
+                    <div className="row row-gap-lg">
                       <div className="muted-small">R$ {Number(item.produto.preco).toFixed(2)} un</div>
                       
                       {/* Controles de quantidade */}
-                      <div className="flex items-center qty-control">
+                      <div className="qty-control">
                         <button 
                           className="btn-qty" 
                           onClick={() => alterarQuantidade(item.produto.id, item.quantidade - 1)}
@@ -762,7 +785,7 @@ export default function VendasPage() {
         {/* Seção de Desconto */}
         {carrinho.length > 0 && (
           <div className="section-surface-1">
-              <div className="flex items-center gap-2 mb-2">
+              <div className="row row-gap-lg mb-2">
               <label className="font-semibold label-small">Desconto:</label>
                 <select 
                 className="form-select" 
@@ -797,19 +820,19 @@ export default function VendasPage() {
         {/* Resumo de Totais */}
         {carrinho.length > 0 && (
           <div className="section-surface-2">
-            <div className="flex justify-between mb-2 muted-small">
+            <div className="row row-between mb-2 muted-small">
               <span>Subtotal:</span>
               <span>R$ {Number(totalBeforeDiscount).toFixed(2)}</span>
             </div>
             
             {discountAmount > 0 && (
-              <div className="flex justify-between mb-2 muted-small muted-warning">
+              <div className="row row-between mb-2 muted-small muted-warning">
                 <span>Desconto:</span>
                 <span>-R$ {Number(discountAmount).toFixed(2)}</span>
               </div>
             )}
 
-            <div className="flex justify-between total-display">
+            <div className="row row-between total-display">
               <span>TOTAL:</span>
               <span>R$ {Number(total).toFixed(2)}</span>
             </div>
@@ -819,12 +842,12 @@ export default function VendasPage() {
     {/* Botão Finalizar / Estado de venda concluída */}
         <div className="section-padding">
           {!vendaConcluida ? (
-            <button
+              <button
               className="btn btn-success btn-full"
               onClick={abrirModalPagamento}
               disabled={carrinho.length === 0}
             >
-              <div className="flex items-center justify-center gap-2">
+              <div className="center-justify">
                 <ShoppingCart size={20} />
                 FINALIZAR VENDA - R$ {Number(total).toFixed(2)}
               </div>
@@ -837,7 +860,7 @@ export default function VendasPage() {
                   if (cupomTexto) {
                       const w = window.open('', '_blank')
                       if (w) {
-                        w.document.write(`<pre style="font-family: 'Courier New', Courier, monospace; white-space: pre-wrap;">${cupomTexto.replace(/</g,'&lt;')}</pre>`) 
+                        w.document.write(`<pre class="cupom-pre">${cupomTexto.replace(/</g,'&lt;')}</pre>`) 
                         w.document.close()
                         // Tenta abrir a janela de impressão automaticamente e fecha a janela ao final
                         try {
@@ -865,7 +888,7 @@ export default function VendasPage() {
 
       {/* Modal de Busca de Cliente */}
       {showClienteModal && (
-        <div className="modal-backdrop" onClick={() => { setShowClienteModal(false); setBuscarClienteQuery('') }}>
+  <div className="modal-backdrop" onClick={() => { setShowClienteModal(false); setBuscarClienteQuery(''); try { searchInputRef.current?.focus() } catch (e) { } }}>
           <div className="modal modal-large" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">
@@ -905,6 +928,7 @@ export default function VendasPage() {
                           setClienteSelecionado(cliente)
                           setShowClienteModal(false)
                           setBuscarClienteQuery('')
+                          try { searchInputRef.current?.focus() } catch (e) { }
                         }}
                       >
                         <div className="client-card-name">
@@ -942,6 +966,7 @@ export default function VendasPage() {
                 onClick={() => {
                   setShowClienteModal(false)
                   setBuscarClienteQuery('')
+                  try { searchInputRef.current?.focus() } catch (e) { }
                 }}
               >
                 Cancelar
@@ -976,7 +1001,7 @@ export default function VendasPage() {
               <label className="form-label font-semibold">Formas de Pagamento</label>
               <div className="space-y-2">
                 {pagamentos.map((p, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
+                  <div key={idx} className="row row-gap">
                     <select
                       className="form-select select-45"
                       value={p.tipo}
@@ -1006,12 +1031,12 @@ export default function VendasPage() {
                       onFocus={() => handleInputFocus(idx, `Pagamento ${idx + 1}`)}
                       onBlur={() => {
                         const newPag = [...pagamentos]
-                        const parsed = Math.max(0, Number.parseFloat(newPag[idx].valor?.replace(',', '.') || "0") || 0)
+                        const parsed = Math.max(0, parseCurrency(newPag[idx].valor))
                         newPag[idx].valor = parsed.toFixed(2).replace('.', ',')
                         setPagamentos(newPag)
                       }}
                       placeholder="0,00"
-                      readOnly={activeInputIndex === idx}
+                      
                     />
 
                     {pagamentos.length > 1 && (
@@ -1154,7 +1179,7 @@ export default function VendasPage() {
                       if (cliente) {
                         const totalFiado = pagamentos
                           .filter((p) => p.tipo === "fiado")
-                          .reduce((s, p) => s + (Number.parseFloat(p.valor || "0") || 0), 0)
+                          .reduce((s, p) => s + parseCurrency(p.valor), 0)
 
                         const available = Math.max(0, cliente.limite_credito - (cliente.debito_atual || 0))
                         if (totalFiado > 0 && totalFiado > available) {

@@ -115,7 +115,7 @@ export default function HistoricoPage() {
         if (conteudo) {
           const w = window.open('', '_blank')
           if (!w) return
-          w.document.write(`<html><head><title>Cupom Venda #${venda.id}</title></head><body><pre style="font-family: 'Courier New', Courier, monospace; white-space: pre-wrap;">${conteudo.replace(/</g,'&lt;')}</pre></body></html>`)
+          w.document.write(`<html><head><title>Cupom Venda #${venda.id}</title></head><body><pre class="cupom-pre">${conteudo.replace(/</g,'&lt;')}</pre></body></html>`)
           w.document.close()
           try { w.focus() } catch (e) { /* ignore */ }
           // esperar o conteúdo renderizar antes de chamar print
