@@ -161,7 +161,6 @@ export default function ProdutosPage() {
       <div className="card">
         <div className="card-header">
           <div className="flex justify-between items-center">
-            <h2 className="card-title">Gerenciar Produtos</h2>
             <button className="btn btn-primary" onClick={() => abrirModal()}>
               <Plus size={20} />
               Novo Produto

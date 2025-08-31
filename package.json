@@ -5,6 +5,8 @@
   "scripts": {
     "build": "next build",
     "dev": "next dev",
+    "dev:turbo": "next dev --turbo",
+    "dev:poll": "next dev --experimental-watcher",
     "lint": "next lint",
     "start": "next start",
     "prisma:generate": "prisma generate",

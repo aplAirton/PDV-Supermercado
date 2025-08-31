@@ -9,16 +9,33 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // Permite que o servidor dev aceite requests vindos do origin de rede
-  // Inclui localhost e as portas 3000/3001 para cobrir quando o servidor muda de porta
-  allowedDevOrigins: [
-    "http://192.168.0.10:3000",
-    "http://192.168.0.10:3001",
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3000",
-    "http://192.168.3.191:3000",
-  ],
+  // Configurações para hot reload
+  reactStrictMode: true,
+  
+  // Configurações específicas de desenvolvimento
+  experimental: {
+    // Habilitar hot reload mais agressivo
+    optimizeCss: false,
+    esmExternals: true,
+    // Força fast refresh
+    forceSwcTransforms: false,
+  },
+  
+  // Configurações do servidor de desenvolvimento
+  devIndicators: {
+    position: 'bottom-right',
+  },
+  
+  // Webpack config para hot reload
+  webpack: (config, { dev }) => {
+    if (dev) {
+      config.watchOptions = {
+        poll: 1000,
+        aggregateTimeout: 300,
+      }
+    }
+    return config
+  },
 }
 
 export default nextConfig

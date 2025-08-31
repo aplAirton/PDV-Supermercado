@@ -6,7 +6,7 @@ import ConfirmationModal from '@/components/confirmation-modal'
 import VirtualKeyboard from '@/components/virtual-keyboard'
 import Loading from "@/components/loading"
 import SearchHint from "@/components/search-hint"
-import { Search, Plus, Minus, Trash2, ShoppingCart, X } from "lucide-react"
+import { Search, Plus, Minus, Trash2, ShoppingCart, X, Settings, ChevronDown, ChevronUp } from "lucide-react"
 import '../../styles/components.css'
 
 interface Produto {
@@ -62,10 +62,14 @@ export default function VendasPage() {
   const [discountType, setDiscountType] = useState<"none" | "valor" | "percent">("none")
   const [discountValue, setDiscountValue] = useState("")
 
+  // Estado para controlar a exibição das opções de filtro/desconto
+  const [showFilterOptions, setShowFilterOptions] = useState(false)
+
   // Estados para teclado virtual
   const [activeInputIndex, setActiveInputIndex] = useState<number | null>(null)
   const [activeInputField, setActiveInputField] = useState<string>("")
   const searchInputRef = useRef<HTMLInputElement | null>(null)
+  const [isWideViewport, setIsWideViewport] = useState<boolean>(true)
 
   const totalBeforeDiscount = carrinho.reduce((sum, item) => sum + Number(item.subtotal), 0)
   const parsedDiscount = Math.max(0, parseCurrency(discountValue || "0")) || 0
@@ -142,6 +146,14 @@ export default function VendasPage() {
     if (searchInputRef.current) {
       try { searchInputRef.current.focus() } catch (e) { /* ignore */ }
     }
+  }, [])
+
+  // detectar largura da viewport para decidir se mostramos o teclado virtual
+  useEffect(() => {
+    const update = () => setIsWideViewport(typeof window !== 'undefined' ? window.innerWidth >= 768 : true)
+    update()
+    window.addEventListener('resize', update)
+    return () => window.removeEventListener('resize', update)
   }, [])
 
   // Nova função de busca de produtos mais robusta
@@ -656,6 +668,9 @@ export default function VendasPage() {
                 setClienteSelecionado(null)
                 setPagamentos([{ tipo: 'dinheiro', valor: '' }])
                 setCodigoBusca('')
+                setDiscountType('none')
+                setDiscountValue('')
+                setShowFilterOptions(false)
               }}>Nova venda</button>
             </div>
           </div>
@@ -782,38 +797,56 @@ export default function VendasPage() {
           )}
         </div>
 
-        {/* Seção de Desconto */}
+        {/* Seção de Opções Avançadas (Desconto) */}
         {carrinho.length > 0 && (
           <div className="section-surface-1">
-              <div className="row row-gap-lg mb-2">
-              <label className="font-semibold label-small">Desconto:</label>
-                <select 
-                className="form-select" 
-                value={discountType} 
-                onChange={(e) => setDiscountType(e.target.value as any)}
-              >
-                <option value="none">Sem desconto</option>
-                <option value="valor">Valor (R$)</option>
-                <option value="percent">Porcentagem (%)</option>
-              </select>
-
-              {discountType !== "none" && (
-                <input
-                  type="number"
-                  step="0.01"
-                  className="form-input input-width-7"
-                  value={discountValue}
-                  onChange={(e) => setDiscountValue(e.target.value)}
-                  placeholder={discountType === "percent" ? "0-100" : "0.00"}
-                />
-              )}
-            </div>
-
-            {discountAmount > 0 && (
-              <div className="muted-small muted-warning fw-600">
-                Desconto aplicado: -R$ {Number(discountAmount).toFixed(2)}
+            {/* Botão para mostrar/ocultar opções */}
+            <button
+              type="button"
+              className="btn-options-toggle mb-2"
+              onClick={() => setShowFilterOptions(!showFilterOptions)}
+            >
+              <div className="btn-options-content">
+                <Settings size={16} />
+                <span>Opções Avançadas</span>
               </div>
-            )}
+              {showFilterOptions ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+
+            {/* Opções de desconto (visíveis apenas quando expandido) */}
+            <div className={`filter-options ${showFilterOptions ? 'expanded' : 'collapsed'}`}>
+              <div>
+                <div className="row row-gap-lg mb-2">
+                  <label className="font-semibold label-small">Desconto:</label>
+                  <select 
+                    className="form-select" 
+                    value={discountType} 
+                    onChange={(e) => setDiscountType(e.target.value as any)}
+                  >
+                    <option value="none">Sem desconto</option>
+                    <option value="valor">Valor (R$)</option>
+                    <option value="percent">Porcentagem (%)</option>
+                  </select>
+
+                  {discountType !== "none" && (
+                    <input
+                      type="number"
+                      step="0.01"
+                      className="form-input input-width-7"
+                      value={discountValue}
+                      onChange={(e) => setDiscountValue(e.target.value)}
+                      placeholder={discountType === "percent" ? "0-100" : "0.00"}
+                    />
+                  )}
+                </div>
+
+                {discountAmount > 0 && (
+                  <div className="muted-small muted-warning fw-600">
+                    Desconto aplicado: -R$ {Number(discountAmount).toFixed(2)}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
@@ -1248,15 +1281,17 @@ export default function VendasPage() {
             </div>
             </div>
 
-            {/* Teclado Virtual */}
-            <div className="payment-keyboard-wrapper">
-              <VirtualKeyboard
-                onKeyPress={handleKeyPress}
-                onBackspace={handleBackspace}
-                onClear={handleClear}
-                activeInput={activeInputIndex !== null ? `Pagamento ${activeInputIndex + 1}` : undefined}
-              />
-            </div>
+            {/* Teclado Virtual (apenas em telas largas) */}
+            {isWideViewport && (
+              <div className="payment-keyboard-wrapper">
+                <VirtualKeyboard
+                  onKeyPress={handleKeyPress}
+                  onBackspace={handleBackspace}
+                  onClear={handleClear}
+                  activeInput={activeInputIndex !== null ? `Pagamento ${activeInputIndex + 1}` : undefined}
+                />
+              </div>
+            )}
           </div>
         </div>
       )}

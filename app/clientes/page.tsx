@@ -200,10 +200,6 @@ export default function ClientesPage() {
       <div className="card">
         <div className="card-header">
           <div className="flex justify-between items-center">
-            <h2 className="card-title flex items-center gap-2">
-              <User size={24} />
-              Gerenciar Clientes
-            </h2>
             <button className="btn btn-primary" onClick={() => abrirModal()}>
               <Plus size={20} />
               Novo Cliente

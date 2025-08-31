@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, CreditCard, Clock, CheckCircle, Eye, DollarSign, FileText, Printer, Trash2, Calculator } from 'lucide-react'
+import { X, Plus, CreditCard, Clock, CheckCircle, Eye, DollarSign, FileText, Printer, Trash2, Calculator } from 'lucide-react'
 import Modal from '@/components/modal'
 import { toast } from '@/hooks/use-toast'
 import '../../styles/components.css'
@@ -405,9 +405,6 @@ export default function FiadosPage() {
 
   return (
     <div className="container p-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Clientes com Débito</h1>
-      </div>
 
       <div className="card">
         <div className="card-header">
@@ -728,24 +725,15 @@ export default function FiadosPage() {
                 <div className="text-sm text-gray-600">Débito Atual</div>
               </div>
             </div>
-            <div className="flex justify-between items-center pt-2 border-t border-blue-200">
+            <div className="flex justify-between items-center pt-2 border-t20 border-blue-200">
               <div className="text-sm text-gray-700">
                 <span className="font-medium">Limite de Crédito:</span> R$ {Number(extratoCliente.limite_credito || 0).toFixed(2)}
               </div>
               <div className="text-sm">
-                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                  Number(extratoCliente.debito_atual || 0) === 0 
-                    ? 'bg-green-100 text-green-800'
-                    : Number(extratoCliente.debito_atual || 0) >= Number(extratoCliente.limite_credito || 0) * 0.8
-                    ? 'bg-red-100 text-red-800'
-                    : 'bg-yellow-100 text-yellow-800'
-                }`}>
-                  {Number(extratoCliente.debito_atual || 0) === 0 
-                    ? 'Em dia'
-                    : Number(extratoCliente.debito_atual || 0) >= Number(extratoCliente.limite_credito || 0) * 0.8
-                    ? 'Limite alto'
-                    : 'Devendo'
-                  }
+                <span className="font-limite">
+                  {extratoCliente.limite_credito != null
+                    ? `Disponível: R$ ${Math.max(0, Number(extratoCliente.limite_credito) - Number(extratoCliente.debito_atual || 0)).toFixed(2)}`
+                    : 'Indisponível'}
                 </span>
               </div>
             </div>
@@ -816,14 +804,12 @@ export default function FiadosPage() {
                       </div>
                     </div>
                   </div>
-                  {movimento.descricao && (
-                    <div className="text-sm text-gray-700 bg-gray-50 rounded p-2 mt-2">
-                      <strong>Descrição:</strong> {movimento.descricao}
-                    </div>
-                  )}
                   {movimento.referencia && (
                     <div className="text-xs text-gray-500 mt-2 font-mono bg-gray-100 rounded px-2 py-1 inline-block">
-                      ID: {movimento.referencia}
+                      {movimento.referencia.includes('venda') || movimento.referencia.includes('Venda') 
+                        ? `Venda ${movimento.referencia.replace(/[^0-9#]/g, '')}`
+                        : movimento.referencia
+                      }
                     </div>
                   )}
                 </div>
@@ -842,7 +828,7 @@ export default function FiadosPage() {
             className="btn btn-outline hover:bg-gray-50 transition-colors" 
             onClick={() => setShowExtrato(false)}
           >
-            <Eye size={16} className="mr-2" />
+            <X size={16} className="mr-2" />
             Fechar
           </button>
         </div>

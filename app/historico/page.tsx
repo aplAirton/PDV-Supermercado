@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Calendar, Filter, Eye, Printer } from "lucide-react"
+import { Calendar, Filter, Eye, Printer, Settings, ChevronDown, ChevronUp } from "lucide-react"
 
 interface Venda {
   id: number
@@ -28,6 +28,9 @@ export default function HistoricoPage() {
   })
   const [vendaSelecionada, setVendaSelecionada] = useState<Venda | null>(null)
   const [showModal, setShowModal] = useState(false)
+  
+  // Estado para controlar a exibição dos filtros
+  const [showFilterOptions, setShowFilterOptions] = useState(false)
 
   useEffect(() => {
     carregarVendas()
@@ -81,6 +84,7 @@ export default function HistoricoPage() {
       forma_pagamento: "",
       cliente: "",
     })
+    setShowFilterOptions(false)
   }
 
   const formatarData = (data: string) => {
@@ -160,75 +164,94 @@ export default function HistoricoPage() {
 
   const totalVendas = vendas.reduce((sum, venda) => sum + Number(venda.total || 0), 0)
 
+  // Função para verificar se há filtros ativos
+  const temFiltrosAtivos = () => {
+    return Object.values(filtros).some(valor => valor !== "")
+  }
+
   return (
     <div>
       <div className="card">
-        <div className="card-header">
-          <h2 className="card-title flex items-center gap-2">
-            <Calendar size={24} />
-            Vendas
-          </h2>
-        </div>
+
 
         {/* Filtros */}
         <div className="card mb-4" style={{ background: "var(--surface)" }}>
-          <div className="grid grid-cols-4 gap-4">
-            <div className="form-group">
-              <label className="form-label">Data Início</label>
-              <input
-                type="date"
-                className="form-input"
-                value={filtros.data_inicio}
-                onChange={(e) => setFiltros({ ...filtros, data_inicio: e.target.value })}
-              />
+          {/* Botão para mostrar/ocultar filtros */}
+          <button
+            type="button"
+            className={`btn-options-toggle mb-3 ${temFiltrosAtivos() ? 'filters-active' : ''}`}
+            onClick={() => setShowFilterOptions(!showFilterOptions)}
+          >
+            <div className="btn-options-content">
+              <Settings size={16} />
+              <span>Filtros de Busca</span>
+              {temFiltrosAtivos() && <span className="filter-indicator">•</span>}
             </div>
+            {showFilterOptions ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
 
-            <div className="form-group">
-              <label className="form-label">Data Fim</label>
-              <input
-                type="date"
-                className="form-input"
-                value={filtros.data_fim}
-                onChange={(e) => setFiltros({ ...filtros, data_fim: e.target.value })}
-              />
+          {/* Opções de filtro (visíveis apenas quando expandido) */}
+          <div className={`filter-options ${showFilterOptions ? 'expanded' : 'collapsed'}`}>
+            <div>
+              <div className="filters-grid">
+                <div className="form-group">
+                  <label className="form-label">Data Início</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={filtros.data_inicio}
+                    onChange={(e) => setFiltros({ ...filtros, data_inicio: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Data Fim</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={filtros.data_fim}
+                    onChange={(e) => setFiltros({ ...filtros, data_fim: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Forma de Pagamento</label>
+                  <select
+                    className="form-select"
+                    value={filtros.forma_pagamento}
+                    onChange={(e) => setFiltros({ ...filtros, forma_pagamento: e.target.value })}
+                  >
+                    <option value="">Todas</option>
+                    <option value="dinheiro">Dinheiro</option>
+                    <option value="cartao_debito">Cartão Débito</option>
+                    <option value="cartao_credito">Cartão Crédito</option>
+                    <option value="pix">PIX</option>
+                    <option value="fiado">Fiado</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Cliente</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Nome do cliente"
+                    value={filtros.cliente}
+                    onChange={(e) => setFiltros({ ...filtros, cliente: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="filter-actions">
+                <button className="btn btn-primary" onClick={aplicarFiltros}>
+                  <Filter size={20} />
+                  Aplicar Filtros
+                </button>
+                <button className="btn btn-outline" onClick={limparFiltros}>
+                  Limpar
+                </button>
+              </div>
             </div>
-
-            <div className="form-group">
-              <label className="form-label">Forma de Pagamento</label>
-              <select
-                className="form-select"
-                value={filtros.forma_pagamento}
-                onChange={(e) => setFiltros({ ...filtros, forma_pagamento: e.target.value })}
-              >
-                <option value="">Todas</option>
-                <option value="dinheiro">Dinheiro</option>
-                <option value="cartao_debito">Cartão Débito</option>
-                <option value="cartao_credito">Cartão Crédito</option>
-                <option value="pix">PIX</option>
-                <option value="fiado">Fiado</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Cliente</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Nome do cliente"
-                value={filtros.cliente}
-                onChange={(e) => setFiltros({ ...filtros, cliente: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div className="flex gap-2">
-            <button className="btn btn-primary" onClick={aplicarFiltros}>
-              <Filter size={20} />
-              Aplicar Filtros
-            </button>
-            <button className="btn btn-outline" onClick={limparFiltros}>
-              Limpar
-            </button>
           </div>
         </div>
 

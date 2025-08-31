@@ -1,63 +1,118 @@
 "use client"
 
-import { useState } from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { ShoppingCart, Package, Users, History, Settings, Menu, X } from "lucide-react"
+import { useState, useEffect } from "react"
+import { ShoppingCart, Package, Users, History, CreditCard, Menu, X } from "lucide-react"
 
-const menuItems = [
-  { href: "/", icon: ShoppingCart, label: "Carrinho", description: "Realizar vendas" },
-  { href: "/produtos", icon: Package, label: "Produtos", description: "Gerenciar produtos" },
-  { href: "/clientes", icon: Users, label: "Clientes", description: "Cadastro de clientes" },
-  { href: "/historico", icon: History, label: "Vendas", description: "Vendas realizadas" },
-]
+type Page = "vendas" | "produtos" | "clientes" | "historico" | "fiados"
 
-export default function Sidebar() {
-  const [isCollapsed, setIsCollapsed] = useState(false)
-  const pathname = usePathname()
+const pageConfig = {
+  vendas: {
+    title: "Carrinho",
+    subtitle: "Realize vendas e gerencie o carrinho de compras",
+    icon: ShoppingCart,
+  },
+  produtos: {
+    title: "Produtos",
+    subtitle: "Cadastre e gerencie produtos do estoque",
+    icon: Package,
+  },
+  clientes: {
+    title: "Clientes",
+    subtitle: "Cadastre e gerencie informações dos clientes",
+    icon: Users,
+  },
+  historico: {
+    title: "Vendas",
+    subtitle: "Visualize o histórico de vendas realizadas",
+    icon: History,
+  },
+  fiados: {
+    title: "Fiados",
+    subtitle: "Gerencie vendas fiadas e pagamentos",
+    icon: CreditCard,
+  },
+}
+
+interface SidebarProps {
+  currentPage: Page
+  onPageChange: (page: Page) => void
+}
+
+export default function Sidebar({ currentPage, onPageChange }: SidebarProps) {
+  const [isOpen, setIsOpen] = useState(false)
+
+  // Fechar sidebar com Escape
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen) {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen])
+
+  // Prevenir scroll quando sidebar aberta
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [isOpen])
+
+  const handlePageChange = (page: Page) => {
+    onPageChange(page)
+    setIsOpen(false)
+  }
 
   return (
-    <aside className={`sidebar ${isCollapsed ? "collapsed" : ""}`}>
-      <div className="sidebar-header">
-        <div className="sidebar-brand">
-          <ShoppingCart size={24} className="brand-icon" />
-          {!isCollapsed && <span className="brand-text">PDV Sistema</span>}
+    <>
+      {/* Overlay para mobile */}
+      <div 
+        className={`sidebar-overlay ${isOpen ? "show" : ""}`}
+        onClick={() => setIsOpen(false)}
+      />
+
+      {/* Botão mobile menu no header */}
+      <button 
+        className="mobile-menu-btn" 
+        onClick={() => setIsOpen(!isOpen)}
+        aria-label="Toggle menu"
+      >
+        {isOpen ? <X size={20} /> : <Menu size={20} />}
+      </button>
+
+      {/* Sidebar */}
+      <aside className={`sidebar ${isOpen ? "open" : ""}`}>
+        <div className="sidebar-header">
+          <h1 className="sidebar-title">PDV Sistema</h1>
         </div>
-        <button className="sidebar-toggle" onClick={() => setIsCollapsed(!isCollapsed)} aria-label="Alternar sidebar">
-          {isCollapsed ? <Menu size={20} /> : <X size={20} />}
-        </button>
-      </div>
 
-      <nav className="sidebar-nav">
-        {menuItems.map((item) => {
-          const Icon = item.icon
-          const isActive = pathname === item.href
-
-          return (
-            <Link key={item.href} href={item.href} className={`nav-item ${isActive ? "active" : ""}`}>
-              <Icon size={20} className="nav-icon" />
-              {!isCollapsed && (
-                <div className="nav-content">
-                  <span className="nav-label">{item.label}</span>
-                  <span className="nav-description">{item.description}</span>
-                </div>
-              )}
-            </Link>
-          )
-        })}
-      </nav>
-
-      <div className="sidebar-footer">
-        <div className={`nav-item ${pathname === "/configuracoes" ? "active" : ""}`}>
-          <Settings size={20} className="nav-icon" />
-          {!isCollapsed && (
-            <div className="nav-content">
-              <span className="nav-label">Configurações</span>
-              <span className="nav-description">Sistema</span>
-            </div>
-          )}
-        </div>
-      </div>
-    </aside>
+        <nav className="sidebar-nav">
+          {Object.entries(pageConfig).map(([key, config]) => {
+            const Icon = config.icon
+            const isActive = currentPage === key
+            
+            return (
+              <div key={key} className="nav-item">
+                <button
+                  className={`nav-link ${isActive ? "active" : ""}`}
+                  onClick={() => handlePageChange(key as Page)}
+                >
+                  <Icon size={20} />
+                  <span className="nav-text">{config.title}</span>
+                </button>
+              </div>
+            )
+          })}
+        </nav>
+      </aside>
+    </>
   )
 }

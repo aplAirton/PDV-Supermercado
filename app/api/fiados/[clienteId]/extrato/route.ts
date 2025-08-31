@@ -3,9 +3,10 @@ import prisma from '@/lib/prisma'
 
 export async function GET(request: NextRequest, context: any) {
   try {
-    // garantir que context seja aguardado corretamente (Next.js exige await antes de usar params)
-    const ctx = await context
-    const clienteId = Number(ctx?.params?.clienteId)
+    // Next.js agora exige que params seja aguardado antes do uso
+    const { params } = await context
+    const resolvedParams = await params
+    const clienteId = Number(resolvedParams?.clienteId)
     if (Number.isNaN(clienteId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
     // Buscar movimentos ordenados usando consulta raw para evitar depender do client gerado

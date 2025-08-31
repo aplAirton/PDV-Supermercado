@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { ShoppingCart, Package, Users, History, CreditCard, Menu, X } from "lucide-react"
+import { useState } from "react"
+import { ShoppingCart, Package, Users, History, CreditCard } from "lucide-react"
 import VendasPage from "./vendas/page"
 import ProdutosPage from "./produtos/page"
 import ClientesPage from "./clientes/page"
 import HistoricoPage from "./historico/page"
 import FiadosPage from "./fiados/page"
+import Sidebar from "@/components/sidebar"
 import '../styles/components.css'
 
 type Page = "vendas" | "produtos" | "clientes" | "historico" | "fiados"
@@ -41,7 +42,6 @@ const pageConfig = {
 
 export default function HomePage() {
   const [currentPage, setCurrentPage] = useState<Page>("vendas")
-  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const renderPage = () => {
     switch (currentPage) {
@@ -65,50 +65,27 @@ export default function HomePage() {
 
   return (
     <div className="app-layout">
-      <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
-        <div className="sidebar-header">
-          <h1 className="sidebar-title">PDV Airton</h1>
-        </div>
-
-        <nav className="sidebar-nav">
-          {Object.entries(pageConfig).map(([key, config]) => {
-            const Icon = config.icon
-            return (
-              <div key={key} className="nav-item">
-                <button
-                  className={`nav-link ${currentPage === key ? "active" : ""}`}
-                  onClick={() => {
-                    setCurrentPage(key as Page)
-                    setSidebarOpen(false)
-                  }}
-                >
-                  <Icon size={20} />
-                  {config.title}
-                </button>
-              </div>
-            )
-          })}
-        </nav>
-      </aside>
+      <Sidebar 
+        currentPage={currentPage} 
+        onPageChange={setCurrentPage} 
+      />
 
       <main className="main-content">
         <header className="content-header">
-          <button className="btn btn-outline btn-sm mobile-menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>
-            {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
-
-          <div className="flex items-center gap-4">
-            <div className="card-icon">
+          <div className="header-content">
+            <div className="header-icon">
               <IconComponent size={24} />
             </div>
-            <div>
+            <div className="header-text">
               <h1 className="content-title">{currentConfig.title}</h1>
               <p className="content-subtitle">{currentConfig.subtitle}</p>
             </div>
           </div>
         </header>
 
-        <div className="content-body">{renderPage()}</div>
+        <div className="content-body">
+          {renderPage()}
+        </div>
       </main>
     </div>
   )
