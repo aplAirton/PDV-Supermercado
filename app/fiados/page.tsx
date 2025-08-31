@@ -305,41 +305,29 @@ export default function FiadosPage() {
 
     try {
       setImprimindoExtrato(true)
-      const response = await fetch(`/api/fiados/${extratoCliente.id}/extrato/cupom`)
-      if (response.ok) {
-        const data = await response.json()
-        
-        // Abrir nova janela para impressão
-        const printWindow = window.open('', '_blank')
-        if (printWindow) {
-          printWindow.document.write(`
-            <html>
-              <head>
-                <title>Extrato de Fiado - ${extratoCliente.nome}</title>
-                <style>
-                  body { font-size: 12px; margin: 20px; }
-                  pre { white-space: pre-wrap; word-wrap: break-word; font-family: monospace; }
-                  .print-button { margin-bottom: 20px; }
-                  @media print { .print-button { display: none; } }
-                </style>
-              </head>
-              <body>
-                <div class="print-button">
-                  <button onclick="window.print()">Imprimir</button>
-                  <button onclick="window.close()">Fechar</button>
-                </div>
-                <pre class="cupom-pre">${data.cupom}</pre>
-              </body>
-            </html>
-          `)
-          printWindow.document.close()
-        }
-      } else {
-        toast({ title: 'Erro', description: 'Erro ao gerar cupom de extrato', variant: 'destructive' })
+      const url = `/api/fiados/${extratoCliente.id}/extrato/cupom`
+      const newWindow = window.open(url, '_blank', 'width=400,height=600')
+      
+      if (!newWindow) {
+        toast({
+          title: "Erro ao imprimir",
+          description: "Não foi possível abrir a janela de impressão. Verifique o bloqueador de pop-ups.",
+          variant: "destructive"
+        })
+        return
       }
+
+      toast({
+        title: "Extrato aberto",
+        description: "Janela de impressão foi aberta"
+      })
     } catch (error) {
       console.error('Erro ao imprimir extrato:', error)
-      toast({ title: 'Erro', description: 'Erro ao imprimir extrato', variant: 'destructive' })
+      toast({ 
+        title: 'Erro', 
+        description: 'Erro ao imprimir extrato', 
+        variant: 'destructive' 
+      })
     } finally {
       setImprimindoExtrato(false)
     }
@@ -475,232 +463,226 @@ export default function FiadosPage() {
 
       {/* Modal Registrar Pagamento */}
       <Modal isOpen={showPagamentoModal} onClose={() => setShowPagamentoModal(false)}>
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-              <DollarSign size={20} className="text-green-600" />
+        <div className="payment-modal">
+          <div className="payment-header">
+            <div className="payment-header-info">
+              <div className="payment-header-icon">
+                <DollarSign size={24} />
+              </div>
+              <h2 className="payment-header-title">Registrar Pagamento</h2>
             </div>
-            <h2 className="text-2xl font-bold text-gray-800">Registrar Pagamento</h2>
+            <div className="payment-date">
+              {new Date().toLocaleDateString('pt-BR')}
+            </div>
           </div>
-          <div className="text-sm text-gray-500">
-            {new Date().toLocaleDateString('pt-BR')}
-          </div>
-        </div>
 
-        {pagamentoCliente && (
-          <div>
-            {/* Informações do Cliente */}
-            <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-green-200 rounded-full flex items-center justify-center">
-                    <span className="text-green-700 font-semibold text-sm">
+          {pagamentoCliente && (
+            <div>
+              {/* Informações do Cliente */}
+              <div className="client-info-card">
+                <div className="client-info-header">
+                  <div className="client-info-left">
+                    <div className="client-avatar">
                       {pagamentoCliente.nome.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  <div>
-                    <div className="font-bold text-lg text-gray-800">{pagamentoCliente.nome}</div>
-                    <div className="text-sm text-gray-600">Cliente ID: {pagamentoCliente.id}</div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-red-600 font-bold text-xl">
-                    R$ {Number(pagamentoCliente.debito_atual || 0).toFixed(2)}
-                  </div>
-                  <div className="text-sm text-gray-600">Débito Atual</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Calculadora de Pagamento */}
-            <div className="mb-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Calculator size={18} className="text-gray-600" />
-                <h3 className="text-lg font-semibold text-gray-800">Formas de Pagamento</h3>
-              </div>
-
-              <div className="space-y-4">
-                {pagamentosForm.map((p, idx) => (
-                  <div key={idx} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-blue-600 font-semibold text-xs">{idx + 1}</span>
-                      </div>
-                      <span className="font-medium text-gray-700">Forma de Pagamento #{idx + 1}</span>
-                      {pagamentosForm.length > 1 && (
-                        <button 
-                          className="ml-auto w-6 h-6 bg-red-100 hover:bg-red-200 rounded-full flex items-center justify-center transition-colors" 
-                          onClick={() => setPagamentosForm(pagamentosForm.filter((_,i) => i !== idx))}
-                          title="Remover forma de pagamento"
-                        >
-                          <Trash2 size={12} className="text-red-600" />
-                        </button>
-                      )}
                     </div>
-                    
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Tipo</label>
-                        <div className="relative">
-                          <select 
-                            className="form-select w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white" 
-                            value={p.tipo} 
-                            onChange={(e) => { 
-                              const arr = [...pagamentosForm]; 
-                              arr[idx].tipo = e.target.value; 
-                              setPagamentosForm(arr) 
-                            }}
+                    <div>
+                      <div className="client-name">{pagamentoCliente.nome}</div>
+                      <div className="client-id">Cliente ID: {pagamentoCliente.id}</div>
+                    </div>
+                  </div>
+                  <div className="client-debt">
+                    <div className="debt-amount">
+                      R$ {Number(pagamentoCliente.debito_atual || 0).toFixed(2)}
+                    </div>
+                    <div className="debt-label">Débito Atual</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Formulário de Pagamentos */}
+              <div className="payment-forms-section">
+                <div className="section-header">
+                  <Calculator size={20} className="text-gray-600" />
+                  <h3>Formas de Pagamento</h3>
+                </div>
+
+                <div className="space-y-4">
+                  {pagamentosForm.map((p, idx) => (
+                    <div key={idx} className="payment-form-item">
+                      <div className="payment-form-header">
+                        <div className="payment-form-number">{idx + 1}</div>
+                        <span className="payment-form-title">Forma de Pagamento #{idx + 1}</span>
+                        {pagamentosForm.length > 1 && (
+                          <button 
+                            className="remove-payment-btn" 
+                            onClick={() => setPagamentosForm(pagamentosForm.filter((_,i) => i !== idx))}
+                            title="Remover forma de pagamento"
                           >
-                            <option value="dinheiro">💵 Dinheiro</option>
-                            <option value="cartao_debito">💳 Cartão Débito</option>
-                            <option value="cartao_credito">💳 Cartão Crédito</option>
-                            <option value="pix">📱 PIX</option>
-                          </select>
-                          <CreditCard size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                        </div>
+                            <Trash2 size={14} />
+                          </button>
+                        )}
                       </div>
                       
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Valor (R$)</label>
-                        <div className="relative">
-                          <input 
-                            type="number" 
-                            step="0.01" 
-                            min="0"
-                            max={Number(pagamentoCliente.debito_atual || 0)}
-                            className="form-input input-with-icon w-full pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" 
-                            value={p.valor} 
-                            onChange={(e) => { 
-                              const arr = [...pagamentosForm]; 
-                              arr[idx].valor = e.target.value; 
-                              setPagamentosForm(arr) 
-                            }}
-                            placeholder="0,00"
-                          />
-                          <DollarSign size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      <div className="payment-form-fields">
+                        <div className="field-group">
+                          <label className="field-label">Tipo de Pagamento</label>
+                          <div className="input-with-icon">
+                            <CreditCard size={16} className="input-icon" />
+                            <select 
+                              className="form-select w-full" 
+                              value={p.tipo} 
+                              onChange={(e) => { 
+                                const arr = [...pagamentosForm]; 
+                                arr[idx].tipo = e.target.value; 
+                                setPagamentosForm(arr) 
+                              }}
+                            >
+                              <option value="dinheiro">💵 Dinheiro</option>
+                              <option value="cartao_debito">💳 Cartão Débito</option>
+                              <option value="cartao_credito">💳 Cartão Crédito</option>
+                              <option value="pix">📱 PIX</option>
+                            </select>
+                          </div>
+                        </div>
+                        
+                        <div className="field-group">
+                          <label className="field-label">Valor (R$)</label>
+                          <div className="input-with-icon">
+                            <DollarSign size={16} className="input-icon" />
+                            <input 
+                              type="number" 
+                              step="0.01" 
+                              min="0"
+                              max={Number(pagamentoCliente.debito_atual || 0)}
+                              className="form-input w-full" 
+                              value={p.valor} 
+                              onChange={(e) => { 
+                                const arr = [...pagamentosForm]; 
+                                arr[idx].valor = e.target.value; 
+                                setPagamentosForm(arr) 
+                              }}
+                              placeholder="0,00"
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
+                  ))}
+                  
+                  <button 
+                    className="add-payment-btn" 
+                    onClick={() => setPagamentosForm([...pagamentosForm, { tipo: 'dinheiro', valor: '' }])}
+                  >
+                    <Plus size={20} />
+                    Adicionar Forma de Pagamento
+                  </button>
+                </div>
+              </div>
+
+              {/* Resumo do Pagamento */}
+              {(() => {
+                const totalPagamento = pagamentosForm.reduce((sum, p) => sum + (Number(p.valor) || 0), 0)
+                const debitoRestante = Number(pagamentoCliente.debito_atual || 0) - totalPagamento
+                const isValidPayment = totalPagamento > 0 && totalPagamento <= Number(pagamentoCliente.debito_atual || 0)
+                
+                const summaryClass = totalPagamento === 0 
+                  ? 'payment-summary empty'
+                  : isValidPayment 
+                  ? 'payment-summary valid'
+                  : 'payment-summary invalid'
+                
+                return (
+                  <div className={summaryClass}>
+                    <div className="summary-header">
+                      <CheckCircle size={20} className={
+                        totalPagamento === 0 
+                          ? 'text-gray-400' 
+                          : isValidPayment 
+                          ? 'text-green-600' 
+                          : 'text-red-600'
+                      } />
+                      <h4 className="summary-title">Resumo do Pagamento</h4>
+                    </div>
+                    
+                    <div className="summary-grid">
+                      <div className="summary-item">
+                        <span className="summary-label">Débito Atual:</span>
+                        <div className="summary-value debt">
+                          R$ {Number(pagamentoCliente.debito_atual || 0).toFixed(2)}
+                        </div>
+                      </div>
+                      <div className="summary-item">
+                        <span className="summary-label">Total a Pagar:</span>
+                        <div className={`summary-value ${totalPagamento === 0 ? 'neutral' : 'payment'}`}>
+                          R$ {totalPagamento.toFixed(2)}
+                        </div>
+                      </div>
+                      <div className="summary-item">
+                        <span className="summary-label">Restará Devendo:</span>
+                        <div className={`summary-value ${debitoRestante <= 0 ? 'payment' : 'remaining'}`}>
+                          R$ {Math.max(0, debitoRestante).toFixed(2)}
+                        </div>
+                      </div>
+                      <div className="summary-item">
+                        <span className="summary-label">Status:</span>
+                        <div className={`summary-status ${
+                          totalPagamento === 0 
+                            ? 'waiting' 
+                            : isValidPayment 
+                            ? debitoRestante <= 0 ? 'paid' : 'partial'
+                            : 'invalid'
+                        }`}>
+                          {totalPagamento === 0 
+                            ? 'Aguardando valores' 
+                            : isValidPayment 
+                            ? debitoRestante <= 0 ? '✅ Quitado' : '⚠️ Parcial'
+                            : '❌ Valor inválido'
+                          }
+                        </div>
+                      </div>
+                    </div>
+
+                    {!isValidPayment && totalPagamento > 0 && (
+                      <div className="payment-error-message">
+                        ⚠️ O valor total não pode exceder o débito atual do cliente.
+                      </div>
+                    )}
                   </div>
-                ))}
+                )
+              })()}
+
+              {/* Botões de Ação */}
+              <div className="payment-actions">
+                <button 
+                  className="action-btn cancel" 
+                  onClick={() => setShowPagamentoModal(false)} 
+                  disabled={pagamentoLoading}
+                >
+                  <Eye size={16} />
+                  Cancelar
+                </button>
                 
                 <button 
-                  className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 transition-colors flex items-center justify-center gap-2" 
-                  onClick={() => setPagamentosForm([...pagamentosForm, { tipo: 'dinheiro', valor: '' }])}
+                  className="action-btn confirm" 
+                  onClick={registrarPagamento} 
+                  disabled={pagamentoLoading || pagamentosForm.reduce((sum, p) => sum + (Number(p.valor) || 0), 0) <= 0}
                 >
-                  <Plus size={18} />
-                  Adicionar Forma de Pagamento
+                  {pagamentoLoading ? (
+                    <>
+                      <div className="loading" style={{ width: '16px', height: '16px' }}></div>
+                      Processando Pagamento...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle size={16} />
+                      Confirmar Pagamento
+                    </>
+                  )}
                 </button>
               </div>
             </div>
-
-            {/* Resumo do Pagamento */}
-            {(() => {
-              const totalPagamento = pagamentosForm.reduce((sum, p) => sum + (Number(p.valor) || 0), 0)
-              const debitoRestante = Number(pagamentoCliente.debito_atual || 0) - totalPagamento
-              const isValidPayment = totalPagamento > 0 && totalPagamento <= Number(pagamentoCliente.debito_atual || 0)
-              
-              return (
-                <div className={`mb-6 p-4 rounded-xl border ${
-                  totalPagamento === 0 
-                    ? 'bg-gray-50 border-gray-200' 
-                    : isValidPayment 
-                    ? 'bg-green-50 border-green-200' 
-                    : 'bg-red-50 border-red-200'
-                }`}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <CheckCircle size={18} className={
-                      totalPagamento === 0 
-                        ? 'text-gray-400' 
-                        : isValidPayment 
-                        ? 'text-green-600' 
-                        : 'text-red-600'
-                    } />
-                    <h4 className="font-semibold text-gray-800">Resumo do Pagamento</h4>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-600">Débito Atual:</span>
-                      <div className="font-bold text-lg text-red-600">
-                        R$ {Number(pagamentoCliente.debito_atual || 0).toFixed(2)}
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Total a Pagar:</span>
-                      <div className={`font-bold text-lg ${
-                        totalPagamento === 0 ? 'text-gray-500' : 'text-green-600'
-                      }`}>
-                        R$ {totalPagamento.toFixed(2)}
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Restará Devendo:</span>
-                      <div className={`font-bold text-lg ${
-                        debitoRestante <= 0 ? 'text-green-600' : 'text-orange-600'
-                      }`}>
-                        R$ {Math.max(0, debitoRestante).toFixed(2)}
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Status:</span>
-                      <div className={`font-medium text-sm ${
-                        totalPagamento === 0 
-                          ? 'text-gray-500' 
-                          : isValidPayment 
-                          ? debitoRestante <= 0 ? 'text-green-600' : 'text-orange-600'
-                          : 'text-red-600'
-                      }`}>
-                        {totalPagamento === 0 
-                          ? 'Aguardando valores' 
-                          : isValidPayment 
-                          ? debitoRestante <= 0 ? '✅ Quitado' : '⚠️ Parcial'
-                          : '❌ Valor inválido'
-                        }
-                      </div>
-                    </div>
-                  </div>
-
-                  {!isValidPayment && totalPagamento > 0 && (
-                    <div className="mt-3 p-2 bg-red-100 rounded text-red-700 text-sm">
-                      ⚠️ O valor total não pode exceder o débito atual do cliente.
-                    </div>
-                  )}
-                </div>
-              )
-            })()}
-
-            {/* Botões de Ação */}
-            <div className="flex gap-3 pt-4 border-t border-gray-200">
-              <button 
-                className="flex-1 btn btn-outline hover:bg-gray-50 transition-colors" 
-                onClick={() => setShowPagamentoModal(false)} 
-                disabled={pagamentoLoading}
-              >
-                <Eye size={16} className="mr-2" />
-                Cancelar
-              </button>
-              
-              <button 
-                className="flex-2 btn btn-success hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
-                onClick={registrarPagamento} 
-                disabled={pagamentoLoading || pagamentosForm.reduce((sum, p) => sum + (Number(p.valor) || 0), 0) <= 0}
-              >
-                {pagamentoLoading ? (
-                  <>
-                    <div className="loading" style={{ width: '16px', height: '16px', marginRight: '8px' }}></div>
-                    Processando Pagamento...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle size={16} className="mr-2" />
-                    Confirmar Pagamento
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </Modal>
 
       {/* Modal Extrato de Fiado */}

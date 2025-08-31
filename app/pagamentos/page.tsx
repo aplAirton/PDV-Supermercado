@@ -1,14 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Calendar, DollarSign, TrendingUp, TrendingDown, Filter, Eye, Search, Download, Printer } from 'lucide-react'
+import { Ban, Calendar, DollarSign, TrendingUp, TrendingDown, Filter, Eye, Search, Download, Printer, CreditCard, Smartphone, Layers, Settings, FileText, LucideFileQuestion, LucideCheckCircle } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
-import '../../styles/components.css'
+import '../../styles/pagamentos-new.css'
 
 interface MovimentoCaixa {
   id: number
   tipo: 'entrada' | 'saida'
-  categoria: 'venda_dinheiro' | 'venda_cartao' | 'venda_pix' | 'pagamento_fiado' | 'ajuste' | 'outros'
+  categoria: 'venda_dinheiro' | 'venda_cartao' | 'venda_pix' | 'venda_multiplas' | 'pagamento_fiado' | 'ajuste' | 'outros'
   valor: number
   descricao: string
   referencia?: string
@@ -24,6 +24,7 @@ interface ResumoFinanceiro {
   totalVendasDinheiro: number
   totalVendasCartao: number
   totalVendasPix: number
+  totalVendasMultiplas: number
   totalPagamentosFiado: number
 }
 
@@ -36,6 +37,7 @@ export default function PagamentosPage() {
     totalVendasDinheiro: 0,
     totalVendasCartao: 0,
     totalVendasPix: 0,
+    totalVendasMultiplas: 0,
     totalPagamentosFiado: 0
   })
   const [filtros, setFiltros] = useState({
@@ -105,16 +107,24 @@ export default function PagamentosPage() {
     })
   }
 
-  const getIconeCategoria = (categoria: string) => {
+const getIconeCategoria = (categoria: string) => {
     switch (categoria) {
-      case 'venda_dinheiro': return '💰'
-      case 'venda_cartao': return '💳'
-      case 'venda_pix': return '📱'
-      case 'pagamento_fiado': return '🏦'
-      case 'ajuste': return '⚙️'
-      default: return '📋'
+        case 'venda_dinheiro':
+            return <DollarSign size={18} />
+        case 'venda_cartao':
+            return <CreditCard size={18} />
+        case 'venda_pix':
+            return <Smartphone size={18} />
+        case 'venda_multiplas':
+            return <Layers size={18} />
+        case 'pagamento_fiado':
+            return <LucideCheckCircle size={18} />
+        case 'ajuste':
+            return <Settings size={18} />
+        default:
+            return <FileText size={18} />
     }
-  }
+}
 
   const exportarRelatorio = async () => {
     try {
@@ -181,160 +191,150 @@ export default function PagamentosPage() {
 
   return (
     <div className="pagamentos-container">
+      {/* Header */}
       <div className="page-header">
-        <h1 className="page-title">
-          <DollarSign size={32} />
-          Controle de Pagamentos
-        </h1>
-        <p className="page-subtitle">Entradas e saídas do movimento de caixa</p>
-      </div>
-
-      {/* Resumo Financeiro */}
-      <div className="resumo-financeiro">
-        <div className="card-resumo entrada">
-          <div className="card-resumo-header">
-            <TrendingUp size={24} />
-            <span>Total Entradas</span>
-          </div>
-          <div className="card-resumo-valor">
-            {formatarValor(resumo.totalEntradas)}
-          </div>
+        <div className="header-info">
+          <h1>Controle de Pagamentos</h1>
+          <p>Gestão financeira completa</p>
         </div>
-
-        <div className="card-resumo saida">
-          <div className="card-resumo-header">
-            <TrendingDown size={24} />
-            <span>Total Saídas</span>
-          </div>
-          <div className="card-resumo-valor">
-            {formatarValor(resumo.totalSaidas)}
-          </div>
-        </div>
-
-        <div className={`card-resumo saldo ${resumo.saldo >= 0 ? 'positivo' : 'negativo'}`}>
-          <div className="card-resumo-header">
-            <DollarSign size={24} />
-            <span>Saldo</span>
-          </div>
-          <div className="card-resumo-valor">
-            {formatarValor(resumo.saldo)}
-          </div>
+        <div className="header-actions">
+          <button 
+            className="btn btn-outline"
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            <Filter size={16} />
+            Filtros
+          </button>
+          <button className="btn btn-primary" onClick={exportarRelatorio}>
+            <Download size={16} />
+            Exportar
+          </button>
         </div>
       </div>
 
-      {/* Detalhamento por Categoria */}
-      <div className="categorias-resumo">
-        <div className="categoria-item">
-          <span className="categoria-icone">💰</span>
-          <div className="categoria-info">
-            <span className="categoria-nome">Vendas Dinheiro</span>
-            <span className="categoria-valor">{formatarValor(resumo.totalVendasDinheiro)}</span>
+      {/* Cards de Totais - 3 em linha */}
+      <div className="totals-grid">
+        <div className="total-card entrada">
+          <div className="card-icon">
+            <TrendingUp size={20} />
+          </div>
+          <div className="card-content">
+            <span className="card-label">Entradas</span>
+            <span className="card-value">{formatarValor(resumo.totalEntradas)}</span>
           </div>
         </div>
         
-        <div className="categoria-item">
-          <span className="categoria-icone">💳</span>
-          <div className="categoria-info">
-            <span className="categoria-nome">Vendas Cartão</span>
-            <span className="categoria-valor">{formatarValor(resumo.totalVendasCartao)}</span>
+        <div className="total-card saida">
+          <div className="card-icon">
+            <TrendingDown size={20} />
+          </div>
+          <div className="card-content">
+            <span className="card-label">Saídas</span>
+            <span className="card-value">{formatarValor(resumo.totalSaidas)}</span>
           </div>
         </div>
-
-        <div className="categoria-item">
-          <span className="categoria-icone">📱</span>
-          <div className="categoria-info">
-            <span className="categoria-nome">Vendas PIX</span>
-            <span className="categoria-valor">{formatarValor(resumo.totalVendasPix)}</span>
+        
+        <div className={`total-card saldo ${resumo.saldo >= 0 ? 'positivo' : 'negativo'}`}>
+          <div className="card-icon">
+            <DollarSign size={20} />
           </div>
-        </div>
-
-        <div className="categoria-item">
-          <span className="categoria-icone">🏦</span>
-          <div className="categoria-info">
-            <span className="categoria-nome">Pagamentos Fiado</span>
-            <span className="categoria-valor">{formatarValor(resumo.totalPagamentosFiado)}</span>
+          <div className="card-content">
+            <span className="card-label">Saldo</span>
+            <span className="card-value">{formatarValor(resumo.saldo)}</span>
           </div>
         </div>
       </div>
 
+      {/* Detalhamento por Tipo */}
+      <div className="detail-section">
+        <h2>Detalhamento por Forma de Pagamento</h2>
+        <div className="detail-grid">
+          <div className="detail-item">
+            <DollarSign size={16} />
+            <span>Dinheiro</span>
+            <strong>{formatarValor(resumo.totalVendasDinheiro)}</strong>
+          </div>
+          <div className="detail-item">
+            <CreditCard size={16} />
+            <span>Cartão</span>
+            <strong>{formatarValor(resumo.totalVendasCartao)}</strong>
+          </div>
+          <div className="detail-item">
+            <Smartphone size={16} />
+            <span>PIX</span>
+            <strong>{formatarValor(resumo.totalVendasPix)}</strong>
+          </div>
+          <div className="detail-item">
+            <Layers size={16} />
+            <span>Múltiplas</span>
+            <strong>{formatarValor(resumo.totalVendasMultiplas)}</strong>
+          </div>
+          <div className="detail-item">
+            <LucideCheckCircle size={16} />
+            <span>Fiado</span>
+            <strong>{formatarValor(resumo.totalPagamentosFiado)}</strong>
+          </div>
+        </div>
+      </div>
       {/* Filtros */}
-      <div className="controles-section">
-        <button 
-          className="btn-filters-toggle"
-          onClick={() => setShowFilters(!showFilters)}
-        >
-          <Filter size={18} />
-          {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
-        </button>
-
-        <button className="btn-secondary" onClick={exportarRelatorio}>
-          <Download size={18} />
-          Exportar Relatório
-        </button>
-      </div>
-
       {showFilters && (
-        <div className="filters-section">
+        <div className="filters-panel">
           <div className="filters-grid">
-            <div className="form-group">
+            <div className="filter-group">
               <label>Data Início</label>
               <input
                 type="date"
                 value={filtros.dataInicio}
                 onChange={(e) => setFiltros(prev => ({ ...prev, dataInicio: e.target.value }))}
-                className="form-input"
+                className="input"
               />
             </div>
-
-            <div className="form-group">
+            <div className="filter-group">
               <label>Data Fim</label>
               <input
                 type="date"
                 value={filtros.dataFim}
                 onChange={(e) => setFiltros(prev => ({ ...prev, dataFim: e.target.value }))}
-                className="form-input"
+                className="input"
               />
             </div>
-
-            <div className="form-group">
+            <div className="filter-group">
               <label>Tipo</label>
               <select
                 value={filtros.tipo}
                 onChange={(e) => setFiltros(prev => ({ ...prev, tipo: e.target.value }))}
-                className="form-select"
+                className="select"
               >
                 <option value="">Todos</option>
                 <option value="entrada">Entradas</option>
                 <option value="saida">Saídas</option>
               </select>
             </div>
-
-            <div className="form-group">
+            <div className="filter-group">
               <label>Categoria</label>
               <select
                 value={filtros.categoria}
                 onChange={(e) => setFiltros(prev => ({ ...prev, categoria: e.target.value }))}
-                className="form-select"
+                className="select"
               >
                 <option value="">Todas</option>
-                <option value="venda_dinheiro">Vendas - Dinheiro</option>
-                <option value="venda_cartao">Vendas - Cartão</option>
-                <option value="venda_pix">Vendas - PIX</option>
-                <option value="pagamento_fiado">Pagamentos de Fiado</option>
-                <option value="ajuste">Ajustes</option>
+                <option value="venda_dinheiro">Dinheiro</option>
+                <option value="venda_cartao">Cartão</option>
+                <option value="venda_pix">PIX</option>
+                <option value="venda_multiplas">Múltiplas</option>
+                <option value="pagamento_fiado">Fiado</option>
               </select>
             </div>
-
-            <div className="form-group">
+            <div className="filter-group">
               <label>Buscar</label>
-              <div className="search-input">
-                <Search size={18} />
+              <div className="search-container">
+                <Search size={16} />
                 <input
                   type="text"
-                  placeholder="Buscar por descrição, referência ou cliente..."
+                  placeholder="Buscar..."
                   value={filtros.busca}
                   onChange={(e) => setFiltros(prev => ({ ...prev, busca: e.target.value }))}
-                  className="form-input"
+                  className="input search"
                 />
               </div>
             </div>
@@ -343,62 +343,54 @@ export default function PagamentosPage() {
       )}
 
       {/* Lista de Movimentos */}
-      <div className="movimentos-section">
-        <div className="section-header">
+      <div className="movements-section">
+        <div className="movements-header">
           <h2>Movimentações</h2>
-          <span className="movimentos-count">
+          <span className="movements-count">
             {movimentosFiltrados.length} movimento{movimentosFiltrados.length !== 1 ? 's' : ''}
           </span>
         </div>
 
         {loading ? (
-          <div className="loading-spinner">Carregando movimentos...</div>
+          <div className="loading">
+            <div className="spinner"></div>
+            <span>Carregando...</span>
+          </div>
         ) : movimentosFiltrados.length === 0 ? (
-          <div className="no-data">
-            <DollarSign size={48} />
+          <div className="empty">
+            <DollarSign size={32} />
             <h3>Nenhum movimento encontrado</h3>
-            <p>Não há movimentações para o período e filtros selecionados</p>
+            <p>Não há movimentações para os filtros selecionados</p>
           </div>
         ) : (
-          <div className="movimentos-list">
+          <div className="movements-list">
             {movimentosFiltrados.map((movimento) => (
-              <div key={movimento.id} className={`movimento-card ${movimento.tipo}`}>
-                <div className="movimento-header">
-                  <div className="movimento-categoria">
-                    <span className="categoria-icone">
-                      {getIconeCategoria(movimento.categoria)}
-                    </span>
-                    <div className="movimento-info">
-                      <h4 className="movimento-descricao">{movimento.descricao}</h4>
-                      {movimento.referencia && (
-                        <span className="movimento-referencia">{movimento.referencia}</span>
-                      )}
-                      {movimento.cliente_nome && (
-                        <span className="movimento-cliente">Cliente: {movimento.cliente_nome}</span>
-                      )}
-                    </div>
+              <div key={movimento.id} className="movement-card">
+                <div className="movement-left">
+                  <div className={`movement-type ${movimento.tipo}`}>
+                    {getIconeCategoria(movimento.categoria)}
                   </div>
-                  <div className="movimento-actions">
-                    <div className={`movimento-valor ${movimento.tipo}`}>
-                      <span className="valor-sinal">{movimento.tipo === 'entrada' ? '+' : '-'}</span>
-                      {formatarValor(Math.abs(movimento.valor))}
+                  <div className="movement-info">
+                    <h3>{movimento.descricao}</h3>
+                    <div className="movement-meta">
+                      <span className="date">{formatarData(movimento.data_movimento)}</span>
+                      {movimento.referencia && <span className="ref">Ref: {movimento.referencia}</span>}
+                      {movimento.cliente_nome && <span className="client">Cliente: {movimento.cliente_nome}</span>}
+                      {movimento.forma_pagamento && <span className="payment">{movimento.forma_pagamento}</span>}
                     </div>
-                    <button
-                      onClick={() => imprimirRecibo(movimento.id)}
-                      className="btn-recibo"
-                      title="Imprimir recibo"
-                    >
-                      <Printer size={16} />
-                      Recibo
-                    </button>
                   </div>
                 </div>
-                
-                <div className="movimento-footer">
-                  <span className="movimento-data">{formatarData(movimento.data_movimento)}</span>
-                  {movimento.forma_pagamento && (
-                    <span className="movimento-forma">{movimento.forma_pagamento}</span>
-                  )}
+                <div className="movement-right">
+                  <div className={`movement-value ${movimento.tipo}`}>
+                    {movimento.tipo === 'entrada' ? '+' : '-'} {formatarValor(Math.abs(movimento.valor))}
+                  </div>
+                  <button
+                    onClick={() => imprimirRecibo(movimento.id)}
+                    className="btn btn-sm"
+                    title="Imprimir recibo"
+                  >
+                    <Printer size={14} />
+                  </button>
                 </div>
               </div>
             ))}

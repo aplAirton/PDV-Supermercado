@@ -1,5 +1,13 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { executeQuery } from '@/lib/database'
+import { 
+  gerarHtmlDocumento, 
+  empresaDefault, 
+  getClienteInfo, 
+  formatarValor, 
+  formatarData,
+  type ClienteInfo 
+} from '@/lib/recibo-utils'
 
 export async function GET(request: NextRequest, context: any) {
   try {
@@ -21,15 +29,17 @@ export async function GET(request: NextRequest, context: any) {
         descricao,
         referencia,
         forma_pagamento,
+        forma_pagamento_json,
         data_movimento,
         cliente_nome,
         cliente_id
       FROM (
-        -- Vendas em dinheiro, cartão e PIX
+        -- Vendas
         SELECT 
           v.id,
           'entrada' as tipo,
           CASE 
+            WHEN v.forma_pagamento_json IS NOT NULL THEN 'venda_multiplas'
             WHEN v.forma_pagamento = 'dinheiro' THEN 'venda_dinheiro'
             WHEN v.forma_pagamento IN ('cartao_debito', 'cartao_credito') THEN 'venda_cartao'
             WHEN v.forma_pagamento = 'pix' THEN 'venda_pix'
@@ -39,18 +49,19 @@ export async function GET(request: NextRequest, context: any) {
           CONCAT('Venda #', v.id) as descricao,
           CONCAT('Venda #', v.id) as referencia,
           CASE 
+            WHEN v.forma_pagamento_json IS NOT NULL THEN 'Múltiplas'
             WHEN v.forma_pagamento = 'dinheiro' THEN 'Dinheiro'
-            WHEN v.forma_pagamento = 'cartao_debito' THEN 'Cartão Débito'
-            WHEN v.forma_pagamento = 'cartao_credito' THEN 'Cartão Crédito'
+            WHEN v.forma_pagamento = 'cartao_debito' THEN 'Débito'
+            WHEN v.forma_pagamento = 'cartao_credito' THEN 'Crédito'
             WHEN v.forma_pagamento = 'pix' THEN 'PIX'
             ELSE v.forma_pagamento
           END as forma_pagamento,
+          v.forma_pagamento_json,
           v.data_venda as data_movimento,
           c.nome as cliente_nome,
           v.cliente_id
         FROM vendas v
         LEFT JOIN clientes c ON v.cliente_id = c.id
-        WHERE v.forma_pagamento IN ('dinheiro', 'cartao_debito', 'cartao_credito', 'pix')
         
         UNION ALL
         
@@ -64,11 +75,12 @@ export async function GET(request: NextRequest, context: any) {
           fm.referencia,
           CASE 
             WHEN fm.referencia LIKE '%dinheiro%' THEN 'Dinheiro'
-            WHEN fm.referencia LIKE '%cartao%' OR fm.referencia LIKE '%débito%' THEN 'Cartão Débito'  
-            WHEN fm.referencia LIKE '%crédito%' THEN 'Cartão Crédito'
+            WHEN fm.referencia LIKE '%cartao%' OR fm.referencia LIKE '%débito%' THEN 'Débito'  
+            WHEN fm.referencia LIKE '%crédito%' THEN 'Crédito'
             WHEN fm.referencia LIKE '%pix%' THEN 'PIX'
             ELSE 'Não especificado'
           END as forma_pagamento,
+          NULL as forma_pagamento_json,
           fm.data_movimento,
           c.nome as cliente_nome,
           fm.cliente_id
@@ -87,183 +99,97 @@ export async function GET(request: NextRequest, context: any) {
 
     const movimento = movimentos[0]
     
-    // Buscar dados da empresa (pode vir de configuração ou banco)
-    const empresaInfo = {
-      nome: 'Supermercado PDV Airton',
-      endereco: 'Rua Principal, 123 - Centro',
-      telefone: '(11) 9999-9999',
-      cnpj: '12.345.678/0001-90'
+    // Helper para processar formas de pagamento
+    const getFormasPagamentoDetalhadas = () => {
+      if (!movimento.forma_pagamento_json) {
+        return movimento.forma_pagamento
+      }
+      
+      try {
+        const pagamentosJson = JSON.parse(movimento.forma_pagamento_json)
+        if (Array.isArray(pagamentosJson)) {
+          return pagamentosJson.map((p: any) => {
+            const tipo = (p.tipo || p.tipo_pagamento || '').toLowerCase()
+            const valor = Number(p.valor || 0)
+            
+            let tipoFormatado = ''
+            switch (tipo) {
+              case 'dinheiro': tipoFormatado = 'Dinheiro'; break
+              case 'cartao_debito': tipoFormatado = 'Cartão Débito'; break
+              case 'cartao_credito': tipoFormatado = 'Cartão Crédito'; break
+              case 'pix': tipoFormatado = 'PIX'; break
+              case 'fiado': tipoFormatado = 'Fiado'; break
+              default: tipoFormatado = tipo.charAt(0).toUpperCase() + tipo.slice(1); break
+            }
+            
+            return `<div class="forma-pagamento-item">
+              <span class="forma-tipo">${tipoFormatado}:</span>
+              <span class="forma-valor">R$ ${valor.toFixed(2)}</span>
+            </div>`
+          }).join('')
+        }
+      } catch (error) {
+        console.error('Erro ao processar forma_pagamento_json:', error)
+      }
+      
+      return movimento.forma_pagamento
     }
+    
+    // Preparar dados do cliente se existir
+    const clienteInfo: ClienteInfo | null = movimento.cliente_nome ? {
+      nome: movimento.cliente_nome,
+      cpf: movimento.cliente_cpf,
+      telefone: movimento.cliente_telefone
+    } : null
 
-    // Gerar HTML do recibo para impressão
-    const htmlRecibo = `
-    <!DOCTYPE html>
-    <html lang="pt-BR">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Recibo - ${movimento.referencia}</title>
-        <style>
-            * {
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-            }
-            
-            body {
-                font-family: 'Courier New', monospace;
-                font-size: 12px;
-                line-height: 1.4;
-                color: #000;
-                background: #fff;
-                padding: 20px;
-                max-width: 300px;
-                margin: 0 auto;
-            }
-            
-            .cabecalho {
-                text-align: center;
-                border-bottom: 2px solid #000;
-                padding-bottom: 10px;
-                margin-bottom: 15px;
-            }
-            
-            .empresa-nome {
-                font-size: 16px;
-                font-weight: bold;
-                margin-bottom: 5px;
-            }
-            
-            .empresa-info {
-                font-size: 10px;
-                margin-bottom: 2px;
-            }
-            
-            .recibo-titulo {
-                font-size: 14px;
-                font-weight: bold;
-                text-align: center;
-                margin: 15px 0;
-                padding: 5px;
-                border: 1px solid #000;
-            }
-            
-            .detalhes {
-                margin-bottom: 15px;
-            }
-            
-            .linha {
-                display: flex;
-                justify-content: space-between;
-                margin-bottom: 5px;
-                padding: 2px 0;
-            }
-            
-            .linha.destaque {
-                font-weight: bold;
-                font-size: 13px;
-                border-top: 1px dashed #000;
-                border-bottom: 1px dashed #000;
-                padding: 5px 0;
-                margin: 10px 0;
-            }
-            
-            .valor {
-                text-align: right;
-                font-weight: bold;
-            }
-            
-            .rodape {
-                margin-top: 20px;
-                text-align: center;
-                font-size: 10px;
-                border-top: 1px dashed #000;
-                padding-top: 10px;
-            }
-            
-            .assinatura {
-                margin-top: 30px;
-                text-align: center;
-            }
-            
-            .linha-assinatura {
-                border-top: 1px solid #000;
-                width: 200px;
-                margin: 30px auto 10px;
-            }
-            
-            @media print {
-                body {
-                    padding: 10px;
-                }
-                .no-print {
-                    display: none;
-                }
-            }
-        </style>
-    </head>
-    <body>
-        <div class="cabecalho">
-            <div class="empresa-nome">${empresaInfo.nome}</div>
-            <div class="empresa-info">${empresaInfo.endereco}</div>
-            <div class="empresa-info">Tel: ${empresaInfo.telefone}</div>
-            <div class="empresa-info">CNPJ: ${empresaInfo.cnpj}</div>
+    // Gerar conteúdo do recibo
+    const conteudoRecibo = `
+      <div class="documento-titulo">RECIBO DE PAGAMENTO</div>
+
+      ${clienteInfo ? getClienteInfo(clienteInfo) : ''}
+
+      <div class="detalhes">
+        <div class="linha">
+          <span>Data:</span>
+          <span>${formatarData(movimento.data_movimento)}</span>
         </div>
-
-        <div class="recibo-titulo">RECIBO DE PAGAMENTO</div>
-
-        <div class="detalhes">
-            <div class="linha">
-                <span>Data:</span>
-                <span>${new Date(movimento.data_movimento).toLocaleString('pt-BR')}</span>
-            </div>
-            
-            <div class="linha">
-                <span>Referência:</span>
-                <span>${movimento.referencia || movimento.descricao}</span>
-            </div>
-            
-            ${movimento.cliente_nome ? `
-            <div class="linha">
-                <span>Cliente:</span>
-                <span>${movimento.cliente_nome}</span>
-            </div>
-            ` : ''}
-            
-            <div class="linha">
-                <span>Forma Pagamento:</span>
-                <span>${movimento.forma_pagamento}</span>
-            </div>
-            
-            <div class="linha">
-                <span>Descrição:</span>
-                <span>${movimento.descricao}</span>
-            </div>
-            
-            <div class="linha destaque">
-                <span>VALOR RECEBIDO:</span>
-                <span class="valor">R$ ${Number(movimento.valor).toFixed(2).replace('.', ',')}</span>
-            </div>
+        
+        <div class="linha">
+          <span>Referência:</span>
+          <span>${movimento.referencia || movimento.descricao}</span>
         </div>
-
-        <div class="assinatura">
-            <div class="linha-assinatura"></div>
-            <div>Assinatura do Responsável</div>
+        
+        ${movimento.forma_pagamento_json ? `
+        <div class="formas-pagamento-section">
+          <div class="formas-titulo">Formas de Pagamento:</div>
+          <div class="formas-lista">
+            ${getFormasPagamentoDetalhadas()}
+          </div>
         </div>
-
-        <div class="rodape">
-            <div>Documento gerado em ${new Date().toLocaleString('pt-BR')}</div>
-            <div>Sistema PDV - Controle de Pagamentos</div>
+        ` : `
+        <div class="linha">
+          <span>Forma de Pagamento:</span>
+          <span>${getFormasPagamentoDetalhadas()}</span>
         </div>
+        `}
+        
+        <div class="linha destaque">
+          <span>VALOR RECEBIDO:</span>
+          <span class="valor">R$ ${formatarValor(Number(movimento.valor))}</span>
+        </div>
+      </div>
 
-        <script>
-            window.onload = function() {
-                window.print();
-            }
-        </script>
-    </body>
-    </html>
+      <div class="assinatura">
+        <div class="linha-assinatura"></div>
+        <div>Assinatura do Responsável</div>
+      </div>
     `
+
+    const htmlRecibo = gerarHtmlDocumento(
+      `Recibo - ${movimento.referencia}`,
+      conteudoRecibo,
+      empresaDefault
+    )
 
     return new Response(htmlRecibo, {
       headers: {

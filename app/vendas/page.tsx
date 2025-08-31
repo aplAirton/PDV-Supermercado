@@ -49,6 +49,7 @@ export default function VendasPage() {
   const [loadingClientes, setLoadingClientes] = useState(false)
   const [vendaConcluida, setVendaConcluida] = useState(false)
   const [cupomTexto, setCupomTexto] = useState<string | null>(null)
+  const [ultimaVenda, setUltimaVenda] = useState<any>(null)
 
   // Estados para modal de identificação de cliente
   const [showClienteModal, setShowClienteModal] = useState(false)
@@ -69,7 +70,8 @@ export default function VendasPage() {
   const [activeInputIndex, setActiveInputIndex] = useState<number | null>(null)
   const [activeInputField, setActiveInputField] = useState<string>("")
   const searchInputRef = useRef<HTMLInputElement | null>(null)
-  const [isWideViewport, setIsWideViewport] = useState<boolean>(true)
+  const paymentInputRef = useRef<HTMLInputElement | null>(null)
+  const [showVirtualKeyboard, setShowVirtualKeyboard] = useState<boolean>(false)
 
   const totalBeforeDiscount = carrinho.reduce((sum, item) => sum + Number(item.subtotal), 0)
   const parsedDiscount = Math.max(0, parseCurrency(discountValue || "0")) || 0
@@ -148,13 +150,19 @@ export default function VendasPage() {
     }
   }, [])
 
-  // detectar largura da viewport para decidir se mostramos o teclado virtual
+  // Focar no primeiro input de pagamento quando o modal abrir
   useEffect(() => {
-    const update = () => setIsWideViewport(typeof window !== 'undefined' ? window.innerWidth >= 768 : true)
-    update()
-    window.addEventListener('resize', update)
-    return () => window.removeEventListener('resize', update)
-  }, [])
+    if (showPagamentoModal && paymentInputRef.current) {
+      setTimeout(() => {
+        try { 
+          paymentInputRef.current?.focus()
+          // Ativar o primeiro input para o teclado virtual
+          setActiveInputIndex(0)
+          setActiveInputField("Pagamento 1")
+        } catch (e) { /* ignore */ }
+      }, 100)
+    }
+  }, [showPagamentoModal])
 
   // Nova função de busca de produtos mais robusta
   const buscarProdutos = async (query: string, mode: 'search' | 'exact' = 'search') => {
@@ -232,6 +240,47 @@ export default function VendasPage() {
       setClientes([])
     } finally {
       setLoadingClientes(false)
+    }
+  }
+
+  const buscarUltimaVenda = async () => {
+    try {
+      const response = await fetch("/api/vendas?limit=1&order=desc")
+      const data = await response.json()
+      if (response.ok && Array.isArray(data) && data.length > 0) {
+        console.log("Dados da última venda:", data[0])
+        setUltimaVenda(data[0])
+      }
+    } catch (error) {
+      console.error("Erro ao buscar última venda:", error)
+      setUltimaVenda(null)
+    }
+  }
+
+  // Helper para processar formas de pagamento da última venda
+  const getFormasPagamentoUltimaVenda = () => {
+    if (!ultimaVenda) return []
+    
+    try {
+      // Primeiro tenta o campo forma_pagamento_json
+      if (ultimaVenda.forma_pagamento_json) {
+        const pagamentosJson = JSON.parse(ultimaVenda.forma_pagamento_json)
+        console.log("Dados do forma_pagamento_json:", pagamentosJson)
+        if (Array.isArray(pagamentosJson)) {
+          return pagamentosJson
+        }
+      }
+      
+      // Fallback para o campo pagamentos (se existir)
+      if (ultimaVenda.pagamentos && Array.isArray(ultimaVenda.pagamentos)) {
+        console.log("Dados do campo pagamentos:", ultimaVenda.pagamentos)
+        return ultimaVenda.pagamentos
+      }
+      
+      return []
+    } catch (error) {
+      console.error("Erro ao processar formas de pagamento:", error)
+      return []
     }
   }
 
@@ -490,6 +539,8 @@ export default function VendasPage() {
             const cup = await cupResp.json()
             setCupomTexto(cup.conteudo_texto)
             setVendaConcluida(true)
+            // Buscar dados da última venda para exibir no resumo
+            await buscarUltimaVenda()
           }
         } catch (err) {
           console.error('Erro ao buscar cupom:', err)
@@ -657,8 +708,57 @@ export default function VendasPage() {
       ) : (
         <div className="card center-card">
           <div className="center-text">
-            <h3 className="font-bold">Venda concluída</h3>
+            <h3 className="font-bold">Venda Concluída</h3>
             <p className="text-sm text-muted">A venda foi finalizada com sucesso.</p>
+            
+            {/* Resumo da Venda */}
+            <div className="sale-summary-card">
+              <div className="sale-summary-row">
+                <span className="summary-label">Quantidade de itens:</span>
+                <span className="summary-value">
+                  {ultimaVenda ? ultimaVenda.itens?.length || 0 : 0} {(ultimaVenda?.itens?.length || 0) === 1 ? "item" : "itens"}
+                </span>
+              </div>
+              
+              <div className="sale-summary-row">
+                <span className="summary-label">Valor total:</span>
+                <span className="summary-value">R$ {ultimaVenda ? Number(ultimaVenda.total || 0).toFixed(2) : "0,00"}</span>
+              </div>
+              
+              <div className="sale-summary-row">
+                <span className="summary-label">Formas de pagamento:</span>
+                <div className="summary-payments">
+                  {getFormasPagamentoUltimaVenda().length > 0 ? (
+                    getFormasPagamentoUltimaVenda().map((p: any, idx: number) => (
+                      <div key={idx} className="payment-item">
+                        <span className="payment-type">
+                          {(p.tipo || p.tipo_pagamento) === 'dinheiro' ? 'Dinheiro' : 
+                           (p.tipo || p.tipo_pagamento) === 'cartao_debito' ? 'Débito' :
+                           (p.tipo || p.tipo_pagamento) === 'cartao_credito' ? 'Crédito' :
+                           (p.tipo || p.tipo_pagamento) === 'pix' ? 'PIX' : 
+                           (p.tipo || p.tipo_pagamento) === 'fiado' ? 'Fiado' : 
+                           `❓ ${p.tipo || p.tipo_pagamento || 'Desconhecido'}`}
+                        </span>
+                        <span className="payment-value">R$ {Number(p.valor || 0).toFixed(2)}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="payment-item">
+                      <span className="payment-type">Carregando...</span>
+                      <span className="payment-value">R$ 0,00</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {ultimaVenda && Number(ultimaVenda.troco || 0) > 0 && (
+                <div className="sale-summary-row troco-highlight">
+                  <span className="summary-label">Troco:</span>
+                  <span className="summary-value troco-value">R$ {Number(ultimaVenda.troco || 0).toFixed(2)}</span>
+                </div>
+              )}
+            </div>
+            
             <div className="center-actions">
               <button className="btn btn-outline" onClick={() => {
                 // reiniciar estado para nova venda
@@ -671,6 +771,7 @@ export default function VendasPage() {
                 setDiscountType('none')
                 setDiscountValue('')
                 setShowFilterOptions(false)
+                setUltimaVenda(null)
               }}>Nova venda</button>
             </div>
           </div>
@@ -1012,8 +1113,9 @@ export default function VendasPage() {
       {/* Modal de Pagamento */}
       {showPagamentoModal && (
         <div className="modal-overlay">
-          <div className="modal payment-modal">
-            <div className="payment-content">
+          <div className={`modal payment-modal ${showVirtualKeyboard ? 'with-keyboard' : ''}`}>
+            <div className="payment-layout">
+              <div className="payment-content">
                 <div className="modal-header-row">
                   <h3 className="modal-title-text">Finalizar Pagamento</h3>
                   <button 
@@ -1027,6 +1129,18 @@ export default function VendasPage() {
                 <div className="payment-summary-card payment-summary-center">
                   <div className="payment-total-amount">Total: R$ {Number(total).toFixed(2)}</div>
                   <div className="payment-items-count">{carrinho.length} {carrinho.length === 1 ? "item" : "itens"}</div>
+                  
+                  {/* Opção de Teclado Virtual */}
+                  <div className="keyboard-toggle-section">
+                    <button
+                      type="button"
+                      className={`btn btn-xs ${showVirtualKeyboard ? 'btn-primary' : 'btn-outline'}`}
+                      onClick={() => setShowVirtualKeyboard(!showVirtualKeyboard)}
+                      title={showVirtualKeyboard ? 'Ocultar teclado virtual' : 'Exibir teclado virtual'}
+                    >
+                      🔢 {showVirtualKeyboard ? 'Ocultar' : 'Exibir'} Teclado Virtual
+                    </button>
+                  </div>
                 </div>
 
             {/* Gerenciador de Múltiplas Formas de Pagamento */}
@@ -1053,6 +1167,7 @@ export default function VendasPage() {
                     </select>
 
                     <input
+                      ref={idx === 0 ? paymentInputRef : undefined}
                       type="text"
                       className={`form-input ${activeInputIndex === idx ? 'keyboard-active' : ''} input-35`}
                       value={p.valor}
@@ -1279,19 +1394,20 @@ export default function VendasPage() {
                 )}
               </button>
             </div>
-            </div>
-
-            {/* Teclado Virtual (apenas em telas largas) */}
-            {isWideViewport && (
-              <div className="payment-keyboard-wrapper">
-                <VirtualKeyboard
-                  onKeyPress={handleKeyPress}
-                  onBackspace={handleBackspace}
-                  onClear={handleClear}
-                  activeInput={activeInputIndex !== null ? `Pagamento ${activeInputIndex + 1}` : undefined}
-                />
               </div>
-            )}
+
+              {/* Teclado Virtual */}
+              {showVirtualKeyboard && (
+                <div className="payment-keyboard-wrapper">
+                  <VirtualKeyboard
+                    onKeyPress={handleKeyPress}
+                    onBackspace={handleBackspace}
+                    onClear={handleClear}
+                    activeInput={activeInputIndex !== null ? `Pagamento ${activeInputIndex + 1}` : undefined}
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

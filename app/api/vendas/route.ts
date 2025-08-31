@@ -125,8 +125,8 @@ export async function POST(request: NextRequest) {
     // Resumo da forma de pagamento para salvar em campo simples (label) e enum (campo obrigatório)
     const labelMap: Record<string, string> = {
       dinheiro: 'Dinheiro',
-      cartao_debito: 'Cartão Débito',
-      cartao_credito: 'Cartão Crédito',
+      cartao_debito: 'Débito',
+      cartao_credito: 'Crédito',
       pix: 'PIX',
       fiado: 'Fiado',
     }

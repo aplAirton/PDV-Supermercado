@@ -40,6 +40,7 @@ export async function GET(request: NextRequest) {
           WHEN categoria = 'venda_dinheiro' THEN 'Venda - Dinheiro'
           WHEN categoria = 'venda_cartao' THEN 'Venda - Cartão'
           WHEN categoria = 'venda_pix' THEN 'Venda - PIX'
+          WHEN categoria = 'venda_multiplas' THEN 'Venda - Múltiplas Formas'
           WHEN categoria = 'pagamento_fiado' THEN 'Pagamento de Fiado'
           WHEN categoria = 'ajuste' THEN 'Ajuste'
           ELSE categoria
@@ -51,11 +52,12 @@ export async function GET(request: NextRequest) {
         FORMAT(valor, 2, 'pt_BR') as valor_formatado,
         valor
       FROM (
-        -- Vendas em dinheiro, cartão e PIX (ENTRADAS)
+        -- Vendas (ENTRADAS) - usando forma_pagamento_json quando disponível
         SELECT 
           v.id,
           'entrada' as tipo,
           CASE 
+            WHEN v.forma_pagamento_json IS NOT NULL THEN 'venda_multiplas'
             WHEN v.forma_pagamento = 'dinheiro' THEN 'venda_dinheiro'
             WHEN v.forma_pagamento IN ('cartao_debito', 'cartao_credito') THEN 'venda_cartao'
             WHEN v.forma_pagamento = 'pix' THEN 'venda_pix'
@@ -65,9 +67,10 @@ export async function GET(request: NextRequest) {
           CONCAT('Venda #', v.id) as descricao,
           CONCAT('Venda #', v.id) as referencia,
           CASE 
+            WHEN v.forma_pagamento_json IS NOT NULL THEN 'Múltiplas'
             WHEN v.forma_pagamento = 'dinheiro' THEN 'Dinheiro'
-            WHEN v.forma_pagamento = 'cartao_debito' THEN 'Cartão Débito'
-            WHEN v.forma_pagamento = 'cartao_credito' THEN 'Cartão Crédito'
+            WHEN v.forma_pagamento = 'cartao_debito' THEN 'Débito'
+            WHEN v.forma_pagamento = 'cartao_credito' THEN 'Crédito'
             WHEN v.forma_pagamento = 'pix' THEN 'PIX'
             ELSE v.forma_pagamento
           END as forma_pagamento,
@@ -75,7 +78,6 @@ export async function GET(request: NextRequest) {
           c.nome as cliente_nome
         FROM vendas v
         LEFT JOIN clientes c ON v.cliente_id = c.id
-        WHERE v.forma_pagamento IN ('dinheiro', 'cartao_debito', 'cartao_credito', 'pix')
         
         UNION ALL
         
@@ -89,8 +91,8 @@ export async function GET(request: NextRequest) {
           fm.referencia,
           CASE 
             WHEN fm.referencia LIKE '%dinheiro%' THEN 'Dinheiro'
-            WHEN fm.referencia LIKE '%cartao%' OR fm.referencia LIKE '%débito%' THEN 'Cartão Débito'  
-            WHEN fm.referencia LIKE '%crédito%' THEN 'Cartão Crédito'
+            WHEN fm.referencia LIKE '%cartao%' OR fm.referencia LIKE '%débito%' THEN 'Débito'  
+            WHEN fm.referencia LIKE '%crédito%' THEN 'Crédito'
             WHEN fm.referencia LIKE '%pix%' THEN 'PIX'
             ELSE 'Não especificado'
           END as forma_pagamento,

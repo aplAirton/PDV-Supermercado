@@ -588,6 +588,80 @@ html, body, input, button, select, textarea {
   gap: 0.5rem;
   justify-content: center;
 }
+
+/* Sale Summary Card Styles */
+.sale-summary-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.sale-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.sale-summary-row:last-child {
+  margin-bottom: 0;
+  border-bottom: none;
+}
+
+.summary-label {
+  font-weight: 600;
+  color: var(--muted-foreground);
+  font-size: 0.9rem;
+}
+
+.summary-value {
+  font-weight: 700;
+  color: var(--foreground);
+  font-size: 1rem;
+}
+
+.summary-payments {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.payment-item {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.payment-type {
+  font-size: 0.85rem;
+  color: var(--muted-foreground);
+}
+
+.payment-value {
+  font-weight: 600;
+  color: var(--foreground);
+  font-size: 0.9rem;
+}
+
+.troco-highlight {
+  background: rgba(34, 197, 94, 0.1);
+  padding: 0.75rem;
+  border-radius: calc(var(--radius) - 2px);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  margin-top: 0.5rem;
+}
+
+.troco-value {
+  color: #22c55e;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
 .card-header-custom {
   padding: 1rem;
   border-bottom: 2px solid var(--border);
@@ -812,21 +886,36 @@ html, body, input, button, select, textarea {
 
 /* Payment Modal Responsive */
 .payment-modal {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.5rem;
   max-width: 90vw;
   max-height: 90vh;
-  overflow-y: auto;
+  overflow: hidden;
+}
+
+.payment-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 1rem;
+}
+
+.payment-modal.with-keyboard .payment-layout {
+  flex-direction: row;
+  gap: 1.5rem;
 }
 
 .payment-content {
   flex: 1;
   overflow-y: auto;
+  min-width: 0;
 }
 
-.payment-keyboard {
+.payment-keyboard-wrapper {
   flex-shrink: 0;
+  width: 100%;
+}
+
+.payment-modal.with-keyboard .payment-keyboard-wrapper {
+  width: 320px;
 }
 
 /* Active input highlight */
@@ -837,8 +926,7 @@ html, body, input, button, select, textarea {
 }
 
 @media (min-width: 768px) {
-  .payment-modal {
-    grid-template-columns: 1fr 320px;
+  .payment-modal.with-keyboard {
     max-width: 70rem;
   }
 
@@ -851,6 +939,14 @@ html, body, input, button, select, textarea {
 @media (max-width: 767px) {
   .payment-modal {
     padding: 1rem;
+  }
+
+  .payment-modal.with-keyboard .payment-layout {
+    flex-direction: column;
+  }
+
+  .payment-modal.with-keyboard .payment-keyboard-wrapper {
+    width: 100%;
   }
 
   .keyboard-btn {

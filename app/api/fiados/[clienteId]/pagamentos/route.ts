@@ -95,7 +95,7 @@ export async function POST(request: NextRequest, context: any) {
 
           // Registrar movimento no extrato (raw SQL dentro da transação)
           const descricaoMov = `Pagamento fiado #${fiado_id} - ${formaPgto}${observacoes ? ` - ${observacoes}` : ''}`
-          const referenciaMov = `pagamento:${pagamento.id}`
+          const referenciaMov = `PAG #${pagamento.id}`
           await tx.$executeRaw`
             INSERT INTO fiado_movimentos (cliente_id, fiado_id, tipo, direcao, valor, descricao, referencia, criado_por, data_movimento)
             VALUES (${clienteId}, ${Number(fiado_id)}, ${'pagamento'}, ${'credito'}, ${valorPgto}, ${descricaoMov}, ${referenciaMov}, ${'PDV'}, NOW())
