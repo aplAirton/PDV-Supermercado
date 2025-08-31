@@ -1547,3 +1547,463 @@
     padding: 0.25rem;
   }
 }
+
+/* Estilos para Página de Pagamentos */
+.pagamentos-container {
+  padding: 1.5rem;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+/* Movimento actions container */
+.movimento-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+/* Botão de recibo nos pagamentos */
+.btn-recibo {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-recibo:hover {
+  background: var(--primary-color-hover);
+  transform: translateY(-1px);
+}
+
+/* Botão de recibo pequeno para extrato */
+.btn-recibo-small {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0.25rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-recibo-small:hover {
+  background: var(--primary-color-hover);
+  transform: scale(1.1);
+}
+
+/* Resumo Financeiro */
+.resumo-financeiro {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.card-resumo {
+  background: var(--card-background);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.card-resumo:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.card-resumo.entrada {
+  border-left: 4px solid var(--success-color);
+}
+
+.card-resumo.saida {
+  border-left: 4px solid var(--danger-color);
+}
+
+.card-resumo.saldo.positivo {
+  border-left: 4px solid var(--success-color);
+  background: linear-gradient(135deg, #f0fdf4, #ffffff);
+}
+
+.card-resumo.saldo.negativo {
+  border-left: 4px solid var(--danger-color);
+  background: linear-gradient(135deg, #fef2f2, #ffffff);
+}
+
+.card-resumo-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.card-resumo-valor {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.saldo.positivo .card-resumo-valor {
+  color: var(--success-color);
+}
+
+.saldo.negativo .card-resumo-valor {
+  color: var(--danger-color);
+}
+
+/* Categorias Resumo */
+.categorias-resumo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: var(--surface);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.categoria-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--card-background);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  transition: all 0.2s ease;
+}
+
+.categoria-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.categoria-icone {
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  background: var(--surface);
+  border-radius: 50%;
+}
+
+.categoria-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.categoria-nome {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.categoria-valor {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--success-color);
+}
+
+/* Controles */
+.controles-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+}
+
+.btn-filters-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-filters-toggle:hover {
+  background: var(--primary-color-hover);
+}
+
+/* Movimentos */
+.movimentos-section {
+  background: var(--card-background);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.section-header h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.movimentos-count {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  background: var(--surface);
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+}
+
+.movimentos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.movimento-card {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem;
+  background: var(--card-background);
+  transition: all 0.2s ease;
+}
+
+.movimento-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateX(2px);
+}
+
+.movimento-card.entrada {
+  border-left: 4px solid var(--success-color);
+}
+
+.movimento-card.saida {
+  border-left: 4px solid var(--danger-color);
+}
+
+.movimento-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+  gap: 1rem;
+}
+
+.movimento-categoria {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.movimento-categoria .categoria-icone {
+  font-size: 1.25rem;
+  width: 2rem;
+  height: 2rem;
+  margin-top: 0.125rem;
+}
+
+.movimento-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.movimento-descricao {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.movimento-referencia {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.movimento-cliente {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.movimento-valor {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.movimento-valor.entrada {
+  color: var(--success-color);
+}
+
+.movimento-valor.saida {
+  color: var(--danger-color);
+}
+
+.valor-sinal {
+  font-size: 1rem;
+  opacity: 0.7;
+}
+
+.movimento-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.movimento-data {
+  font-weight: 500;
+}
+
+.movimento-forma {
+  background: var(--surface);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Search Input */
+.search-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-input svg {
+  position: absolute;
+  left: 0.75rem;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.search-input .form-input {
+  padding-left: 2.5rem;
+}
+
+/* Loading e No Data */
+.loading-spinner {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+.no-data {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-secondary);
+}
+
+.no-data svg {
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+.no-data h3 {
+  margin: 1rem 0 0.5rem 0;
+  color: var(--text-primary);
+  font-size: 1.25rem;
+}
+
+.no-data p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .pagamentos-container {
+    padding: 1rem;
+  }
+
+  .resumo-financeiro {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .categorias-resumo {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 1rem;
+  }
+
+  .controles-section {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .movimento-header {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .movimento-actions {
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .movimento-valor {
+    align-self: flex-end;
+  }
+
+  .btn-recibo {
+    align-self: flex-end;
+  }
+
+  .movimento-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .categorias-resumo {
+    grid-template-columns: 1fr;
+  }
+
+  .card-resumo-valor {
+    font-size: 1.5rem;
+  }
+
+  .categoria-valor {
+    font-size: 1rem;
+  }
+}

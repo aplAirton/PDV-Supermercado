@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ShoppingCart, Package, Users, History, CreditCard, Menu, X } from "lucide-react"
+import { ShoppingCart, Package, Users, History, CreditCard, Menu, X, DollarSign } from "lucide-react"
 
-type Page = "vendas" | "produtos" | "clientes" | "historico" | "fiados"
+type Page = "vendas" | "produtos" | "clientes" | "historico" | "fiados" | "pagamentos"
 
 const pageConfig = {
   vendas: {
@@ -30,6 +30,11 @@ const pageConfig = {
     title: "Fiados",
     subtitle: "Gerencie vendas fiadas e pagamentos",
     icon: CreditCard,
+  },
+  pagamentos: {
+    title: "Pagamentos",
+    subtitle: "Controle de entradas e saídas do caixa",
+    icon: DollarSign,
   },
 }
 

@@ -1,16 +1,17 @@
 "use client"
 
 import { useState } from "react"
-import { ShoppingCart, Package, Users, History, CreditCard } from "lucide-react"
+import { ShoppingCart, Package, Users, History, CreditCard, DollarSign } from "lucide-react"
 import VendasPage from "./vendas/page"
 import ProdutosPage from "./produtos/page"
 import ClientesPage from "./clientes/page"
 import HistoricoPage from "./historico/page"
 import FiadosPage from "./fiados/page"
+import PagamentosPage from "./pagamentos/page"
 import Sidebar from "@/components/sidebar"
 import '../styles/components.css'
 
-type Page = "vendas" | "produtos" | "clientes" | "historico" | "fiados"
+type Page = "vendas" | "produtos" | "clientes" | "historico" | "fiados" | "pagamentos"
 
 const pageConfig = {
   vendas: {
@@ -38,6 +39,11 @@ const pageConfig = {
     subtitle: "Gerencie vendas fiadas e pagamentos",
     icon: CreditCard,
   },
+  pagamentos: {
+    title: "Pagamentos",
+    subtitle: "Controle de entradas e saídas do caixa",
+    icon: DollarSign,
+  },
 }
 
 export default function HomePage() {
@@ -55,6 +61,8 @@ export default function HomePage() {
         return <HistoricoPage />
       case "fiados":
         return <FiadosPage />
+      case "pagamentos":
+        return <PagamentosPage />
       default:
         return <VendasPage />
     }

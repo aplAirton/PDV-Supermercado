@@ -60,6 +60,7 @@ export default function FiadosPage() {
   const [extratoCliente, setExtratoCliente] = useState<Cliente | null>(null)
   const [movimentosExtrato, setMovimentosExtrato] = useState<MovimentoExtrato[]>([])
   const [extratoLoading, setExtratoLoading] = useState(false)
+  const [imprimindoExtrato, setImprimindoExtrato] = useState(false)
 
   // Estados do formulário
   const [novoFiado, setNovoFiado] = useState({
@@ -303,6 +304,7 @@ export default function FiadosPage() {
     if (!extratoCliente) return
 
     try {
+      setImprimindoExtrato(true)
       const response = await fetch(`/api/fiados/${extratoCliente.id}/extrato/cupom`)
       if (response.ok) {
         const data = await response.json()
@@ -338,6 +340,36 @@ export default function FiadosPage() {
     } catch (error) {
       console.error('Erro ao imprimir extrato:', error)
       toast({ title: 'Erro', description: 'Erro ao imprimir extrato', variant: 'destructive' })
+    } finally {
+      setImprimindoExtrato(false)
+    }
+  }
+
+  const imprimirReciboMovimento = async (movimentoId: number) => {
+    try {
+      const url = `/api/fiados/movimentos/${movimentoId}/recibo`
+      const newWindow = window.open(url, '_blank', 'width=400,height=600')
+      
+      if (!newWindow) {
+        toast({
+          title: "Erro ao imprimir",
+          description: "Não foi possível abrir a janela de impressão. Verifique o bloqueador de pop-ups.",
+          variant: "destructive"
+        })
+        return
+      }
+
+      toast({
+        title: "Recibo aberto",
+        description: "Janela de impressão foi aberta"
+      })
+    } catch (error) {
+      console.error('Erro:', error)
+      toast({
+        title: "Erro ao gerar recibo",
+        description: "Não foi possível gerar o recibo para impressão",
+        variant: "destructive"
+      })
     }
   }
 
@@ -682,13 +714,22 @@ export default function FiadosPage() {
           </div>
           <div className="flex gap-2">
             <button 
-              className="btn btn-sm btn-outline hover:bg-blue-50 hover:border-blue-300 transition-colors" 
+              className="btn btn-sm btn-outline hover:bg-blue-50 hover:border-blue-300 transition-colors disabled:opacity-50" 
               onClick={imprimirExtrato}
-              disabled={extratoLoading || !extratoCliente}
+              disabled={extratoLoading || !extratoCliente || imprimindoExtrato}
               title="Imprimir extrato"
             >
-              <Printer size={16} />
-              Imprimir
+              {imprimindoExtrato ? (
+                <>
+                  <div className="loading" style={{ width: '16px', height: '16px', marginRight: '8px' }}></div>
+                  Gerando extrato...
+                </>
+              ) : (
+                <>
+                  <Printer size={16} />
+                  Imprimir
+                </>
+              )}
             </button>
             <button 
               className="btn btn-sm btn-success hover:bg-green-600 transition-colors" 
@@ -793,15 +834,26 @@ export default function FiadosPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className={`text-lg font-bold ${
-                        movimento.direcao === 'debito' ? 'text-red-600' : 'text-green-600'
-                      }`}>
-                        {movimento.direcao === 'debito' ? '+' : '-'}R$ {movimento.valor.toFixed(2)}
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <div className={`text-lg font-bold ${
+                          movimento.direcao === 'debito' ? 'text-red-600' : 'text-green-600'
+                        }`}>
+                          {movimento.direcao === 'debito' ? '+' : '-'}R$ {movimento.valor.toFixed(2)}
+                        </div>
+                        <div className="text-sm text-gray-600 font-medium">
+                          Saldo: R$ {movimento.saldo_corrente.toFixed(2)}
+                        </div>
                       </div>
-                      <div className="text-sm text-gray-600 font-medium">
-                        Saldo: R$ {movimento.saldo_corrente.toFixed(2)}
-                      </div>
+                      {movimento.tipo === 'pagamento' && (
+                        <button
+                          onClick={() => imprimirReciboMovimento(movimento.id)}
+                          className="btn-recibo-small"
+                          title="Imprimir recibo do pagamento"
+                        >
+                          <Printer size={14} />
+                        </button>
+                      )}
                     </div>
                   </div>
                   {movimento.referencia && (
