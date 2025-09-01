@@ -6,7 +6,7 @@ import ConfirmationModal from '@/components/confirmation-modal'
 import VirtualKeyboard from '@/components/virtual-keyboard'
 import Loading from "@/components/loading"
 import SearchHint from "@/components/search-hint"
-import { Search, Plus, Minus, Trash2, ShoppingCart, X, Settings, ChevronDown, ChevronUp, Loader2 } from "lucide-react"
+import { Search, Plus, Minus, Trash2, ShoppingCart, X, Settings, ChevronDown, ChevronUp, Loader2, User } from "lucide-react"
 import '../../styles/components.css'
 
 interface Produto {
@@ -37,6 +37,11 @@ export default function VendasPage() {
   const [carrinho, setCarrinho] = useState<ItemVenda[]>([])
   const [codigoBusca, setCodigoBusca] = useState("")
   const [clienteSelecionado, setClienteSelecionado] = useState<Cliente | null>(null)
+  const [caixaAberto, setCaixaAberto] = useState<boolean | null>(null)
+  const [dadosCaixa, setDadosCaixa] = useState<{
+    funcionario_nome: string
+    funcionario_cargo: string
+  } | null>(null)
   
   // Modal de pagamento
   const [showPagamentoModal, setShowPagamentoModal] = useState(false)
@@ -140,8 +145,35 @@ export default function VendasPage() {
   const excessoNaoPermitido = excessoNaoDinheiro || (temMultiplasFormas && totalNaoDinheiro > (totalRounded - totalDinheiro) && totalDinheiro < troco)
 
   useEffect(() => {
+    verificarStatusCaixa()
     carregarClientes()
   }, [])
+
+  const verificarStatusCaixa = async () => {
+    try {
+      const response = await fetch('/api/caixa/status')
+      const data = await response.json()
+      setCaixaAberto(data.caixaAberto)
+      
+      if (data.caixaAberto) {
+        setDadosCaixa({
+          funcionario_nome: data.caixa.funcionario_nome,
+          funcionario_cargo: data.caixa.funcionario_cargo
+        })
+      } else {
+        setDadosCaixa(null)
+        toast({
+          title: "Atenção",
+          description: "Não há caixa aberto. As vendas estão bloqueadas.",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error('Erro ao verificar status do caixa:', error)
+      setCaixaAberto(false)
+      setDadosCaixa(null)
+    }
+  }
 
   // manter foco no campo de busca por padrão
   useEffect(() => {
@@ -288,6 +320,15 @@ export default function VendasPage() {
   const buscarProduto = async (exact = false) => {
     if (!codigoBusca || codigoBusca.trim().length === 0) return
 
+    if (caixaAberto === false) {
+      toast({ 
+        title: 'Caixa fechado', 
+        description: 'Não é possível buscar produtos sem um caixa aberto!', 
+        variant: 'destructive'
+      })
+      return
+    }
+
     // Se exact=true, consultamos servidor com o codigo completo
     await buscarProdutos(codigoBusca, exact ? 'exact' : 'search')
 
@@ -311,6 +352,15 @@ export default function VendasPage() {
   }
 
   const adicionarAoCarrinho = (produto: Produto) => {
+    if (caixaAberto === false) {
+      toast({ 
+        title: 'Caixa fechado', 
+        description: 'Não é possível adicionar produtos sem um caixa aberto!', 
+        variant: 'destructive'
+      })
+      return
+    }
+    
     const itemExistente = carrinho.find((item) => item.produto.id === produto.id)
 
     if (itemExistente) {
@@ -787,8 +837,17 @@ export default function VendasPage() {
               <ShoppingCart size={20} />
               PDV - Carrinho
             </h2>
-            <div className="text-sm text-muted">
-              {carrinho.length} {carrinho.length === 1 ? "item" : "itens"}
+            <div className="header-info-right">
+              {dadosCaixa && (
+                <div className="funcionario-info-vendas">
+                  <User size={14} />
+                  <span>{dadosCaixa.funcionario_nome}</span>
+                  <small>({dadosCaixa.funcionario_cargo})</small>
+                </div>
+              )}
+              <div className="text-sm text-muted">
+                {carrinho.length} {carrinho.length === 1 ? "item" : "itens"}
+              </div>
             </div>
           </div>
           
@@ -976,16 +1035,23 @@ export default function VendasPage() {
     {/* Botão Finalizar / Estado de venda concluída */}
         <div className="section-padding">
           {!vendaConcluida ? (
+            <>
+              {caixaAberto === false && (
+                <div className="alert alert-warning" style={{ marginBottom: '16px', padding: '12px', background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: '8px', color: '#92400e' }}>
+                  <strong>Atenção:</strong> Não há caixa aberto. Abra um caixa antes de realizar vendas.
+                </div>
+              )}
               <button
-              className="btn btn-success btn-full"
-              onClick={abrirModalPagamento}
-              disabled={carrinho.length === 0}
-            >
-              <div className="center-justify">
-                <ShoppingCart size={20} />
-                FINALIZAR VENDA - R$ {Number(total).toFixed(2)}
-              </div>
-            </button>
+                className="btn btn-success btn-full"
+                onClick={abrirModalPagamento}
+                disabled={carrinho.length === 0 || caixaAberto === false}
+              >
+                <div className="center-justify">
+                  <ShoppingCart size={20} />
+                  FINALIZAR VENDA - R$ {Number(total).toFixed(2)}
+                </div>
+              </button>
+            </>
           ) : (
             <div>
               <button

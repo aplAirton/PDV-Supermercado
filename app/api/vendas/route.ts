@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
       `
       
       const vendaIdResult = await tx.$queryRaw`SELECT LAST_INSERT_ID() as id`
-      const venda = { id: (vendaIdResult as any[])[0].id }
+      const venda = { id: Number((vendaIdResult as any[])[0].id) }
 
       console.log('[vendas] Venda criada id=', venda.id)
 

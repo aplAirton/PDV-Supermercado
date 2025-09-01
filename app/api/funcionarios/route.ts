@@ -39,6 +39,33 @@ export async function POST(request: NextRequest) {
       )
     }
     
+    // Gerar login automaticamente se não fornecido
+    let loginFinal = login
+    if (!loginFinal || loginFinal.trim() === '') {
+      // Gerar login baseado no primeiro nome + primeiros dígitos do CPF
+      const primeiroNome = nome.split(' ')[0].toLowerCase().replace(/[^a-z]/g, '')
+      const digitosCpf = cpf.replace(/\D/g, '').slice(0, 4)
+      loginFinal = `${primeiroNome}${digitosCpf}`
+      
+      // Verificar se login já existe e ajustar se necessário
+      let contador = 0
+      let loginTentativa = loginFinal
+      while (contador < 10) {
+        const loginExiste = await executeQuery(
+          'SELECT id FROM funcionarios WHERE login = ?', 
+          [loginTentativa]
+        ) as any[]
+        
+        if (loginExiste.length === 0) {
+          loginFinal = loginTentativa
+          break
+        }
+        
+        contador++
+        loginTentativa = `${loginFinal}${contador}`
+      }
+    }
+    
     // Verificar se CPF já existe
     const cpfExiste = await executeQuery(
       'SELECT id FROM funcionarios WHERE cpf = ?', 
@@ -64,12 +91,13 @@ export async function POST(request: NextRequest) {
     
     const result = await executeQuery(insertQuery, [
       nome, cpf, rg || null, telefone || null, email || null, endereco || null,
-      cargo, Number(salario) || 0, data_admissao, ativo, login || null, senha_hash
+      cargo, Number(salario) || 0, data_admissao, ativo, loginFinal, senha_hash
     ]) as any
     
     return NextResponse.json({ 
       success: true, 
       funcionario_id: result.insertId,
+      login: loginFinal,
       message: 'Funcionário cadastrado com sucesso'
     })
   } catch (error) {

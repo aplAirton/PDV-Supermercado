@@ -12,9 +12,11 @@ export async function GET(
     const caixaQuery = `
       SELECT 
         c.*,
-        f.nome as funcionario_nome
+        f_abertura.nome as funcionario_nome,
+        f_fechamento.nome as funcionario_fechamento_nome
       FROM caixas c
-      JOIN funcionarios f ON c.funcionario_id = f.id
+      LEFT JOIN funcionarios f_abertura ON c.funcionario_abertura_id = f_abertura.id
+      LEFT JOIN funcionarios f_fechamento ON c.funcionario_fechamento_id = f_fechamento.id
       WHERE c.id = ?
     `
     
@@ -106,6 +108,140 @@ export async function PATCH(
     }
   } catch (error) {
     console.error('Erro na operação do caixa:', error)
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const caixaId = params.id
+    const data = await request.json()
+    
+    if (!caixaId) {
+      return NextResponse.json(
+        { error: 'ID do caixa é obrigatório' },
+        { status: 400 }
+      )
+    }
+    
+    // Buscar caixa atual
+    const caixaQuery = `
+      SELECT * FROM caixas WHERE id = ? AND status = 'aberto'
+      LIMIT 1
+    `
+    const caixas = await executeQuery(caixaQuery, [caixaId]) as any[]
+    
+    if (caixas.length === 0) {
+      return NextResponse.json(
+        { error: 'Caixa não encontrado ou já fechado' },
+        { status: 404 }
+      )
+    }
+    
+    const caixa = caixas[0]
+    
+    if (data.status === 'fechado') {
+      // Calcular totais de vendas do caixa
+      const vendasQuery = `
+        SELECT 
+          COALESCE(SUM(total), 0) as total_vendas,
+          COALESCE(SUM(valor_dinheiro), 0) as total_dinheiro,
+          COALESCE(SUM(valor_cartao_debito), 0) as total_cartao_debito,
+          COALESCE(SUM(valor_cartao_credito), 0) as total_cartao_credito,
+          COALESCE(SUM(valor_pix), 0) as total_pix,
+          COALESCE(SUM(valor_fiado), 0) as total_fiado
+        FROM vendas 
+        WHERE caixa_id = ?
+      `
+      const vendas = await executeQuery(vendasQuery, [caixaId]) as any[]
+      const totaisVendas = vendas[0] || {}
+      
+      // Buscar totais de movimentações (suprimentos e sangrias)
+      const movimentacoesQuery = `
+        SELECT 
+          COALESCE(SUM(CASE WHEN tipo = 'suprimento' THEN valor ELSE 0 END), 0) as total_suprimentos,
+          COALESCE(SUM(CASE WHEN tipo = 'sangria' THEN valor ELSE 0 END), 0) as total_sangrias
+        FROM caixa_movimentacoes 
+        WHERE caixa_id = ?
+      `
+      const movimentacoes = await executeQuery(movimentacoesQuery, [caixaId]) as any[]
+      const totaisMovimentacoes = movimentacoes[0] || {}
+      
+      // Atualizar caixa com fechamento
+      const updateQuery = `
+        UPDATE caixas SET
+          status = 'fechado',
+          data_fechamento = CURRENT_TIMESTAMP,
+          funcionario_fechamento_id = ?,
+          valor_contado_dinheiro = ?,
+          observacoes_fechamento = ?,
+          total_vendas = ?,
+          total_dinheiro = ?,
+          total_cartao_debito = ?,
+          total_cartao_credito = ?,
+          total_pix = ?,
+          total_fiado = ?,
+          total_suprimentos = ?,
+          total_sangrias = ?,
+          diferenca_caixa = ?,
+          status_reconciliacao = ?,
+          valor_final = ?
+        WHERE id = ?
+      `
+      
+      const valorFinal = parseFloat(data.valor_contado_dinheiro || 0)
+      
+      await executeQuery(updateQuery, [
+        caixa.funcionario_id, // funcionário que está fechando
+        data.valor_contado_dinheiro || 0,
+        data.observacoes_fechamento || '',
+        totaisVendas.total_vendas || 0,
+        totaisVendas.total_dinheiro || 0,
+        totaisVendas.total_cartao_debito || 0,
+        totaisVendas.total_cartao_credito || 0,
+        totaisVendas.total_pix || 0,
+        totaisVendas.total_fiado || 0,
+        totaisMovimentacoes.total_suprimentos || 0,
+        totaisMovimentacoes.total_sangrias || 0,
+        data.diferenca_caixa || 0,
+        data.status_reconciliacao || null,
+        valorFinal,
+        caixaId
+      ])
+    } else {
+      // Atualização geral do caixa
+      const updateFields: string[] = []
+      const updateValues: any[] = []
+      
+      Object.keys(data).forEach(key => {
+        if (key !== 'id') {
+          updateFields.push(`${key} = ?`)
+          updateValues.push(data[key])
+        }
+      })
+      
+      if (updateFields.length === 0) {
+        return NextResponse.json(
+          { error: 'Nenhum campo para atualizar' },
+          { status: 400 }
+        )
+      }
+      
+      const updateQuery = `UPDATE caixas SET ${updateFields.join(', ')} WHERE id = ?`
+      updateValues.push(caixaId)
+      
+      await executeQuery(updateQuery, updateValues)
+    }
+    
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Erro ao atualizar caixa:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

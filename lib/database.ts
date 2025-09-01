@@ -9,8 +9,8 @@ let dbConfig = {
   database: process.env.DB_NAME || 'pdv_supermercado',
   charset: 'utf8mb4',
   timezone: '+00:00',
-  connectTimeout: 60000,
-  acquireTimeout: 60000
+  connectTimeout: 60000
+  // acquireTimeout removido - não é válido para mysql2
 }
 
 // Suporte para DATABASE_URL (produção)

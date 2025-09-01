@@ -54,7 +54,25 @@
 
 .header-actions {
   display: flex;
-  gap: 12px;
+  align-items: center;
+  gap: 16px;
+}
+
+.funcionario-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.funcionario-info small {
+  color: #6b7280;
+  font-weight: 400;
 }
 
 /* Botões padronizados */
@@ -609,4 +627,80 @@
   .mov-details {
     text-align: left;
   }
+}
+
+/* Estilos específicos para modais grandes */
+.modal-large {
+  max-width: 800px;
+}
+
+.info-section {
+  background: #f9fafb;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.info-section p {
+  margin: 8px 0;
+  font-size: 14px;
+  color: #374151;
+}
+
+.caixa-details {
+  padding: 0;
+}
+
+.detail-section {
+  margin-bottom: 32px;
+}
+
+.detail-section:last-child {
+  margin-bottom: 0;
+}
+
+.detail-section h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 16px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.detail-grid > div {
+  font-size: 14px;
+  color: #374151;
+}
+
+.detail-section p {
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-left: 8px;
+}
+
+.status.aberto {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status.fechado {
+  background: #fef2f2;
+  color: #991b1b;
 }
