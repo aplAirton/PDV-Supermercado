@@ -169,6 +169,42 @@ const renderFormasPagamento = (movimento: MovimentoCaixa) => {
   return movimento.forma_pagamento || null
 }
 
+  const gerarHistoricoMovimentacoes = async () => {
+    try {
+      const params = new URLSearchParams({
+        dataInicio: filtros.dataInicio,
+        dataFim: filtros.dataFim,
+        tipo: filtros.tipo,
+        categoria: filtros.categoria
+      })
+
+      const url = `/api/pagamentos/historico-movimentacoes?${params}`
+      const newWindow = window.open(url, '_blank', 'width=400,height=600')
+      
+      if (!newWindow) {
+        toast({
+          title: "Erro ao gerar histórico",
+          description: "Não foi possível abrir a janela de impressão. Verifique o bloqueador de pop-ups.",
+          variant: "destructive"
+        })
+        return
+      }
+
+      setShowExtratosModal(false)
+      toast({
+        title: "Histórico gerado",
+        description: "Janela de impressão foi aberta"
+      })
+    } catch (error) {
+      console.error('Erro:', error)
+      toast({
+        title: "Erro ao gerar histórico",
+        description: "Não foi possível gerar o histórico de movimentações",
+        variant: "destructive"
+      })
+    }
+  }
+
   const gerarExtratoMovimentos = async () => {
     try {
       const params = new URLSearchParams({
@@ -508,13 +544,13 @@ const renderFormasPagamento = (movimento: MovimentoCaixa) => {
                 <div className="extrato-badge">Disponível</div>
               </div>
               
-              <div className="extrato-card disabled">
+              <div className="extrato-card" onClick={gerarHistoricoMovimentacoes}>
                 <div className="extrato-icon">
                   <FileText size={32} />
                 </div>
                 <h3>Histórico de Pagamentos</h3>
                 <p>Listagem detalhada de todas as movimentações financeiras do período</p>
-                <div className="extrato-badge">Em breve</div>
+                <div className="extrato-badge">Disponível</div>
               </div>
             </div>
           </div>
