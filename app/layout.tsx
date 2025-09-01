@@ -3,6 +3,8 @@ import { Toaster } from '@/components/ui/toaster'
 import type { Metadata } from "next"
 import "./globals.css"
 import "../styles/components.css"
+import "../styles/caixa.css"
+import "../styles/funcionarios.css"
 
 export const metadata: Metadata = {
   title: "PDV Airton",

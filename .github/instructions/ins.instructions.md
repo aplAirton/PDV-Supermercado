@@ -18,3 +18,5 @@ nao use css inline
 nao crie modulos teste a mesmo que seja expressamente solicitado
 
 use apenas estilização em arquivo global css ou especifico quando solicitado, JAMAIS css inline NEM TAMPOUCO TAWILWIND
+
+QUANDO FOR NOMEAR ARQUIVOS DE ROTAS PELO AMOR DE DEU NOMEIE COM ALGO IDENTIFICAVEL exemplo "qrcode_route"

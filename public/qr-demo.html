@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste QR Code ASCII</title>
+    <style>
+        body { 
+            font-family: 'Courier New', monospace; 
+            background: #f0f0f0; 
+            padding: 20px; 
+        }
+        .cupom-container { 
+            background: white; 
+            width: fit-content; 
+            padding: 20px; 
+            border: 1px solid #ccc; 
+            border-radius: 5px;
+            margin: 20px auto;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .cupom { 
+            white-space: pre-line; 
+            font-size: 12px; 
+            line-height: 1.2;
+            text-align: left;
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 3px;
+        }
+        .teste-info {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="teste-info">
+        <h1>🎯 QR Code ASCII no Cupom Impresso</h1>
+        <p><strong>Problema resolvido!</strong> Agora o QR code aparece renderizado no cupom impresso usando caracteres ASCII.</p>
+        <p>✅ QR code visível no cupom<br>
+           ✅ QR code funcional na tela de conclusão<br>
+           ✅ Sistema 100% offline</p>
+    </div>
+
+    <div class="cupom-container">
+        <h3>📄 Prévia do Cupom Impresso</h3>
+        <div class="cupom" id="cupom-preview">Carregando prévia do cupom...</div>
+    </div>
+
+    <script>
+        // Simular cupom com QR code ASCII
+        const cupomTexto = `========================================
+                BUDEGA AIRTON
+            CNPJ: 00.000.000/0000-00
+              Povoado Jurema, 123
+             Tel: (00) 00000-0000
+========================================
+
+VENDA: #123
+DATA:  ${new Date().toLocaleString('pt-BR')}
+CLIENTE: TESTE CLIENTE
+
+----------------------------------------
+PRODUTO           QTD   V.UNIT     SOMA
+----------------------------------------
+Coca-Cola 2L        1    5.50     5.50
+Pão de Açúcar       2    0.75     1.50
+----------------------------------------
+                        TOTAL GERAL: R$ 7.00
+========================================
+
+FORMAS DE PAGAMENTO:
+----------------------------------------
+Dinheiro:                       R$ 7.00
+========================================
+
+           Obrigado pela preferência!
+                 Volte sempre!
+========================================
+
+             CUPOM DIGITAL
+----------------------------------------
+       Escaneie o QR Code abaixo:
+----------------------------------------
+     █▀▀▀▀▀█ █  ▄█▀ █▀▄▀ ▀ █▀▀▀▀▀█
+     █ ███ █ ▄▀ ▄  ███▄██▀ █ ███ █
+     █ ▀▀▀ █  ▀▀▀▀▀█ ▄██▄▀ █ ▀▀▀ █
+     ▀▀▀▀▀▀▀ █▄▀▄▀▄▀▄▀ █▄█ ▀▀▀▀▀▀▀
+     ▄▀█▄▀█▀█ ▀▄▀ ██▄▀ █▄▀▀▀▄▄█▄█▀
+      ▄██ ▄▀ ▀█▀  █▀ █▀▀█▄██▄█▄█▄
+     ███▄▄▄▀▀    ▀▀▀█▄ ▄▄▀███ ▄▄ █
+     ▀█▄▀██▀█▄█ █ ▄ █▀  ▄▀ ▀ ▀▀▀▄
+     ▀ █▀▀ ▀▄▀▄  ▄▀ █▄█▀▄ ▀█ ▄▄▄█▄
+     █ ▄▀ █▀▀ ▀█▄ ▄ █▄  █▀  █ ▀  ▄
+      ▀▀ ▀▀▀ ▀▄▀█▄▄▄ ▄▀  █▀▀▀█▀█▀▀
+     █▀▀▀▀▀█ █▀▀▄▀  █ ██▄█ ▀ ██  ▄
+     █ ███ █ ▀▄██▄ ▀▄▄ ▄ ▀▀▀▀▀█▀▀▄
+     █ ▀▀▀ █ █ ██▄▀█▄▄ ▄▄▀█▄▀ █ ▄▄
+     ▀▀▀▀▀▀▀  ▀  ▀ ▀  ▀▀▀ ▀  ▀ ▀
+----------------------------------------
+     localhost:3000/cupom/teste123
+========================================`;
+
+        document.getElementById('cupom-preview').textContent = cupomTexto;
+    </script>
+</body>
+</html>

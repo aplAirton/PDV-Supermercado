@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { executeQuery } from '@/lib/database'
 import prisma from '@/lib/prisma'
 import type { Prisma } from '@prisma/client'
 
@@ -91,13 +92,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Itens da venda inválidos' }, { status: 400 })
     }
 
+    // Buscar caixa aberto para atribuir à venda
+    let caixaId = null
+    try {
+      const caixaAberto = await executeQuery(`
+        SELECT id FROM caixas WHERE status = 'aberto' 
+        ORDER BY data_abertura DESC LIMIT 1
+      `) as any[]
+      
+      if (caixaAberto.length > 0) {
+        caixaId = caixaAberto[0].id
+        console.log(`[vendas][${requestId}] Caixa aberto encontrado: ${caixaId}`)
+      } else {
+        console.warn(`[vendas][${requestId}] Nenhum caixa aberto encontrado`)
+      }
+    } catch (caixaErr) {
+      console.error(`[vendas][${requestId}] Erro ao buscar caixa aberto:`, caixaErr)
+      // Continua sem caixa_id se não conseguir buscar
+    }
+
     const pagamentosNorm = pagamentos.map((p: any) => ({
       tipo: (p.tipo || p.tipo_pagamento || '').toString(),
       valor: Number(p.valor) || 0,
     }))
 
     const somaPagamentos = pagamentosNorm.reduce((s: number, p: any) => s + (Number(p.valor) || 0), 0)
-  console.log('[vendas] pagamentosNorm:', pagamentosNorm, 'somaPagamentos:', somaPagamentos)
+  console.log('[vendas] pagamentosNorm:', pagamentosNorm, 'somaPagamentos:', somaPagamentos, 'caixaId:', caixaId)
     if (Number(somaPagamentos.toFixed(2)) < Number(Number(total).toFixed(2))) {
       return NextResponse.json({ error: 'Valor total dos pagamentos menor que o total da venda' }, { status: 400 })
     }
@@ -151,15 +171,15 @@ export async function POST(request: NextRequest) {
     try {
       console.log(`[vendas][${requestId}] Iniciando transação (tentativa ${attempt}/${maxAttempts})`)
       result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const venda = await tx.vendas.create({
-        data: {
-          cliente_id: cliente_id || null,
-          total: Number(total) || 0,
-          forma_pagamento_json: JSON.stringify(pagamentosNorm || []),
-          valor_pago: Number(somaPagamentos) || 0,
-          troco: Number(troco) || 0,
-        },
-      })
+      // Criar venda usando raw query para incluir caixa_id
+      const vendaResult = await tx.$executeRaw`
+        INSERT INTO vendas (cliente_id, total, forma_pagamento_json, valor_pago, troco, caixa_id, data_venda) 
+        VALUES (${cliente_id || null}, ${Number(total) || 0}, ${JSON.stringify(pagamentosNorm || [])}, 
+                ${Number(somaPagamentos) || 0}, ${Number(troco) || 0}, ${caixaId}, NOW())
+      `
+      
+      const vendaIdResult = await tx.$queryRaw`SELECT LAST_INSERT_ID() as id`
+      const venda = { id: (vendaIdResult as any[])[0].id }
 
       console.log('[vendas] Venda criada id=', venda.id)
 

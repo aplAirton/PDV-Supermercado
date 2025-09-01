@@ -1,17 +1,19 @@
 "use client"
 
 import { useState } from "react"
-import { ShoppingCart, Package, Users, History, CreditCard, DollarSign } from "lucide-react"
+import { ShoppingCart, Package, Users, History, CreditCard, DollarSign, Calculator, UserCog } from "lucide-react"
 import VendasPage from "./vendas/page"
 import ProdutosPage from "./produtos/page"
 import ClientesPage from "./clientes/page"
 import HistoricoPage from "./historico/page"
 import FiadosPage from "./fiados/page"
 import PagamentosPage from "./pagamentos/page"
+import CaixaPage from "./caixa/page"
+import FuncionariosPage from "./funcionarios/page"
 import Sidebar from "@/components/sidebar"
 import '../styles/components.css'
 
-type Page = "vendas" | "produtos" | "clientes" | "historico" | "fiados" | "pagamentos"
+type Page = "vendas" | "produtos" | "clientes" | "historico" | "fiados" | "pagamentos" | "caixa" | "funcionarios"
 
 const pageConfig = {
   vendas: {
@@ -44,6 +46,16 @@ const pageConfig = {
     subtitle: "Controle de entradas e saídas do caixa",
     icon: DollarSign,
   },
+  caixa: {
+    title: "Caixa",
+    subtitle: "Gerenciamento de abertura e fechamento do caixa",
+    icon: Calculator,
+  },
+  funcionarios: {
+    title: "Funcionários",
+    subtitle: "Cadastre e gerencie funcionários",
+    icon: UserCog,
+  },
 }
 
 export default function HomePage() {
@@ -63,6 +75,10 @@ export default function HomePage() {
         return <FiadosPage />
       case "pagamentos":
         return <PagamentosPage />
+      case "caixa":
+        return <CaixaPage />
+      case "funcionarios":
+        return <FuncionariosPage />
       default:
         return <VendasPage />
     }

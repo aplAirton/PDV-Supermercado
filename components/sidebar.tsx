@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ShoppingCart, Package, Users, History, CreditCard, Menu, X, DollarSign } from "lucide-react"
+import { ShoppingCart, Package, Users, History, CreditCard, Menu, X, DollarSign, Calculator, UserCog } from "lucide-react"
 
-type Page = "vendas" | "produtos" | "clientes" | "historico" | "fiados" | "pagamentos"
+type Page = "vendas" | "produtos" | "clientes" | "historico" | "fiados" | "pagamentos" | "caixa" | "funcionarios"
 
 const pageConfig = {
   vendas: {
@@ -35,6 +35,16 @@ const pageConfig = {
     title: "Pagamentos",
     subtitle: "Controle de entradas e saídas do caixa",
     icon: DollarSign,
+  },
+  caixa: {
+    title: "Caixa",
+    subtitle: "Gerenciamento de abertura e fechamento do caixa",
+    icon: Calculator,
+  },
+  funcionarios: {
+    title: "Funcionários",
+    subtitle: "Cadastre e gerencie funcionários",
+    icon: UserCog,
   },
 }
 

@@ -1,26 +1,29 @@
 import mysql from "mysql2/promise"
 
-// Suporta duas formas de configuração:
-// 1) Variáveis separadas: DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
-// 2) DATABASE_URL no formato mysql://user:pass@host:3306/dbname
+// Configuração local padrão para desenvolvimento
 let dbConfig = {
-  host: process.env.DB_HOST,
+  host: process.env.DB_HOST || 'localhost',
   port: Number.parseInt(process.env.DB_PORT || "3306"),
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'pdv_supermercado',
+  charset: 'utf8mb4',
+  timezone: '+00:00',
+  connectTimeout: 60000,
+  acquireTimeout: 60000
 }
 
-if ((!dbConfig.host || !dbConfig.user || !dbConfig.database) && process.env.DATABASE_URL) {
+// Suporte para DATABASE_URL (produção)
+if (process.env.DATABASE_URL) {
   try {
     const url = new URL(process.env.DATABASE_URL)
-    // url: mysql://user:pass@host:3306/db
     dbConfig = {
+      ...dbConfig,
       host: url.hostname,
       port: Number.parseInt(url.port || "3306"),
       user: decodeURIComponent(url.username),
       password: decodeURIComponent(url.password),
-      database: url.pathname ? url.pathname.replace(/^\//, "") : process.env.DB_NAME,
+      database: url.pathname ? url.pathname.replace(/^\//, "") : dbConfig.database,
     }
     console.log("DATABASE_URL detectada — usando configuração via URL para conexão ao banco")
   } catch (err) {
