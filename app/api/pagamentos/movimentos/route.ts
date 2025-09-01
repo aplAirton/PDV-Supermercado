@@ -167,8 +167,24 @@ export async function GET(request: NextRequest) {
           CASE WHEN JSON_UNQUOTE(JSON_EXTRACT(v.forma_pagamento_json, CONCAT('$[', nums.n, '].tipo'))) = 'pix' THEN CAST(JSON_UNQUOTE(JSON_EXTRACT(v.forma_pagamento_json, CONCAT('$[', nums.n, '].valor'))) AS DECIMAL(10,2)) ELSE 0 END
         ),0) FROM vendas v CROSS JOIN (SELECT 0 as n UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9) nums WHERE DATE(v.data_venda) >= ? AND DATE(v.data_venda) <= ? AND v.forma_pagamento_json IS NOT NULL AND JSON_EXTRACT(v.forma_pagamento_json, CONCAT('$[', nums.n, ']')) IS NOT NULL) AS totalVendasPix,
 
-        -- Pagamentos de fiado
-            (SELECT COALESCE(SUM(fm.valor),0) FROM fiado_movimentos fm WHERE fm.tipo = 'pagamento' AND fm.direcao = 'credito' AND DATE(fm.data_movimento) >= ? AND DATE(fm.data_movimento) <= ?) AS totalPagamentosFiado
+        -- Pagamentos de fiado: somar lançamentos na tabela fiado_movimentos
+        -- e também itens 'fiado' que podem estar dentro de vendas.forma_pagamento_json
+        (SELECT 
+          COALESCE(
+            (SELECT COALESCE(SUM(fm.valor),0) FROM fiado_movimentos fm WHERE fm.tipo = 'pagamento' AND fm.direcao = 'credito' AND DATE(fm.data_movimento) >= ? AND DATE(fm.data_movimento) <= ?),
+            0
+          )
+          + COALESCE(
+            (SELECT COALESCE(SUM(CAST(JSON_UNQUOTE(JSON_EXTRACT(v.forma_pagamento_json, CONCAT('$[', nums.n, '].valor'))) AS DECIMAL(10,2))),0)
+             FROM vendas v CROSS JOIN (SELECT 0 as n UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9) nums
+             WHERE DATE(v.data_venda) >= ? AND DATE(v.data_venda) <= ?
+               AND v.forma_pagamento_json IS NOT NULL
+               AND JSON_UNQUOTE(JSON_EXTRACT(v.forma_pagamento_json, CONCAT('$[', nums.n, '].tipo'))) = 'fiado'
+               AND JSON_EXTRACT(v.forma_pagamento_json, CONCAT('$[', nums.n, ']')) IS NOT NULL
+            ),
+            0
+          )
+        ) AS totalPagamentosFiado
     `
 
     const resumoResult = await executeQuery(resumoQuery, [
@@ -179,7 +195,9 @@ export async function GET(request: NextRequest) {
       dataInicio, dataFim, // totalVendasCartaoDebito
       dataInicio, dataFim, // totalVendasCartaoCredito
       dataInicio, dataFim, // totalVendasPix
-      dataInicio, dataFim  // totalPagamentosFiado
+      // parâmetros para totalPagamentosFiado: primeiro para fiado_movimentos, depois para pesquisa em vendas JSON
+      dataInicio, dataFim,
+      dataInicio, dataFim
     ]) as any[]
     const resumoData = resumoResult[0] || {}
     
