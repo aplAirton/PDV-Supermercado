@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Calendar, Filter, Eye, Printer, Settings, ChevronDown, ChevronUp } from "lucide-react"
+import { Calendar, Filter, Eye, Printer, Settings, ChevronDown, ChevronUp, Loader2 } from "lucide-react"
 
 interface Venda {
   id: number
@@ -280,7 +280,7 @@ export default function HistoricoPage() {
         {/* Tabela de Vendas */}
         {loadingVendas ? (
           <div className="p-6 text-center">
-            <div className="loading" style={{ width: '2rem', height: '2rem', margin: '0 auto' }}></div>
+            <Loader2 className="animate-spin mx-auto" size={32} />
             <div className="text-muted" style={{ marginTop: '0.75rem' }}>Carregando vendas...</div>
           </div>
         ) : (

@@ -28,9 +28,9 @@ export async function GET(request: NextRequest) {
 
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : ''
 
-    // Query principal para buscar movimentos
+    // Query principal para buscar movimentos (vendas, pagamentos de fiado e ajustes)
     const movimentosQuery = `
-      SELECT 
+      SELECT
         id,
         tipo,
         categoria,
@@ -38,72 +38,85 @@ export async function GET(request: NextRequest) {
         descricao,
         referencia,
         forma_pagamento,
+        forma_pagamento_json,
         data_movimento,
-        cliente_nome
+        cliente_nome,
+        valor_pago,
+        troco
       FROM (
-        -- Vendas (ENTRADAS) - usando forma_pagamento_json quando disponível
-        SELECT 
+        -- Vendas
+        SELECT
           v.id,
-          'entrada' as tipo,
-          CASE 
-            WHEN v.forma_pagamento_json IS NOT NULL THEN 'venda_multiplas'
-            WHEN v.forma_pagamento = 'dinheiro' THEN 'venda_dinheiro'
-            WHEN v.forma_pagamento IN ('cartao_debito', 'cartao_credito') THEN 'venda_cartao'
-            WHEN v.forma_pagamento = 'pix' THEN 'venda_pix'
-            ELSE 'outros'
-          END as categoria,
-          v.total as valor,
-          CONCAT('Venda #', v.id) as descricao,
-          CONCAT('Venda #', v.id) as referencia,
-          CASE 
-            WHEN v.forma_pagamento_json IS NOT NULL THEN 'Múltiplas'
-            WHEN v.forma_pagamento = 'dinheiro' THEN 'Dinheiro'
-            WHEN v.forma_pagamento = 'cartao_debito' THEN 'Débito'
-            WHEN v.forma_pagamento = 'cartao_credito' THEN 'Crédito'
-            WHEN v.forma_pagamento = 'pix' THEN 'PIX'
-            ELSE v.forma_pagamento
-          END as forma_pagamento,
-          v.data_venda as data_movimento,
-          c.nome as cliente_nome
+          'entrada' AS tipo,
+          CASE
+            WHEN v.forma_pagamento_json IS NOT NULL AND JSON_LENGTH(v.forma_pagamento_json) > 1 THEN 'venda_multiplas'
+            WHEN v.forma_pagamento_json IS NOT NULL AND JSON_UNQUOTE(JSON_EXTRACT(v.forma_pagamento_json, '$[0].tipo')) = 'dinheiro' THEN 'venda_dinheiro'
+            WHEN v.forma_pagamento_json IS NOT NULL AND JSON_UNQUOTE(JSON_EXTRACT(v.forma_pagamento_json, '$[0].tipo')) = 'cartao_debito' THEN 'venda_cartao_debito'
+            WHEN v.forma_pagamento_json IS NOT NULL AND JSON_UNQUOTE(JSON_EXTRACT(v.forma_pagamento_json, '$[0].tipo')) = 'cartao_credito' THEN 'venda_cartao_credito'
+            WHEN v.forma_pagamento_json IS NOT NULL AND JSON_UNQUOTE(JSON_EXTRACT(v.forma_pagamento_json, '$[0].tipo')) = 'pix' THEN 'venda_pix'
+            ELSE 'venda_outros'
+          END AS categoria,
+          v.total AS valor,
+          CONCAT('Venda #', v.id) AS descricao,
+          CONCAT('Venda #', v.id) AS referencia,
+          CASE
+            WHEN v.forma_pagamento_json IS NOT NULL AND JSON_LENGTH(v.forma_pagamento_json) > 1 THEN 'Múltiplas'
+            WHEN v.forma_pagamento_json IS NOT NULL AND JSON_UNQUOTE(JSON_EXTRACT(v.forma_pagamento_json, '$[0].tipo')) = 'dinheiro' THEN 'Dinheiro'
+            WHEN v.forma_pagamento_json IS NOT NULL AND JSON_UNQUOTE(JSON_EXTRACT(v.forma_pagamento_json, '$[0].tipo')) = 'cartao_debito' THEN 'Cartão Débito'
+            WHEN v.forma_pagamento_json IS NOT NULL AND JSON_UNQUOTE(JSON_EXTRACT(v.forma_pagamento_json, '$[0].tipo')) = 'cartao_credito' THEN 'Cartão Crédito'
+            WHEN v.forma_pagamento_json IS NOT NULL AND JSON_UNQUOTE(JSON_EXTRACT(v.forma_pagamento_json, '$[0].tipo')) = 'pix' THEN 'PIX'
+            ELSE COALESCE(v.forma_pagamento, 'N/A')
+          END AS forma_pagamento,
+          v.forma_pagamento_json AS forma_pagamento_json,
+          v.data_venda AS data_movimento,
+          c.nome AS cliente_nome,
+          v.valor_pago,
+          v.troco
         FROM vendas v
         LEFT JOIN clientes c ON v.cliente_id = c.id
-        
+
         UNION ALL
-        
-        -- Pagamentos de fiado (ENTRADAS)
-        SELECT 
+
+        -- Pagamentos de fiado (entradas)
+        SELECT
           fm.id,
-          'entrada' as tipo,
-          'pagamento_fiado' as categoria,
+          'entrada' AS tipo,
+          'pagamento_fiado' AS categoria,
           fm.valor,
-          COALESCE(fm.descricao, CONCAT('Pagamento Fiado #', fm.fiado_id)) as descricao,
+          COALESCE(fm.descricao, CONCAT('Pagamento Fiado #', fm.fiado_id)) AS descricao,
           fm.referencia,
-          CASE 
+          NULL AS forma_pagamento_json,
+          CASE
             WHEN fm.referencia LIKE '%dinheiro%' THEN 'Dinheiro'
-            WHEN fm.referencia LIKE '%cartao%' OR fm.referencia LIKE '%débito%' THEN 'Débito'  
-            WHEN fm.referencia LIKE '%crédito%' THEN 'Crédito'
+            WHEN fm.referencia LIKE '%cartao%' OR fm.referencia LIKE '%débito%' THEN 'Cartão Débito'
+            WHEN fm.referencia LIKE '%crédito%' THEN 'Cartão Crédito'
             WHEN fm.referencia LIKE '%pix%' THEN 'PIX'
             ELSE 'Não especificado'
-          END as forma_pagamento,
+          END AS forma_pagamento,
           fm.data_movimento,
-          c.nome as cliente_nome
+          c.nome AS cliente_nome,
+          fm.valor AS valor_pago,
+          NULL AS troco
         FROM fiado_movimentos fm
         JOIN clientes c ON fm.cliente_id = c.id
         WHERE fm.tipo = 'pagamento' AND fm.direcao = 'credito'
-        
+
         UNION ALL
-        
-        -- Ajustes e outros movimentos
-        SELECT 
-          fm.id + 100000 as id, -- offset para evitar conflito de IDs
-          CASE WHEN fm.direcao = 'credito' THEN 'entrada' ELSE 'saida' END as tipo,
-          'ajuste' as categoria,
+
+        -- Ajustes (podem ser entrada ou saída)
+        SELECT
+          fm.id + 100000 AS id,
+          CASE WHEN fm.direcao = 'credito' THEN 'entrada' ELSE 'saida' END AS tipo,
+          'ajuste' AS categoria,
           fm.valor,
-          COALESCE(fm.descricao, 'Ajuste de movimento') as descricao,
+          COALESCE(fm.descricao, 'Ajuste de movimento') AS descricao,
           fm.referencia,
-          'Ajuste Manual' as forma_pagamento,
+          NULL AS forma_pagamento_json,
+          'Ajuste Manual' AS forma_pagamento,
           fm.data_movimento,
-          c.nome as cliente_nome
+          c.nome AS cliente_nome,
+          NULL AS valor_pago,
+          NULL AS troco
         FROM fiado_movimentos fm
         JOIN clientes c ON fm.cliente_id = c.id
         WHERE fm.tipo = 'ajuste'
@@ -114,112 +127,60 @@ export async function GET(request: NextRequest) {
 
     const movimentos = await executeQuery(movimentosQuery, queryParams) as any[]
 
-    // Calcular resumo financeiro - processar JSON para contabilizar corretamente
+    // Calcular resumo financeiro usando forma_pagamento_json e colunas valor_pago/troco quando necessário
     const resumoQuery = `
-      WITH vendas_detalhadas AS (
-        SELECT 
-          v.id,
-          'entrada' as tipo,
-          CASE 
-            WHEN v.forma_pagamento_json IS NOT NULL THEN 'venda_multiplas'
-            WHEN v.forma_pagamento = 'dinheiro' THEN 'venda_dinheiro'
-            WHEN v.forma_pagamento IN ('cartao_debito', 'cartao_credito') THEN 'venda_cartao'
-            WHEN v.forma_pagamento = 'pix' THEN 'venda_pix'
-            ELSE 'outros'
-          END as categoria,
-          v.total as valor,
-          v.data_venda as data_movimento,
-          v.forma_pagamento_json
-        FROM vendas v
-        WHERE DATE(v.data_venda) >= ? AND DATE(v.data_venda) <= ?
-      ),
-      pagamentos_fiado AS (
-        SELECT 
-          fm.id,
-          'entrada' as tipo,
-          'pagamento_fiado' as categoria,
-          fm.valor,
-          fm.data_movimento,
-          NULL as forma_pagamento_json
-        FROM fiado_movimentos fm
-        WHERE fm.tipo = 'pagamento' AND fm.direcao = 'credito'
-          AND DATE(fm.data_movimento) >= ? AND DATE(fm.data_movimento) <= ?
-      ),
-      ajustes AS (
-        SELECT 
-          fm.id + 100000 as id,
-          CASE WHEN fm.direcao = 'credito' THEN 'entrada' ELSE 'saida' END as tipo,
-          'ajuste' as categoria,
-          fm.valor,
-          fm.data_movimento,
-          NULL as forma_pagamento_json
-        FROM fiado_movimentos fm
-        WHERE fm.tipo = 'ajuste'
-          AND DATE(fm.data_movimento) >= ? AND DATE(fm.data_movimento) <= ?
-      ),
-      todos_movimentos AS (
-        SELECT * FROM vendas_detalhadas
-        UNION ALL
-        SELECT * FROM pagamentos_fiado  
-        UNION ALL
-        SELECT * FROM ajustes
-      )
-      SELECT 
-        SUM(CASE WHEN tipo = 'entrada' THEN valor ELSE 0 END) as totalEntradas,
-        SUM(CASE WHEN tipo = 'saida' THEN valor ELSE 0 END) as totalSaidas,
-        -- Dinheiro: vendas simples + JSON processado
-        SUM(CASE WHEN categoria = 'venda_dinheiro' THEN valor ELSE 0 END) + 
-        SUM(CASE 
-          WHEN categoria = 'venda_multiplas' AND forma_pagamento_json IS NOT NULL THEN
-            COALESCE((
-              SELECT SUM(CAST(JSON_UNQUOTE(JSON_EXTRACT(item, '$.valor')) AS DECIMAL(10,2)))
-              FROM (
-                SELECT JSON_EXTRACT(forma_pagamento_json, CONCAT('$[', n.n, ']')) as item
-                FROM (SELECT 0 as n UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4) n
-                WHERE JSON_EXTRACT(forma_pagamento_json, CONCAT('$[', n.n, ']')) IS NOT NULL
-              ) items
-              WHERE COALESCE(JSON_UNQUOTE(JSON_EXTRACT(item, '$.tipo')), JSON_UNQUOTE(JSON_EXTRACT(item, '$.tipo_pagamento'))) = 'dinheiro'
-            ), 0)
-          ELSE 0
-        END) as totalVendasDinheiro,
-        -- Cartão: vendas simples + JSON processado  
-        SUM(CASE WHEN categoria = 'venda_cartao' THEN valor ELSE 0 END) + 
-        SUM(CASE 
-          WHEN categoria = 'venda_multiplas' AND forma_pagamento_json IS NOT NULL THEN
-            COALESCE((
-              SELECT SUM(CAST(JSON_UNQUOTE(JSON_EXTRACT(item, '$.valor')) AS DECIMAL(10,2)))
-              FROM (
-                SELECT JSON_EXTRACT(forma_pagamento_json, CONCAT('$[', n.n, ']')) as item
-                FROM (SELECT 0 as n UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4) n
-                WHERE JSON_EXTRACT(forma_pagamento_json, CONCAT('$[', n.n, ']')) IS NOT NULL
-              ) items
-              WHERE COALESCE(JSON_UNQUOTE(JSON_EXTRACT(item, '$.tipo')), JSON_UNQUOTE(JSON_EXTRACT(item, '$.tipo_pagamento'))) IN ('cartao_debito', 'cartao_credito')
-            ), 0)
-          ELSE 0
-        END) as totalVendasCartao,
-        -- PIX: vendas simples + JSON processado
-        SUM(CASE WHEN categoria = 'venda_pix' THEN valor ELSE 0 END) + 
-        SUM(CASE 
-          WHEN categoria = 'venda_multiplas' AND forma_pagamento_json IS NOT NULL THEN
-            COALESCE((
-              SELECT SUM(CAST(JSON_UNQUOTE(JSON_EXTRACT(item, '$.valor')) AS DECIMAL(10,2)))
-              FROM (
-                SELECT JSON_EXTRACT(forma_pagamento_json, CONCAT('$[', n.n, ']')) as item
-                FROM (SELECT 0 as n UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4) n
-                WHERE JSON_EXTRACT(forma_pagamento_json, CONCAT('$[', n.n, ']')) IS NOT NULL
-              ) items
-              WHERE COALESCE(JSON_UNQUOTE(JSON_EXTRACT(item, '$.tipo')), JSON_UNQUOTE(JSON_EXTRACT(item, '$.tipo_pagamento'))) = 'pix'
-            ), 0)
-          ELSE 0
-        END) as totalVendasPix,
-        -- Múltiplas (para referência, mas valores já desagregados acima)
-        SUM(CASE WHEN categoria = 'venda_multiplas' THEN valor ELSE 0 END) as totalVendasMultiplas,
-        -- Pagamentos fiado
-        SUM(CASE WHEN categoria = 'pagamento_fiado' THEN valor ELSE 0 END) as totalPagamentosFiado
-      FROM todos_movimentos
+      SELECT
+        (
+          -- Entradas provenientes de vendas: somar os valores dos itens do JSON quando existir, caso contrário usar valor_pago se definido, senão total
+          SELECT COALESCE(SUM(
+            CASE
+              WHEN v.forma_pagamento_json IS NOT NULL THEN (
+                SELECT COALESCE(SUM(CAST(JSON_UNQUOTE(JSON_EXTRACT(v.forma_pagamento_json, CONCAT('$[', nums.n, '].valor'))) AS DECIMAL(10,2))),0)
+                FROM (SELECT 0 as n UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9) nums
+                WHERE JSON_EXTRACT(v.forma_pagamento_json, CONCAT('$[', nums.n, ']')) IS NOT NULL
+              )
+              ELSE COALESCE(v.valor_pago, v.total)
+            END
+          ),0) FROM vendas v WHERE DATE(v.data_venda) >= ? AND DATE(v.data_venda) <= ?
+  )
+  /* Não somar pagamentos fiado em Entradas: fiado é anotação, não contabilizar como entrada */
+  + (SELECT COALESCE(SUM(fm.valor),0) FROM fiado_movimentos fm WHERE fm.tipo = 'ajuste' AND fm.direcao = 'credito' AND DATE(fm.data_movimento) >= ? AND DATE(fm.data_movimento) <= ?)
+        AS totalEntradas,
+
+        -- Saídas (ajustes débito)
+        (SELECT COALESCE(SUM(fm.valor),0) FROM fiado_movimentos fm WHERE fm.tipo = 'ajuste' AND fm.direcao = 'debito' AND DATE(fm.data_movimento) >= ? AND DATE(fm.data_movimento) <= ?) AS totalSaidas,
+
+        -- Totais por forma extraídos do JSON das vendas (itera até 10 itens)
+        (SELECT COALESCE(SUM(
+          CASE WHEN JSON_UNQUOTE(JSON_EXTRACT(v.forma_pagamento_json, CONCAT('$[', nums.n, '].tipo'))) = 'dinheiro' THEN CAST(JSON_UNQUOTE(JSON_EXTRACT(v.forma_pagamento_json, CONCAT('$[', nums.n, '].valor'))) AS DECIMAL(10,2)) ELSE 0 END
+        ),0) FROM vendas v CROSS JOIN (SELECT 0 as n UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9) nums WHERE DATE(v.data_venda) >= ? AND DATE(v.data_venda) <= ? AND v.forma_pagamento_json IS NOT NULL AND JSON_EXTRACT(v.forma_pagamento_json, CONCAT('$[', nums.n, ']')) IS NOT NULL) AS totalVendasDinheiro,
+
+        (SELECT COALESCE(SUM(
+          CASE WHEN JSON_UNQUOTE(JSON_EXTRACT(v.forma_pagamento_json, CONCAT('$[', nums.n, '].tipo'))) = 'cartao_debito' THEN CAST(JSON_UNQUOTE(JSON_EXTRACT(v.forma_pagamento_json, CONCAT('$[', nums.n, '].valor'))) AS DECIMAL(10,2)) ELSE 0 END
+        ),0) FROM vendas v CROSS JOIN (SELECT 0 as n UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9) nums WHERE DATE(v.data_venda) >= ? AND DATE(v.data_venda) <= ? AND v.forma_pagamento_json IS NOT NULL AND JSON_EXTRACT(v.forma_pagamento_json, CONCAT('$[', nums.n, ']')) IS NOT NULL) AS totalVendasCartaoDebito,
+
+        (SELECT COALESCE(SUM(
+          CASE WHEN JSON_UNQUOTE(JSON_EXTRACT(v.forma_pagamento_json, CONCAT('$[', nums.n, '].tipo'))) = 'cartao_credito' THEN CAST(JSON_UNQUOTE(JSON_EXTRACT(v.forma_pagamento_json, CONCAT('$[', nums.n, '].valor'))) AS DECIMAL(10,2)) ELSE 0 END
+        ),0) FROM vendas v CROSS JOIN (SELECT 0 as n UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9) nums WHERE DATE(v.data_venda) >= ? AND DATE(v.data_venda) <= ? AND v.forma_pagamento_json IS NOT NULL AND JSON_EXTRACT(v.forma_pagamento_json, CONCAT('$[', nums.n, ']')) IS NOT NULL) AS totalVendasCartaoCredito,
+
+        (SELECT COALESCE(SUM(
+          CASE WHEN JSON_UNQUOTE(JSON_EXTRACT(v.forma_pagamento_json, CONCAT('$[', nums.n, '].tipo'))) = 'pix' THEN CAST(JSON_UNQUOTE(JSON_EXTRACT(v.forma_pagamento_json, CONCAT('$[', nums.n, '].valor'))) AS DECIMAL(10,2)) ELSE 0 END
+        ),0) FROM vendas v CROSS JOIN (SELECT 0 as n UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9) nums WHERE DATE(v.data_venda) >= ? AND DATE(v.data_venda) <= ? AND v.forma_pagamento_json IS NOT NULL AND JSON_EXTRACT(v.forma_pagamento_json, CONCAT('$[', nums.n, ']')) IS NOT NULL) AS totalVendasPix,
+
+        -- Pagamentos de fiado
+            (SELECT COALESCE(SUM(fm.valor),0) FROM fiado_movimentos fm WHERE fm.tipo = 'pagamento' AND fm.direcao = 'credito' AND DATE(fm.data_movimento) >= ? AND DATE(fm.data_movimento) <= ?) AS totalPagamentosFiado
     `
 
-    const resumoResult = await executeQuery(resumoQuery, [dataInicio, dataFim, dataInicio, dataFim, dataInicio, dataFim]) as any[]
+    const resumoResult = await executeQuery(resumoQuery, [
+      dataInicio, dataFim, // vendas - entradas
+      dataInicio, dataFim, // ajustes credito
+      dataInicio, dataFim, // ajustes debito (totalSaidas)
+      dataInicio, dataFim, // totalVendasDinheiro
+      dataInicio, dataFim, // totalVendasCartaoDebito
+      dataInicio, dataFim, // totalVendasCartaoCredito
+      dataInicio, dataFim, // totalVendasPix
+      dataInicio, dataFim  // totalPagamentosFiado
+    ]) as any[]
     const resumoData = resumoResult[0] || {}
     
     const resumo = {
@@ -227,9 +188,9 @@ export async function GET(request: NextRequest) {
       totalSaidas: Number(resumoData.totalSaidas) || 0,
       saldo: (Number(resumoData.totalEntradas) || 0) - (Number(resumoData.totalSaidas) || 0),
       totalVendasDinheiro: Number(resumoData.totalVendasDinheiro) || 0,
-      totalVendasCartao: Number(resumoData.totalVendasCartao) || 0,
+      totalVendasCartaoDebito: Number(resumoData.totalVendasCartaoDebito) || 0,
+      totalVendasCartaoCredito: Number(resumoData.totalVendasCartaoCredito) || 0,
       totalVendasPix: Number(resumoData.totalVendasPix) || 0,
-      totalVendasMultiplas: Number(resumoData.totalVendasMultiplas) || 0,
       totalPagamentosFiado: Number(resumoData.totalPagamentosFiado) || 0
     }
 

@@ -43,20 +43,19 @@ model clientes {
 }
 
 model vendas {
-  id                   Int                    @id @default(autoincrement())
+  id                   Int           @id @default(autoincrement())
   cliente_id           Int?
-  total                Decimal                @db.Decimal(10, 2)
-  desconto             Decimal                @default(0.00) @db.Decimal(10, 2)
-  forma_pagamento      vendas_forma_pagamento
-  valor_pago           Decimal?               @db.Decimal(10, 2)
-  troco                Decimal                @default(0.00) @db.Decimal(10, 2)
-  observacoes          String?                @db.Text
-  data_venda           DateTime               @default(now())
-  forma_pagamento_json String?                @db.Text
+  total                Decimal       @db.Decimal(10, 2)
+  desconto             Decimal       @default(0.00) @db.Decimal(10, 2)
+  valor_pago           Decimal?      @db.Decimal(10, 2)
+  troco                Decimal       @default(0.00) @db.Decimal(10, 2)
+  observacoes          String?       @db.Text
+  data_venda           DateTime      @default(now())
+  forma_pagamento_json String?       @db.Text
   cupons               cupons[]
   fiados               fiados[]
   itens                itens_venda[]
-  cliente              clientes?              @relation(fields: [cliente_id], references: [id])
+  cliente              clientes?     @relation(fields: [cliente_id], references: [id])
   fiado_movimentos     fiado_movimentos[]
 
   @@index([cliente_id], map: "idx_vendas_cliente")
@@ -147,14 +146,6 @@ enum pagamentos_fiado_forma_pagamento {
   cartao_debito
   cartao_credito
   pix
-}
-
-enum vendas_forma_pagamento {
-  dinheiro
-  cartao_debito
-  cartao_credito
-  pix
-  fiado
 }
 
 enum fiados_status {

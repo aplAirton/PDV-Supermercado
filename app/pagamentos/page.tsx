@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Ban, Calendar, DollarSign, TrendingUp, TrendingDown, Filter, Eye, Search, Download, Printer, CreditCard, Smartphone, Layers, Settings, FileText, LucideFileQuestion, LucideCheckCircle } from 'lucide-react'
+import { Ban, Calendar, DollarSign, TrendingUp, TrendingDown, Filter, Eye, Search, Download, Printer, CreditCard, Smartphone, Layers, Settings, FileText, LucideFileQuestion, LucideCheckCircle, Loader2 } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import '../../styles/pagamentos-new.css'
 
@@ -13,6 +13,9 @@ interface MovimentoCaixa {
   descricao: string
   referencia?: string
   forma_pagamento?: string
+  forma_pagamento_json?: string | null
+  valor_pago?: number | null
+  troco?: number | null
   data_movimento: string
   cliente_nome?: string
 }
@@ -22,9 +25,9 @@ interface ResumoFinanceiro {
   totalSaidas: number
   saldo: number
   totalVendasDinheiro: number
-  totalVendasCartao: number
+  totalVendasCartaoDebito: number
+  totalVendasCartaoCredito: number
   totalVendasPix: number
-  totalVendasMultiplas: number
   totalPagamentosFiado: number
 }
 
@@ -35,9 +38,9 @@ export default function PagamentosPage() {
     totalSaidas: 0,
     saldo: 0,
     totalVendasDinheiro: 0,
-    totalVendasCartao: 0,
+    totalVendasCartaoDebito: 0,
+    totalVendasCartaoCredito: 0,
     totalVendasPix: 0,
-    totalVendasMultiplas: 0,
     totalPagamentosFiado: 0
   })
   const [filtros, setFiltros] = useState({
@@ -124,6 +127,45 @@ const getIconeCategoria = (categoria: string) => {
         default:
             return <FileText size={18} />
     }
+}
+
+const renderFormasPagamento = (movimento: MovimentoCaixa) => {
+  // Exibir formas como pills com valor (mantendo dimensões do card)
+  if (movimento.forma_pagamento_json) {
+    try {
+      const arr = JSON.parse(movimento.forma_pagamento_json)
+      if (Array.isArray(arr) && arr.length > 0) {
+        return (
+          <div className="formas-pagamento-pills">
+            {arr.map((p: any, idx: number) => {
+              const tipoRaw = (p.tipo || p.tipo_pagamento || '').toString()
+              const valor = Number(p.valor || 0)
+              const labelMap: Record<string, {label: string, class?: string}> = {
+                dinheiro: { label: 'Dinheiro', class: 'fp-dinheiro' },
+                cartao_debito: { label: 'Cartão Débito', class: 'fp-cartao-debito' },
+                cartao_credito: { label: 'Cartão Crédito', class: 'fp-cartao-credito' },
+                pix: { label: 'PIX', class: 'fp-pix' },
+                fiado: { label: 'Fiado', class: 'fp-fiado' }
+              }
+              const meta = labelMap[tipoRaw] || { label: tipoRaw.replace(/_/g, ' '), class: '' }
+
+              // não renderizar fiado nos totais do resumo — mas exibição no card é permitida
+              return (
+                <div key={idx} className={`forma-pill ${meta.class}`} title={`${meta.label}: ${formatarValor(valor)}`}>
+                  <span className="pill-label">{meta.label}</span>
+                  <span className="pill-valor">{formatarValor(valor)}</span>
+                </div>
+              )
+            })}
+          </div>
+        )
+      }
+    } catch (e) {
+      return movimento.forma_pagamento || null
+    }
+  }
+
+  return movimento.forma_pagamento || null
 }
 
   const exportarRelatorio = async () => {
@@ -256,8 +298,13 @@ const getIconeCategoria = (categoria: string) => {
           </div>
           <div className="detail-item">
             <CreditCard size={16} />
-            <span>Cartão</span>
-            <strong>{formatarValor(resumo.totalVendasCartao)}</strong>
+            <span>Cartão Débito</span>
+            <strong>{formatarValor(resumo.totalVendasCartaoDebito)}</strong>
+          </div>
+          <div className="detail-item">
+            <CreditCard size={16} />
+            <span>Cartão Crédito</span>
+            <strong>{formatarValor(resumo.totalVendasCartaoCredito)}</strong>
           </div>
           <div className="detail-item">
             <Smartphone size={16} />
@@ -265,13 +312,8 @@ const getIconeCategoria = (categoria: string) => {
             <strong>{formatarValor(resumo.totalVendasPix)}</strong>
           </div>
           <div className="detail-item">
-            <Layers size={16} />
-            <span>Múltiplas</span>
-            <strong>{formatarValor(resumo.totalVendasMultiplas)}</strong>
-          </div>
-          <div className="detail-item">
             <LucideCheckCircle size={16} />
-            <span>Fiado</span>
+            <span>Pagamento Fiado</span>
             <strong>{formatarValor(resumo.totalPagamentosFiado)}</strong>
           </div>
         </div>
@@ -321,8 +363,9 @@ const getIconeCategoria = (categoria: string) => {
                 <option value="venda_dinheiro">Dinheiro</option>
                 <option value="venda_cartao">Cartão</option>
                 <option value="venda_pix">PIX</option>
-                <option value="venda_multiplas">Múltiplas</option>
-                <option value="pagamento_fiado">Fiado</option>
+                <option value="venda_multiplas">Múltiplas Formas</option>
+                <option value="pagamento_fiado">Pagamento Fiado</option>
+                <option value="ajuste">Ajustes</option>
               </select>
             </div>
             <div className="filter-group">
@@ -353,7 +396,7 @@ const getIconeCategoria = (categoria: string) => {
 
         {loading ? (
           <div className="loading">
-            <div className="spinner"></div>
+            <Loader2 className="animate-spin" size={24} />
             <span>Carregando...</span>
           </div>
         ) : movimentosFiltrados.length === 0 ? (
@@ -376,7 +419,13 @@ const getIconeCategoria = (categoria: string) => {
                       <span className="date">{formatarData(movimento.data_movimento)}</span>
                       {movimento.referencia && <span className="ref">Ref: {movimento.referencia}</span>}
                       {movimento.cliente_nome && <span className="client">Cliente: {movimento.cliente_nome}</span>}
-                      {movimento.forma_pagamento && <span className="payment">{movimento.forma_pagamento}</span>}
+                      {movimento.forma_pagamento && <span className="payment">{renderFormasPagamento(movimento)}</span>}
+                      {movimento.valor_pago !== undefined && movimento.valor_pago !== null ? (
+                        <span className="valor-recebido">Recebido: {formatarValor(Number(movimento.valor_pago))}</span>
+                      ) : null}
+                      {movimento.troco !== undefined && movimento.troco !== null && Number(movimento.troco) > 0 ? (
+                        <span className="troco">Troco: {formatarValor(Number(movimento.troco))}</span>
+                      ) : null}
                     </div>
                   </div>
                 </div>

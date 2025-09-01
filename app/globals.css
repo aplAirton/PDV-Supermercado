@@ -630,6 +630,7 @@ html, body, input, button, select, textarea {
   flex-direction: column;
   gap: 0.5rem;
   align-items: flex-end;
+  margin-left: 2.5rem;
 }
 
 .payment-item {
@@ -645,7 +646,7 @@ html, body, input, button, select, textarea {
 
 .payment-value {
   font-weight: 600;
-  color: var(--foreground);
+  color: var(--chart-5);
   font-size: 0.9rem;
 }
 
@@ -1354,7 +1355,7 @@ html, body, input, button, select, textarea {
   border: 1px solid #fecaca;
 }
 
-/* Loading spinner */
+/* Loading spinner - Desabilitado - Usando Lucide React ao invés de CSS
 .loading {
   display: inline-block;
   width: 1.5rem;
@@ -1370,6 +1371,21 @@ html, body, input, button, select, textarea {
     transform: rotate(0deg);
   }
   100% {
+    transform: rotate(360deg);
+  }
+}
+*/
+
+/* Animação para Lucide React spinners */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
     transform: rotate(360deg);
   }
 }

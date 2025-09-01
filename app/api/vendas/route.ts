@@ -30,14 +30,9 @@ export async function GET(request: Request) {
       }
     }
 
-    // Filtro por forma de pagamento (verifica campo forma_pagamento ou forma_pagamento_json)
+    // Filtro por forma de pagamento (verifica apenas campo forma_pagamento_json)
     if (forma_pagamento) {
-      // tentar filtrar pelo campo enum forma_pagamento
-      where.OR = [
-        { forma_pagamento: forma_pagamento },
-        // ou quando armazenado no JSON como parte das formas
-        { forma_pagamento_json: { contains: forma_pagamento } }
-      ]
+      where.forma_pagamento_json = { contains: forma_pagamento }
     }
 
     // Filtro por cliente (aceita id numérico ou parte do nome)
@@ -122,7 +117,7 @@ export async function POST(request: NextRequest) {
 
   console.log('[vendas] aggByProduct (quantidades por produto):', aggByProduct)
 
-    // Resumo da forma de pagamento para salvar em campo simples (label) e enum (campo obrigatório)
+    // Resumo da forma de pagamento para salvar em campo JSON
     const labelMap: Record<string, string> = {
       dinheiro: 'Dinheiro',
       cartao_debito: 'Débito',
@@ -130,14 +125,6 @@ export async function POST(request: NextRequest) {
       pix: 'PIX',
       fiado: 'Fiado',
     }
-
-    const resumoLabel = pagamentosNorm
-      .map((p: any) => labelMap[p.tipo] || (p.tipo || '').toString())
-      .filter(Boolean)
-      .join(', ')
-
-    // Forma de pagamento (enum) - usar o primeiro método como valor primário (campo obrigatório no schema)
-    const formaEnumValue = (pagamentosNorm[0]?.tipo && ['dinheiro','cartao_debito','cartao_credito','pix','fiado'].includes(pagamentosNorm[0].tipo)) ? pagamentosNorm[0].tipo : 'dinheiro'
 
     // Calcular total fiado (se houver)
     const totalFiado = pagamentosNorm.filter((p: any) => (p.tipo || '').toString() === 'fiado').reduce((s: number, p: any) => s + (Number(p.valor) || 0), 0)
@@ -168,7 +155,6 @@ export async function POST(request: NextRequest) {
         data: {
           cliente_id: cliente_id || null,
           total: Number(total) || 0,
-          forma_pagamento: formaEnumValue,
           forma_pagamento_json: JSON.stringify(pagamentosNorm || []),
           valor_pago: Number(somaPagamentos) || 0,
           troco: Number(troco) || 0,
@@ -348,6 +334,15 @@ export async function POST(request: NextRequest) {
       } catch (e) {
         const valor = `R$ ${Number(total || 0).toFixed(2)}`
         texto += pad('Dinheiro:', 25) + pad(valor, 15, 'right') + '\n'
+      }
+
+      // Adicionar informações de valor pago e troco
+      texto += linhaThin
+      texto += pad('VALOR PAGO:', 25) + pad(`R$ ${Number(somaPagamentos || 0).toFixed(2)}`, 15, 'right') + '\n'
+      
+      const trocoValue = Number(troco || 0)
+      if (trocoValue > 0) {
+        texto += pad('TROCO:', 25) + pad(`R$ ${trocoValue.toFixed(2)}`, 15, 'right') + '\n'
       }
 
       texto += linha + '\n' + pad('Obrigado pela preferência!', 40, 'center') + '\n' + pad('Volte sempre!', 40, 'center') + '\n' + linha

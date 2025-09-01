@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Plus, CreditCard, Clock, CheckCircle, Eye, DollarSign, FileText, Printer, Trash2, Calculator } from 'lucide-react'
+import { X, Plus, CreditCard, Clock, CheckCircle, Eye, DollarSign, FileText, Printer, Trash2, Calculator, Loader2 } from 'lucide-react'
 import Modal from '@/components/modal'
 import { toast } from '@/hooks/use-toast'
 import '../../styles/components.css'
@@ -205,7 +205,7 @@ export default function FiadosPage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center" style={{ height: '24rem', padding: '2rem' }}>
-        <div className="loading" style={{ width: '2rem', height: '2rem' }}></div>
+        <Loader2 className="animate-spin" size={32} />
       </div>
     )
   }
@@ -669,7 +669,7 @@ export default function FiadosPage() {
                 >
                   {pagamentoLoading ? (
                     <>
-                      <div className="loading" style={{ width: '16px', height: '16px' }}></div>
+                      <Loader2 className="animate-spin" size={16} />
                       Processando Pagamento...
                     </>
                   ) : (
@@ -703,7 +703,7 @@ export default function FiadosPage() {
             >
               {imprimindoExtrato ? (
                 <>
-                  <div className="loading" style={{ width: '16px', height: '16px', marginRight: '8px' }}></div>
+                  <Loader2 className="animate-spin" size={16} style={{ marginRight: '8px' }} />
                   Gerando extrato...
                 </>
               ) : (
@@ -773,7 +773,7 @@ export default function FiadosPage() {
         <div className="max-h-80 overflow-y-auto bg-gray-50 rounded-lg p-1">
           {extratoLoading ? (
             <div className="flex flex-col items-center justify-center py-12">
-              <div className="loading" style={{ width: '40px', height: '40px', marginBottom: '12px' }}></div>
+              <Loader2 className="animate-spin" size={40} style={{ marginBottom: '12px' }} />
               <p className="text-gray-600 text-sm">Carregando movimentações...</p>
             </div>
           ) : movimentosExtrato.length === 0 ? (

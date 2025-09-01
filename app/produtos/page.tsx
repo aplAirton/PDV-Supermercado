@@ -6,7 +6,7 @@ import { useState, useEffect } from "react"
 import Loading from "@/components/loading"
 import ConfirmationModal from '@/components/confirmation-modal'
 import { toast } from '@/hooks/use-toast'
-import { Plus, Edit, Trash2, Search } from "lucide-react"
+import { Plus, Edit, Trash2, Search, Loader2 } from "lucide-react"
 
 interface Produto {
   id: number
@@ -329,7 +329,7 @@ export default function ProdutosPage() {
                 <button type="submit" className="btn btn-primary" disabled={loading}>
                   {loading ? (
                     <>
-                      <div className="loading"></div>
+                      <Loader2 className="animate-spin" size={16} />
                       Salvando...
                     </>
                   ) : (

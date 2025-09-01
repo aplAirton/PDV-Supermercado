@@ -32,7 +32,9 @@ export async function GET(request: NextRequest, context: any) {
         forma_pagamento_json,
         data_movimento,
         cliente_nome,
-        cliente_id
+        cliente_id,
+        valor_pago,
+        troco
       FROM (
         -- Vendas
         SELECT 
@@ -59,7 +61,9 @@ export async function GET(request: NextRequest, context: any) {
           v.forma_pagamento_json,
           v.data_venda as data_movimento,
           c.nome as cliente_nome,
-          v.cliente_id
+          v.cliente_id,
+          v.valor_pago,
+          v.troco
         FROM vendas v
         LEFT JOIN clientes c ON v.cliente_id = c.id
         
@@ -83,7 +87,9 @@ export async function GET(request: NextRequest, context: any) {
           NULL as forma_pagamento_json,
           fm.data_movimento,
           c.nome as cliente_nome,
-          fm.cliente_id
+          fm.cliente_id,
+          NULL as valor_pago,
+          NULL as troco
         FROM fiado_movimentos fm
         JOIN clientes c ON fm.cliente_id = c.id
         WHERE fm.tipo = 'pagamento' AND fm.direcao = 'credito'
@@ -177,6 +183,20 @@ export async function GET(request: NextRequest, context: any) {
           <span>VALOR RECEBIDO:</span>
           <span class="valor">R$ ${formatarValor(Number(movimento.valor))}</span>
         </div>
+        
+        ${movimento.valor_pago && movimento.categoria?.includes('venda') ? `
+        <div class="linha">
+          <span>VALOR PAGO:</span>
+          <span class="valor">R$ ${formatarValor(Number(movimento.valor_pago))}</span>
+        </div>
+        ` : ''}
+        
+        ${movimento.troco && Number(movimento.troco) > 0 && movimento.categoria?.includes('venda') ? `
+        <div class="linha">
+          <span>TROCO:</span>
+          <span class="valor">R$ ${formatarValor(Number(movimento.troco))}</span>
+        </div>
+        ` : ''}
       </div>
 
       <div class="assinatura">

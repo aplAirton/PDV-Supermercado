@@ -6,7 +6,7 @@ import ConfirmationModal from '@/components/confirmation-modal'
 import VirtualKeyboard from '@/components/virtual-keyboard'
 import Loading from "@/components/loading"
 import SearchHint from "@/components/search-hint"
-import { Search, Plus, Minus, Trash2, ShoppingCart, X, Settings, ChevronDown, ChevronUp } from "lucide-react"
+import { Search, Plus, Minus, Trash2, ShoppingCart, X, Settings, ChevronDown, ChevronUp, Loader2 } from "lucide-react"
 import '../../styles/components.css'
 
 interface Produto {
@@ -714,7 +714,7 @@ export default function VendasPage() {
             {/* Resumo da Venda */}
             <div className="sale-summary-card">
               <div className="sale-summary-row">
-                <span className="summary-label">Quantidade de itens:</span>
+                <span className="summary-label">Quantidade:</span>
                 <span className="summary-value">
                   {ultimaVenda ? ultimaVenda.itens?.length || 0 : 0} {(ultimaVenda?.itens?.length || 0) === 1 ? "item" : "itens"}
                 </span>
@@ -726,7 +726,7 @@ export default function VendasPage() {
               </div>
               
               <div className="sale-summary-row">
-                <span className="summary-label">Formas de pagamento:</span>
+                <span className="summary-label">Pagamento:</span>
                 <div className="summary-payments">
                   {getFormasPagamentoUltimaVenda().length > 0 ? (
                     getFormasPagamentoUltimaVenda().map((p: any, idx: number) => (
@@ -1383,7 +1383,7 @@ export default function VendasPage() {
               >
                 {loading ? (
                   <>
-                    <div className="loading loading-small"></div>
+                    <Loader2 className="animate-spin" size={16} />
                     Processando...
                   </>
                 ) : (

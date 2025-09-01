@@ -143,3 +143,24 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Estilos para detalhamento de formas de pagamento na página de pagamentos */
+.formas-pagamento-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+}
+.forma-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+.forma-tipo {
+  font-weight: 600;
+}
+.forma-valor {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', 'Segoe UI Mono', monospace;
+}
