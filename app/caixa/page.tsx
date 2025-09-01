@@ -1,16 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Calculator, User, DollarSign, Clock, TrendingUp, Plus, Settings, Eye, AlertCircle, CheckCircle, Loader2, ArrowUp, ArrowDown, Filter } from 'lucide-react'
+import { Calculator, User, DollarSign, Clock, TrendingUp, Plus, Settings, AlertCircle, CheckCircle, Loader2, ArrowUp, ArrowDown, Filter, Lock, FileText, Printer } from 'lucide-react'
 import '../../styles/caixa.css'
 
-// Função toast simples temporária
+// Função toast limpa - sem alertas de navegador
 const toast = ({ title, description, variant }: { title: string; description?: string; variant?: string }) => {
-  const message = description ? `${title}: ${description}` : title
-  if (variant === 'destructive') {
-    alert(`❌ ${message}`)
-  } else {
-    alert(`✅ ${message}`)
+  // Sistema de toast silencioso - apenas log no console em desenvolvimento
+  if (process.env.NODE_ENV === 'development') {
+    const emoji = variant === 'destructive' ? '❌' : '✅'
+    const message = description ? `${title}: ${description}` : title
+    console.log(`${emoji} ${message}`)
   }
 }
 
@@ -48,7 +48,6 @@ export default function CaixaPage() {
   const [funcionarios, setFuncionarios] = useState<Funcionario[]>([])
   const [showNovoModal, setShowNovoModal] = useState(false)
   const [showFecharModal, setShowFecharModal] = useState(false)
-  const [showVisualizarModal, setShowVisualizarModal] = useState(false)
   const [showResumoModal, setShowResumoModal] = useState(false)
   const [caixaSelecionado, setCaixaSelecionado] = useState<Caixa | null>(null)
   const [filtro, setFiltro] = useState<'todos' | 'aberto' | 'fechado'>('todos')
@@ -171,10 +170,7 @@ export default function CaixaPage() {
         
         setResumoFechamento(resumoCompleto)
 
-        toast({
-          title: "Caixa fechado com sucesso",
-          description: `Caixa ${diferenca === 0 ? 'perfeito' : diferenca > 0 ? `com sobra de R$ ${diferenca.toFixed(2)}` : `com falta de R$ ${Math.abs(diferenca).toFixed(2)}`}`
-        })
+        // Fechamento realizado com sucesso - sem toast irritante
         
         setShowFecharModal(false)
         setCaixaSelecionado(null)
@@ -262,10 +258,7 @@ export default function CaixaPage() {
           // Salvar dados do funcionário para uso posterior
           sessionStorage.setItem('funcionario_caixa', JSON.stringify(funcionario))
           setEtapaAbertura('fundos')
-          toast({
-            title: "Login validado",
-            description: `Bem-vindo, ${funcionario.nome}!`
-          })
+          // Toast removido - transição silenciosa
         } else {
           const error = await response.json()
           toast({
@@ -300,10 +293,7 @@ export default function CaixaPage() {
         const result = await response.json()
 
         if (response.ok) {
-          toast({
-            title: "Caixa aberto com sucesso",
-            description: `Caixa aberto para ${funcionarioData.nome} (${funcionarioData.cargo})`
-          })
+          // Abertura realizada com sucesso - sem toast
           
           // Atualizar estado do caixa atual
           setCaixaAtual({
@@ -379,6 +369,31 @@ export default function CaixaPage() {
     }
   }
 
+  const imprimirResumoCaixa = async (caixaId: number) => {
+    try {
+      const url = `/api/caixa/${caixaId}/resumo/cupom`
+      const newWindow = window.open(url, '_blank', 'width=400,height=600')
+      
+      if (!newWindow) {
+        toast({
+          title: "Erro ao imprimir",
+          description: "Verifique o bloqueador de pop-ups",
+          variant: "destructive"
+        })
+        return
+      }
+
+      // Impressão aberta - sem toast de confirmação
+    } catch (error) {
+      console.error('Erro ao imprimir resumo:', error)
+      toast({
+        title: "Erro ao imprimir",
+        description: "Não foi possível imprimir o resumo",
+        variant: "destructive"
+      })
+    }
+  }
+
   const caixasAbertos = caixas.filter(c => c.status === 'aberto')
   const caixasFiltrados = filtro === 'todos' ? caixas : caixas.filter(c => c.status === filtro)
 
@@ -413,7 +428,7 @@ export default function CaixaPage() {
           
           <button
             onClick={() => setShowNovoModal(true)}
-            className="btn-primary"
+            className="btn btn-primary"
           >
             <Plus size={16} />
             Abrir Caixa
@@ -500,8 +515,6 @@ export default function CaixaPage() {
               <tr>
                 <th>Funcionário</th>
                 <th>Status</th>
-                <th>Valor Inicial</th>
-                <th>Valor Final</th>
                 <th>Total Vendas</th>
                 <th>Abertura</th>
                 <th>Fechamento</th>
@@ -523,12 +536,6 @@ export default function CaixaPage() {
                     </span>
                   </td>
                   <td className="currency">
-                    {formatarValor(caixa.valor_inicial)}
-                  </td>
-                  <td className="currency">
-                    {caixa.valor_final ? formatarValor(caixa.valor_final) : '-'}
-                  </td>
-                  <td className="currency">
                     {formatarValor(caixa.total_vendas)}
                   </td>
                   <td style={{ fontSize: '13px', color: '#6b7280' }}>
@@ -539,16 +546,6 @@ export default function CaixaPage() {
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      <button
-                        onClick={() => {
-                          setCaixaSelecionado(caixa)
-                          setShowVisualizarModal(true)
-                        }}
-                        className="btn btn-sm btn-outline"
-                        title="Ver detalhes"
-                      >
-                        <Eye size={14} />
-                      </button>
                       {caixa.status === 'aberto' ? (
                         <button
                           onClick={() => {
@@ -557,18 +554,53 @@ export default function CaixaPage() {
                           }}
                           className="btn btn-sm btn-outline danger"
                           title="Fechar caixa"
+                          style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '6px',
+                            backgroundColor: '#fef2f2',
+                            borderColor: '#fecaca',
+                            color: '#dc2626'
+                          }}
                         >
+                          <Lock size={14} />
                           Fechar
                         </button>
                       ) : (
                         <button
                           onClick={() => verResumo(caixa)}
-                          className="btn btn-sm btn-outline primary"
+                          className="btn btn-sm btn-outline"
                           title="Ver resumo do fechamento"
+                          style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '6px',
+                            backgroundColor: '#eff6ff',
+                            borderColor: '#bfdbfe',
+                            color: '#2563eb',
+                            marginRight: '8px'
+                          }}
                         >
+                          <FileText size={14} />
                           Resumo
                         </button>
                       )}
+                      <button
+                        onClick={() => imprimirResumoCaixa(caixa.id)}
+                        className="btn btn-sm btn-outline"
+                        title="Imprimir resumo"
+                        style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '6px',
+                          backgroundColor: '#f0fdf4',
+                          borderColor: '#bbf7d0',
+                          color: '#16a34a'
+                        }}
+                      >
+                        <Printer size={14} />
+                        Imprimir
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -794,93 +826,6 @@ export default function CaixaPage() {
         </div>
       )}
 
-      {/* Modal Visualizar Caixa */}
-      {showVisualizarModal && caixaSelecionado && (
-        <div className="modal-overlay">
-          <div className="modal-content modal-large">
-            <div className="modal-header">
-              <h3>Detalhes do Caixa</h3>
-              <button
-                onClick={() => {
-                  setShowVisualizarModal(false)
-                  setCaixaSelecionado(null)
-                }}
-                className="modal-close"
-              >
-                ×
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="caixa-details">
-                <div className="detail-section">
-                  <h4>Informações Gerais</h4>
-                  <div className="detail-grid">
-                    <div><strong>ID:</strong> #{caixaSelecionado.id}</div>
-                    <div><strong>Status:</strong> 
-                      <span className={`status ${caixaSelecionado.status}`}>
-                        {caixaSelecionado.status === 'aberto' ? 'Aberto' : 'Fechado'}
-                      </span>
-                    </div>
-                    <div><strong>Funcionário:</strong> {caixaSelecionado.funcionario_nome}</div>
-                    <div><strong>Valor Inicial:</strong> {formatarValor(caixaSelecionado.valor_inicial)}</div>
-                    {caixaSelecionado.valor_final && (
-                      <div><strong>Valor Final:</strong> {formatarValor(caixaSelecionado.valor_final)}</div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="detail-section">
-                  <h4>Datas</h4>
-                  <div className="detail-grid">
-                    <div><strong>Data Abertura:</strong> {formatarData(caixaSelecionado.data_abertura)}</div>
-                    {caixaSelecionado.data_fechamento && (
-                      <div><strong>Data Fechamento:</strong> {formatarData(caixaSelecionado.data_fechamento)}</div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="detail-section">
-                  <h4>Resumo de Vendas</h4>
-                  <div className="detail-grid">
-                    <div><strong>Total de Vendas:</strong> {formatarValor(caixaSelecionado.total_vendas)}</div>
-                    <div><strong>Dinheiro:</strong> {formatarValor(caixaSelecionado.total_dinheiro)}</div>
-                    <div><strong>Cartão Débito:</strong> {formatarValor(caixaSelecionado.total_cartao_debito)}</div>
-                    <div><strong>Cartão Crédito:</strong> {formatarValor(caixaSelecionado.total_cartao_credito)}</div>
-                    <div><strong>PIX:</strong> {formatarValor(caixaSelecionado.total_pix)}</div>
-                    <div><strong>Fiado:</strong> {formatarValor(caixaSelecionado.total_fiado)}</div>
-                  </div>
-                </div>
-
-                {caixaSelecionado.observacoes_abertura && (
-                  <div className="detail-section">
-                    <h4>Observações de Abertura</h4>
-                    <p>{caixaSelecionado.observacoes_abertura}</p>
-                  </div>
-                )}
-
-                {caixaSelecionado.observacoes_fechamento && (
-                  <div className="detail-section">
-                    <h4>Observações de Fechamento</h4>
-                    <p>{caixaSelecionado.observacoes_fechamento}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button 
-                onClick={() => {
-                  setShowVisualizarModal(false)
-                  setCaixaSelecionado(null)
-                }} 
-                className="btn btn-outline"
-              >
-                Fechar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Modal Resumo */}
       {showResumoModal && resumoFechamento && (
         <div className="modal-overlay">
@@ -962,7 +907,7 @@ export default function CaixaPage() {
 
             <div className="modal-footer">
               <button 
-                onClick={() => window.print()}
+                onClick={() => imprimirResumoCaixa(resumoFechamento.id)}
                 className="btn btn-primary"
               >
                 Imprimir

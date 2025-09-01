@@ -25,7 +25,7 @@ if (process.env.DATABASE_URL) {
       password: decodeURIComponent(url.password),
       database: url.pathname ? url.pathname.replace(/^\//, "") : dbConfig.database,
     }
-    console.log("DATABASE_URL detectada — usando configuração via URL para conexão ao banco")
+    // Console.log removido - detecta DATABASE_URL silenciosamente
   } catch (err) {
     console.error("Falha ao parsear DATABASE_URL:", err)
   }

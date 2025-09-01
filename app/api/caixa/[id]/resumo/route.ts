@@ -3,8 +3,9 @@ import { executeQuery } from '../../../../../lib/database'
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const caixaId = params.id
-    
+    const { id } = await params
+    const caixaId = id
+
     if (!caixaId) {
       return NextResponse.json(
         { error: 'ID do caixa é obrigatório' },
