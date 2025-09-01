@@ -52,6 +52,7 @@ export default function PagamentosPage() {
   })
   const [showFilters, setShowFilters] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [showExtratosModal, setShowExtratosModal] = useState(false)
 
   useEffect(() => {
     carregarDados()
@@ -168,6 +169,42 @@ const renderFormasPagamento = (movimento: MovimentoCaixa) => {
   return movimento.forma_pagamento || null
 }
 
+  const gerarExtratoMovimentos = async () => {
+    try {
+      const params = new URLSearchParams({
+        dataInicio: filtros.dataInicio,
+        dataFim: filtros.dataFim,
+        tipo: filtros.tipo,
+        categoria: filtros.categoria
+      })
+
+      const url = `/api/pagamentos/extrato-movimentos?${params}`
+      const newWindow = window.open(url, '_blank', 'width=400,height=600')
+      
+      if (!newWindow) {
+        toast({
+          title: "Erro ao gerar extrato",
+          description: "Não foi possível abrir a janela de impressão. Verifique o bloqueador de pop-ups.",
+          variant: "destructive"
+        })
+        return
+      }
+
+      setShowExtratosModal(false)
+      toast({
+        title: "Extrato gerado",
+        description: "Janela de impressão foi aberta"
+      })
+    } catch (error) {
+      console.error('Erro:', error)
+      toast({
+        title: "Erro ao gerar extrato",
+        description: "Não foi possível gerar o extrato de movimentos",
+        variant: "destructive"
+      })
+    }
+  }
+
   const exportarRelatorio = async () => {
     try {
       const params = new URLSearchParams({
@@ -247,9 +284,9 @@ const renderFormasPagamento = (movimento: MovimentoCaixa) => {
             <Filter size={16} />
             Filtros
           </button>
-          <button className="btn btn-primary" onClick={exportarRelatorio}>
+          <button className="btn btn-primary" onClick={() => setShowExtratosModal(true)}>
             <Download size={16} />
-            Exportar
+            Extratos
           </button>
         </div>
       </div>
@@ -446,6 +483,43 @@ const renderFormasPagamento = (movimento: MovimentoCaixa) => {
           </div>
         )}
       </div>
+
+      {/* Modal de Extratos */}
+      {showExtratosModal && (
+        <div className="modal-overlay" onClick={() => setShowExtratosModal(false)}>
+          <div className="modal-content extratos-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Selecione o tipo de extrato</h2>
+              <button 
+                className="modal-close"
+                onClick={() => setShowExtratosModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="extratos-grid">
+              <div className="extrato-card" onClick={gerarExtratoMovimentos}>
+                <div className="extrato-icon">
+                  <FileText size={32} />
+                </div>
+                <h3>Extrato de Movimentos</h3>
+                <p>Gera um extrato completo com resumo financeiro e detalhamento das formas de pagamento</p>
+                <div className="extrato-badge">Disponível</div>
+              </div>
+              
+              <div className="extrato-card disabled">
+                <div className="extrato-icon">
+                  <FileText size={32} />
+                </div>
+                <h3>Histórico de Pagamentos</h3>
+                <p>Listagem detalhada de todas as movimentações financeiras do período</p>
+                <div className="extrato-badge">Em breve</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
