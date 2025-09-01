@@ -34,18 +34,22 @@ CREATE TABLE clientes (
 );
 
 -- Tabela de Vendas
-CREATE TABLE vendas (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    cliente_id INT NULL,
-    total DECIMAL(10,2) NOT NULL,
-    desconto DECIMAL(10,2) DEFAULT 0.00,
-    forma_pagamento ENUM('dinheiro', 'cartao_debito', 'cartao_credito', 'pix', 'fiado') NOT NULL,
-    valor_pago DECIMAL(10,2),
-    troco DECIMAL(10,2) DEFAULT 0.00,
-    observacoes TEXT,
-    data_venda TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE SET NULL
-);
+CREATE TABLE `vendas` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `cliente_id` int DEFAULT NULL,
+    `total` decimal(10, 2) NOT NULL,
+    `desconto` decimal(10, 2) NOT NULL DEFAULT '0.00',
+    `valor_pago` decimal(10, 2) DEFAULT NULL,
+    `troco` decimal(10, 2) NOT NULL DEFAULT '0.00',
+    `observacoes` text,
+    `data_venda` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `forma_pagamento_json` text,
+    `forma_pagamento` varchar(50) DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    KEY `idx_vendas_data` (`data_venda`),
+    KEY `idx_vendas_cliente` (`cliente_id`),
+    CONSTRAINT `vendas_cliente_id_fkey` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE = InnoDB AUTO_INCREMENT = 198 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci
 
 -- Tabela de Itens da Venda
 CREATE TABLE itens_venda (
