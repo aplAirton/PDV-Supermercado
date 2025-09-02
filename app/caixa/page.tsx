@@ -57,6 +57,9 @@ export default function CaixaPage() {
     funcionario_cargo: string
     valor_inicial: number
   } | null>(null)
+
+  // Persistir funcionário validado durante a etapa de abertura (evita perda entre etapas)
+  const [funcionarioAbertura, setFuncionarioAbertura] = useState<Funcionario | null>(null)
   
   // Estados para abertura em etapas
   const [etapaAbertura, setEtapaAbertura] = useState<'login' | 'fundos'>('login')
@@ -232,8 +235,14 @@ export default function CaixaPage() {
     e.preventDefault()
     
     if (etapaAbertura === 'login') {
-      // Validar login
-      if (!loginForm.cpf || !loginForm.senha) {
+      // Validar login (mais robusto)
+      const cpfInput = (loginForm.cpf || '').toString().trim()
+      const senhaInput = (loginForm.senha || '').toString().trim()
+
+      // Se não houver dados no formulário, verificar se já existe um funcionário validado no sessionStorage
+      const storedFuncionario = sessionStorage.getItem('funcionario_caixa')
+
+      if ((!cpfInput || !senhaInput) && !storedFuncionario) {
         toast({
           title: "Erro",
           description: "CPF e senha são obrigatórios",
@@ -241,22 +250,39 @@ export default function CaixaPage() {
         })
         return
       }
-      
+
+      // Se houver funcionário armazenado, avançar automaticamente para etapa de fundos
+      if ((!cpfInput || !senhaInput) && storedFuncionario) {
+        try {
+          const parsed = JSON.parse(storedFuncionario)
+          setFuncionarioAbertura(parsed)
+          setEtapaAbertura('fundos')
+          return
+        } catch (err) {
+          // se parsing falhar, prosseguir com validação normal
+          console.error('Erro ao ler funcionario armazenado:', err)
+        }
+      }
+
       try {
         // Validar credenciais
         const response = await fetch('/api/funcionarios/validar', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            cpf: loginForm.cpf,
-            senha: loginForm.senha
+            cpf: cpfInput,
+            senha: senhaInput
           })
         })
 
         if (response.ok) {
           const funcionario = await response.json()
-          // Salvar dados do funcionário para uso posterior
+          // Debug: verificar dados recebidos
+          console.log('🔐 Login validado:', { funcionario, cpf: cpfInput })
+          
+          // Salvar dados do funcionário para uso posterior (sessionStorage + estado local)
           sessionStorage.setItem('funcionario_caixa', JSON.stringify(funcionario))
+          setFuncionarioAbertura(funcionario)
           setEtapaAbertura('fundos')
           // Toast removido - transição silenciosa
         } else {
@@ -278,19 +304,56 @@ export default function CaixaPage() {
     } else if (etapaAbertura === 'fundos') {
       // Abrir caixa com fundos
       try {
-        const funcionarioData = JSON.parse(sessionStorage.getItem('funcionario_caixa') || '{}')
+        // Preferir o estado local (mais confiável durante fluxo), senão fallback para sessionStorage
+        const funcionarioData = funcionarioAbertura || JSON.parse(sessionStorage.getItem('funcionario_caixa') || '{}')
+        
+        // Debug: verificar estado antes de abrir caixa
+        console.log('💰 Tentando abrir caixa:', { 
+          funcionarioAbertura: !!funcionarioAbertura,
+          sessionStorage: !!sessionStorage.getItem('funcionario_caixa'),
+          funcionarioData,
+          etapa: etapaAbertura
+        })
+        
+        // Validação robusta: se não temos dados do funcionário, forçar volta para login
+        if (!funcionarioData || !funcionarioData.id) {
+          console.error('❌ Dados do funcionário perdidos!')
+          toast({
+            title: "Erro de sessão",
+            description: "Sessão expirada. Faça login novamente.",
+            variant: "destructive"
+          })
+          setEtapaAbertura('login')
+          setFuncionarioAbertura(null)
+          sessionStorage.removeItem('funcionario_caixa')
+          return
+        }
         
         const response = await fetch('/api/caixa', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            funcionario_id: funcionarioData.id,
+            cpf: loginForm.cpf,
+            senha: loginForm.senha,
             valor_inicial: parseFloat(novoForm.valor_inicial) || 0,
             observacoes_abertura: novoForm.observacoes
           })
         })
 
         const result = await response.json()
+        
+        // Debug: verificar resposta da API
+        console.log('🔥 Resposta da API /api/caixa:', { 
+          status: response.status,
+          ok: response.ok,
+          result,
+          requestBody: {
+            cpf: loginForm.cpf,
+            senha: '***',
+            valor_inicial: parseFloat(novoForm.valor_inicial) || 0,
+            observacoes_abertura: novoForm.observacoes
+          }
+        })
 
         if (response.ok) {
           // Abertura realizada com sucesso - sem toast
@@ -303,10 +366,12 @@ export default function CaixaPage() {
             valor_inicial: parseFloat(novoForm.valor_inicial) || 0
           })
           
+          // Limpar estado e sessionStorage após abrir o caixa
           setShowNovoModal(false)
           setEtapaAbertura('login')
           setLoginForm({ cpf: '', senha: '' })
           setNovoForm({ valor_inicial: '', observacoes: '' })
+          setFuncionarioAbertura(null)
           sessionStorage.removeItem('funcionario_caixa')
           carregarDados()
         } else {
@@ -617,7 +682,14 @@ export default function CaixaPage() {
             <div className="modal-header">
               <h3>Abrir Novo Caixa</h3>
               <button
-                onClick={() => setShowNovoModal(false)}
+                onClick={() => {
+                  setShowNovoModal(false)
+                  setEtapaAbertura('login')
+                  setLoginForm({ cpf: '', senha: '' })
+                  setNovoForm({ valor_inicial: '', observacoes: '' })
+                  setFuncionarioAbertura(null)
+                  sessionStorage.removeItem('funcionario_caixa')
+                }}
                 className="modal-close"
               >
                 ×
@@ -728,6 +800,7 @@ export default function CaixaPage() {
                     setEtapaAbertura('login')
                     setLoginForm({ cpf: '', senha: '' })
                     setNovoForm({ valor_inicial: '', observacoes: '' })
+                    setFuncionarioAbertura(null)
                     sessionStorage.removeItem('funcionario_caixa')
                   }} 
                   className="btn btn-outline"
