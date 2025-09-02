@@ -72,21 +72,45 @@ export async function GET(
 
     const movimentacoes = await executeQuery(movQuery, [caixaId]) as any[]
 
+    // Buscar sangrias específicas da tabela caixa_sangrias
+    const sangriasQuery = `
+      SELECT 
+        id,
+        valor,
+        descricao,
+        data_criacao
+      FROM caixa_sangrias 
+      WHERE caixa_id = ?
+      ORDER BY data_criacao DESC
+    `
+    
+    let sangriasDetalhadas: any[] = []
+    try {
+      sangriasDetalhadas = await executeQuery(sangriasQuery, [caixaId]) as any[]
+    } catch (error) {
+      // Tabela pode não existir ainda, continuar sem sangrias detalhadas
+      console.log('Tabela caixa_sangrias não encontrada, usando total_sangrias da tabela caixas')
+    }
+
     // Calcular totais usando os dados já calculados da tabela caixas
     const totalVendas = Number(caixaData.total_vendas || 0)
     const totalSuprimentos = Number(caixaData.total_suprimentos || 0)
     const totalSangrias = Number(caixaData.total_sangrias || 0)
 
-    // Calcular totais por forma de pagamento usando os dados da tabela caixas
+    // Calcular totais por forma de pagamento diretamente das vendas (não da tabela caixas que pode estar zerada)
     const totaisPorForma = {
-      dinheiro: Number(caixaData.total_dinheiro || 0),
-      cartao_debito: Number(caixaData.total_cartao_debito || 0),
-      cartao_credito: Number(caixaData.total_cartao_credito || 0),
-      pix: Number(caixaData.total_pix || 0),
-      fiado: Number(caixaData.total_fiado || 0)
+      dinheiro: vendas.reduce((sum, v) => sum + Number(v.valor_dinheiro || 0), 0),
+      cartao_debito: vendas.reduce((sum, v) => sum + Number(v.valor_cartao_debito || 0), 0),
+      cartao_credito: vendas.reduce((sum, v) => sum + Number(v.valor_cartao_credito || 0), 0),
+      pix: vendas.reduce((sum, v) => sum + Number(v.valor_pix || 0), 0),
+      fiado: vendas.reduce((sum, v) => sum + Number(v.valor_fiado || 0), 0)
     }
 
-    const valorEsperado = Number(caixaData.valor_inicial) + totalVendas + totalSuprimentos - totalSangrias
+    // Recalcular total de vendas baseado nas vendas reais
+    const totalVendasCalculado = vendas.reduce((sum, v) => sum + Number(v.total || 0), 0)
+    const totalVendasFinal = Math.max(totalVendas, totalVendasCalculado)
+
+    const valorEsperado = Number(caixaData.valor_inicial) + totalVendasFinal + totalSuprimentos - totalSangrias
     const valorContado = Number(caixaData.valor_contado_dinheiro || caixaData.valor_final || 0)
     const diferenca = valorContado - valorEsperado
 
@@ -131,18 +155,18 @@ export async function GET(
         </div>
         <div class="linha">
           <span>Total de Vendas:</span>
-          <span class="valor">R$ ${formatarValor(totalVendas)}</span>
+          <span class="valor">R$ ${formatarValor(totalVendasFinal)}</span>
         </div>
+        ${totalSangrias > 0 ? `
+        <div class="linha">
+          <span>Total em Sangrias:</span>
+          <span class="valor">- R$ ${formatarValor(totalSangrias)}</span>
+        </div>
+        ` : ''}
         ${totalSuprimentos > 0 ? `
         <div class="linha">
           <span>Suprimentos:</span>
           <span class="valor">+ R$ ${formatarValor(totalSuprimentos)}</span>
-        </div>
-        ` : ''}
-        ${totalSangrias > 0 ? `
-        <div class="linha">
-          <span>Sangrias:</span>
-          <span class="valor">- R$ ${formatarValor(totalSangrias)}</span>
         </div>
         ` : ''}
         <div class="linha destaque">
@@ -154,7 +178,7 @@ export async function GET(
           <span>Valor Contado:</span>
           <span class="valor">R$ ${formatarValor(valorContado)}</span>
         </div>
-        <div class="linha destaque" style="color: ${diferenca === 0 ? '#2e7d32' : diferenca > 0 ? '#1976d2' : '#d32f2f'}">
+        <div class="linha destaque" style="color: ${diferenca === 0 ? '#666' : diferenca > 0 ? '#2e7d32' : '#d32f2f'}">
           <span>${statusReconciliacao}:</span>
           <span class="valor">R$ ${formatarValor(Math.abs(diferenca))}</span>
         </div>
@@ -195,16 +219,12 @@ export async function GET(
           <span class="valor">${vendas.length}</span>
         </div>
         <div class="linha">
-          <span>Valor Total Vendido:</span>
-          <span class="valor">R$ ${formatarValor(totalVendas)}</span>
-        </div>
-        <div class="linha">
           <span>Ticket Médio:</span>
-          <span class="valor">R$ ${formatarValor(vendas.length > 0 ? totalVendas / vendas.length : 0)}</span>
+          <span class="valor">R$ ${formatarValor(vendas.length > 0 ? totalVendasFinal / vendas.length : 0)}</span>
         </div>
       </div>
 
-      ${movimentacoes.length > 0 ? `
+      ${movimentacoes.length > 0 || sangriasDetalhadas.length > 0 ? `
       <div class="documento-titulo">MOVIMENTAÇÕES</div>
       
       <div class="movimentos-lista">
@@ -219,6 +239,20 @@ export async function GET(
             <div class="movimento-desc">${mov.descricao}</div>
             <div class="movimento-valor ${mov.tipo === 'suprimento' ? 'movimento-credito' : 'movimento-debito'}">
               ${mov.tipo === 'suprimento' ? '+' : '-'} R$ ${formatarValor(Number(mov.valor))}
+            </div>
+          </div>
+        `).join('')}
+        ${sangriasDetalhadas.map((sangria: any) => `
+          <div class="movimento-item">
+            <div class="movimento-data">${sangria.data_criacao ? new Date(sangria.data_criacao).toLocaleString('pt-BR', { 
+              day: '2-digit', 
+              month: '2-digit', 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            }) : ''}</div>
+            <div class="movimento-desc">SANGRIA: ${sangria.descricao}</div>
+            <div class="movimento-valor movimento-debito">
+              - R$ ${formatarValor(Number(sangria.valor))}
             </div>
           </div>
         `).join('')}

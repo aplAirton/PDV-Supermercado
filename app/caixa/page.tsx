@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Calculator, User, DollarSign, Clock, TrendingUp, Plus, Settings, AlertCircle, CheckCircle, Loader2, ArrowUp, ArrowDown, Filter, Lock, FileText, Printer } from 'lucide-react'
+import LoadingModal from '../../components/loading-modal'
 import '../../styles/caixa.css'
 
 // Função toast limpa - sem alertas de navegador
@@ -49,6 +50,16 @@ export default function CaixaPage() {
   const [showNovoModal, setShowNovoModal] = useState(false)
   const [showFecharModal, setShowFecharModal] = useState(false)
   const [showResumoModal, setShowResumoModal] = useState(false)
+  const [loadingResumo, setLoadingResumo] = useState(false)
+  const [loadingAbrirCaixa, setLoadingAbrirCaixa] = useState(false)
+  const [loadingFecharCaixa, setLoadingFecharCaixa] = useState(false)
+  const [loadingDados, setLoadingDados] = useState(false)
+  const [showSangriaModal, setShowSangriaModal] = useState(false)
+  const [sangriaForm, setSangriaForm] = useState({
+    valor: '',
+    descricao: ''
+  })
+  const [processandoSangria, setProcessandoSangria] = useState(false)
   const [caixaSelecionado, setCaixaSelecionado] = useState<Caixa | null>(null)
   const [filtro, setFiltro] = useState<'todos' | 'aberto' | 'fechado'>('todos')
   const [caixaAtual, setCaixaAtual] = useState<{
@@ -102,6 +113,7 @@ export default function CaixaPage() {
   const fecharCaixa = async () => {
     if (!caixaSelecionado) return
     
+    setLoadingFecharCaixa(true)
     try {
       // Primeiro, validar senha do funcionário
       const validacaoResponse = await fetch('/api/caixa/validar-senha', {
@@ -198,12 +210,20 @@ export default function CaixaPage() {
         description: "Não foi possível fechar o caixa",
         variant: "destructive"
       })
+    } finally {
+      setLoadingFecharCaixa(false)
     }
   }
 
   const carregarDados = async () => {
     try {
       setLoading(true)
+      
+      // Só mostrar loading modal se for uma operação inicial (não refresh rápido)
+      const shouldShowModal = !caixas.length || !funcionarios.length
+      if (shouldShowModal) {
+        setLoadingDados(true)
+      }
       
       const [caixasRes, funcionariosRes] = await Promise.all([
         fetch('/api/caixa'),
@@ -228,6 +248,7 @@ export default function CaixaPage() {
       })
     } finally {
       setLoading(false)
+      setLoadingDados(false) // Sempre limpar, mesmo que não tenha sido ativado
     }
   }
 
@@ -265,6 +286,7 @@ export default function CaixaPage() {
       }
 
       try {
+        setLoadingAbrirCaixa(true)
         // Validar credenciais
         const response = await fetch('/api/funcionarios/validar', {
           method: 'POST',
@@ -300,10 +322,13 @@ export default function CaixaPage() {
           description: "Não foi possível validar as credenciais",
           variant: "destructive"
         })
+      } finally {
+        setLoadingAbrirCaixa(false)
       }
     } else if (etapaAbertura === 'fundos') {
       // Abrir caixa com fundos
       try {
+        setLoadingAbrirCaixa(true)
         // Preferir o estado local (mais confiável durante fluxo), senão fallback para sessionStorage
         const funcionarioData = funcionarioAbertura || JSON.parse(sessionStorage.getItem('funcionario_caixa') || '{}')
         
@@ -388,6 +413,8 @@ export default function CaixaPage() {
           description: "Não foi possível abrir o caixa",
           variant: "destructive"
         })
+      } finally {
+        setLoadingAbrirCaixa(false)
       }
     }
   }
@@ -411,6 +438,8 @@ export default function CaixaPage() {
 
   const verResumo = async (caixa: Caixa) => {
     try {
+      setLoadingResumo(true)
+      
       const response = await fetch(`/api/caixa/${caixa.id}/resumo`)
       const resumo = await response.json()
       
@@ -431,6 +460,71 @@ export default function CaixaPage() {
         description: "Não foi possível carregar o resumo",
         variant: "destructive"
       })
+    } finally {
+      setLoadingResumo(false)
+    }
+  }
+
+  const realizarSangria = async () => {
+    if (!caixaSelecionado) return
+    
+    const valor = parseFloat(sangriaForm.valor)
+    if (isNaN(valor) || valor <= 0) {
+      toast({
+        title: "Erro",
+        description: "Informe um valor válido para sangria",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setProcessandoSangria(true)
+    
+    try {
+      const response = await fetch(`/api/caixa/${caixaSelecionado.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          acao: 'movimentacao',
+          tipo: 'sangria',
+          valor: valor,
+          descricao: sangriaForm.descricao || 'Sangria do caixa'
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Erro ao realizar sangria')
+      }
+
+      toast({
+        title: "Sucesso",
+        description: `Sangria de ${formatarValor(valor)} realizada com sucesso`,
+        variant: "default"
+      })
+
+      // Limpar formulário e fechar modal
+      setSangriaForm({ valor: '', descricao: '' })
+      setShowSangriaModal(false)
+
+      // Atualizar lista de caixas
+      await carregarDados()
+
+      // Se havia resumo aberto, recarregar
+      if (showResumoModal) {
+        await verResumo(caixaSelecionado)
+      }
+
+    } catch (error) {
+      console.error('Erro ao realizar sangria:', error)
+      toast({
+        title: "Erro",
+        description: "Não foi possível realizar a sangria",
+        variant: "destructive"
+      })
+    } finally {
+      setProcessandoSangria(false)
     }
   }
 
@@ -612,60 +706,80 @@ export default function CaixaPage() {
                   <td>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       {caixa.status === 'aberto' ? (
-                        <button
-                          onClick={() => {
-                            setCaixaSelecionado(caixa)
-                            setShowFecharModal(true)
-                          }}
-                          className="btn btn-sm btn-outline danger"
-                          title="Fechar caixa"
-                          style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: '6px',
-                            backgroundColor: '#fef2f2',
-                            borderColor: '#fecaca',
-                            color: '#dc2626'
-                          }}
-                        >
-                          <Lock size={14} />
-                          Fechar
-                        </button>
+                        <>
+                          <button
+                            onClick={() => {
+                              setCaixaSelecionado(caixa)
+                              setShowFecharModal(true)
+                            }}
+                            className="btn btn-sm btn-outline danger"
+                            title="Fechar caixa"
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '6px',
+                              backgroundColor: '#fef2f2',
+                              borderColor: '#fecaca',
+                              color: '#dc2626'
+                            }}
+                          >
+                            <Lock size={14} />
+                            Fechar
+                          </button>
+                          <button
+                            onClick={() => verResumo(caixa)}
+                            className="btn btn-sm btn-outline"
+                            title="Ver resumo atual do caixa"
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '6px',
+                              backgroundColor: '#eff6ff',
+                              borderColor: '#bfdbfe',
+                              color: '#2563eb'
+                            }}
+                          >
+                            <FileText size={14} />
+                            Resumo
+                          </button>
+                        </>
                       ) : (
-                        <button
-                          onClick={() => verResumo(caixa)}
-                          className="btn btn-sm btn-outline"
-                          title="Ver resumo do fechamento"
-                          style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: '6px',
-                            backgroundColor: '#eff6ff',
-                            borderColor: '#bfdbfe',
-                            color: '#2563eb',
-                            marginRight: '8px'
-                          }}
-                        >
-                          <FileText size={14} />
-                          Resumo
-                        </button>
+                        <>
+                          <button
+                            onClick={() => verResumo(caixa)}
+                            className="btn btn-sm btn-outline"
+                            title="Ver resumo do fechamento"
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '6px',
+                              backgroundColor: '#eff6ff',
+                              borderColor: '#bfdbfe',
+                              color: '#2563eb',
+                              marginRight: '8px'
+                            }}
+                          >
+                            <FileText size={14} />
+                            Resumo
+                          </button>
+                          <button
+                            onClick={() => imprimirResumoCaixa(caixa.id)}
+                            className="btn btn-sm btn-outline"
+                            title="Imprimir resumo"
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '6px',
+                              backgroundColor: '#f0fdf4',
+                              borderColor: '#bbf7d0',
+                              color: '#16a34a'
+                            }}
+                          >
+                            <Printer size={14} />
+                            Imprimir
+                          </button>
+                        </>
                       )}
-                      <button
-                        onClick={() => imprimirResumoCaixa(caixa.id)}
-                        className="btn btn-sm btn-outline"
-                        title="Imprimir resumo"
-                        style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '6px',
-                          backgroundColor: '#f0fdf4',
-                          borderColor: '#bbf7d0',
-                          color: '#16a34a'
-                        }}
-                      >
-                        <Printer size={14} />
-                        Imprimir
-                      </button>
                     </div>
                   </td>
                 </tr>
@@ -899,6 +1013,14 @@ export default function CaixaPage() {
         </div>
       )}
 
+      {/* Modal Loading Resumo */}
+      <LoadingModal
+        isOpen={loadingResumo}
+        title="Carregando Resumo"
+        message="Buscando informações do caixa..."
+        size="medium"
+      />
+
       {/* Modal Resumo */}
       {showResumoModal && resumoFechamento && (
         <div className="modal-overlay">
@@ -979,6 +1101,23 @@ export default function CaixaPage() {
             </div>
 
             <div className="modal-footer">
+              {resumoFechamento.status === 'aberto' && (
+                <button 
+                  onClick={() => {
+                    setCaixaSelecionado(caixas.find(c => c.id === resumoFechamento.id) || null)
+                    setShowSangriaModal(true)
+                  }}
+                  className="btn"
+                  style={{ 
+                    backgroundColor: '#ef4444', 
+                    color: 'white',
+                    border: '1px solid #ef4444'
+                  }}
+                >
+                  <ArrowDown size={16} style={{ marginRight: '6px' }} />
+                  Sangria
+                </button>
+              )}
               <button 
                 onClick={() => imprimirResumoCaixa(resumoFechamento.id)}
                 className="btn btn-primary"
@@ -998,6 +1137,137 @@ export default function CaixaPage() {
           </div>
         </div>
       )}
+
+      {/* Modal Sangria */}
+      {showSangriaModal && caixaSelecionado && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '500px', width: '90%' }}>
+            <div className="modal-header">
+              <h3>Realizar Sangria - Caixa #{caixaSelecionado.id}</h3>
+              <button
+                onClick={() => {
+                  setShowSangriaModal(false)
+                  setSangriaForm({ valor: '', descricao: '' })
+                }}
+                className="modal-close"
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ padding: '20px' }}>
+              <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#fef2f2', borderRadius: '8px', color: '#dc2626' }}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                  <AlertCircle size={20} style={{ marginRight: '8px' }} />
+                  <strong>Atenção - Sangria do Caixa</strong>
+                </div>
+                <p style={{ margin: '0', fontSize: '14px' }}>
+                  Esta operação irá retirar dinheiro do caixa. O valor será subtraído do total disponível.
+                </p>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="sangria-valor">Valor da Sangria *</label>
+                <input
+                  id="sangria-valor"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  placeholder="0,00"
+                  value={sangriaForm.valor}
+                  onChange={(e) => setSangriaForm({...sangriaForm, valor: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '16px',
+                    fontWeight: 'bold'
+                  }}
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="sangria-descricao">Descrição/Motivo</label>
+                <textarea
+                  id="sangria-descricao"
+                  placeholder="Motivo da sangria (opcional)"
+                  value={sangriaForm.descricao}
+                  onChange={(e) => setSangriaForm({...sangriaForm, descricao: e.target.value})}
+                  rows={3}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    resize: 'vertical'
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button 
+                onClick={realizarSangria}
+                disabled={processandoSangria || !sangriaForm.valor || parseFloat(sangriaForm.valor) <= 0}
+                className="btn"
+                style={{ 
+                  backgroundColor: processandoSangria ? '#9ca3af' : '#ef4444', 
+                  color: 'white',
+                  border: `1px solid ${processandoSangria ? '#9ca3af' : '#ef4444'}`,
+                  opacity: processandoSangria || !sangriaForm.valor || parseFloat(sangriaForm.valor) <= 0 ? 0.5 : 1
+                }}
+              >
+                {processandoSangria ? (
+                  <>
+                    <Loader2 size={16} style={{ marginRight: '6px', animation: 'spin 1s linear infinite' }} />
+                    Processando...
+                  </>
+                ) : (
+                  <>
+                    <ArrowDown size={16} style={{ marginRight: '6px' }} />
+                    Confirmar Sangria
+                  </>
+                )}
+              </button>
+              <button 
+                onClick={() => {
+                  setShowSangriaModal(false)
+                  setSangriaForm({ valor: '', descricao: '' })
+                }} 
+                disabled={processandoSangria}
+                className="btn btn-outline"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modais de Loading */}
+      <LoadingModal
+        isOpen={loadingAbrirCaixa}
+        title="Abrindo Caixa"
+        message={etapaAbertura === 'login' ? "Validando credenciais..." : "Criando novo caixa..."}
+        size="medium"
+      />
+
+      <LoadingModal
+        isOpen={loadingFecharCaixa}
+        title="Fechando Caixa"
+        message="Processando fechamento do caixa..."
+        size="medium"
+      />
+
+      <LoadingModal
+        isOpen={loadingDados}
+        title="Carregando Dados"
+        message="Buscando informações do sistema..."
+        size="small"
+        spinnerSize={40}
+      />
     </div>
   )
 }

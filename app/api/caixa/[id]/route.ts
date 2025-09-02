@@ -85,21 +85,52 @@ export async function PATCH(
       // Adicionar movimentação (sangria, suprimento, etc.)
       const { tipo, descricao } = data
       
-      const insertQuery = `
-        INSERT INTO caixa_movimentacoes (
-          caixa_id, 
-          tipo, 
-          valor, 
-          descricao
-        ) VALUES (?, ?, ?, ?)
-      `
-      
-      await executeQuery(insertQuery, [caixaId, tipo, valor, descricao])
-      
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Movimentação registrada com sucesso' 
-      })
+      if (tipo === 'sangria') {
+        // Para sangrias, usar tabela específica e atualizar total
+        
+        // 1. Inserir registro na tabela caixa_sangrias
+        const insertSangriaQuery = `
+          INSERT INTO caixa_sangrias (
+            caixa_id, 
+            valor, 
+            descricao
+          ) VALUES (?, ?, ?)
+        `
+        
+        await executeQuery(insertSangriaQuery, [caixaId, valor, descricao || 'Sangria do caixa'])
+        
+        // 2. Atualizar total_sangrias na tabela caixas
+        const updateTotalQuery = `
+          UPDATE caixas 
+          SET total_sangrias = COALESCE(total_sangrias, 0) + ?
+          WHERE id = ?
+        `
+        
+        await executeQuery(updateTotalQuery, [valor, caixaId])
+        
+        return NextResponse.json({ 
+          success: true, 
+          message: `Sangria de R$ ${parseFloat(valor).toFixed(2)} registrada com sucesso` 
+        })
+        
+      } else {
+        // Para outras movimentações, usar tabela caixa_movimentacoes
+        const insertQuery = `
+          INSERT INTO caixa_movimentacoes (
+            caixa_id, 
+            tipo, 
+            valor, 
+            descricao
+          ) VALUES (?, ?, ?, ?)
+        `
+        
+        await executeQuery(insertQuery, [caixaId, tipo, valor, descricao])
+        
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Movimentação registrada com sucesso' 
+        })
+      }
     } else {
       return NextResponse.json(
         { error: 'Ação não reconhecida' },
@@ -162,16 +193,29 @@ export async function PUT(
       const vendas = await executeQuery(vendasQuery, [caixaId]) as any[]
       const totaisVendas = vendas[0] || {}
       
-      // Buscar totais de movimentações (suprimentos e sangrias)
+      // Buscar totais de movimentações (suprimentos)
       const movimentacoesQuery = `
         SELECT 
-          COALESCE(SUM(CASE WHEN tipo = 'suprimento' THEN valor ELSE 0 END), 0) as total_suprimentos,
-          COALESCE(SUM(CASE WHEN tipo = 'sangria' THEN valor ELSE 0 END), 0) as total_sangrias
+          COALESCE(SUM(CASE WHEN tipo = 'suprimento' THEN valor ELSE 0 END), 0) as total_suprimentos
         FROM caixa_movimentacoes 
         WHERE caixa_id = ?
       `
       const movimentacoes = await executeQuery(movimentacoesQuery, [caixaId]) as any[]
       const totaisMovimentacoes = movimentacoes[0] || {}
+      
+      // Buscar total de sangrias da nova tabela específica
+      const sangriasQuery = `
+        SELECT COALESCE(SUM(valor), 0) as total_sangrias_tabela
+        FROM caixa_sangrias 
+        WHERE caixa_id = ?
+      `
+      const sangriasResult = await executeQuery(sangriasQuery, [caixaId]) as any[]
+      const totalSangriasCalculado = sangriasResult[0]?.total_sangrias_tabela || 0
+      
+      // Usar o valor da tabela caixas (que já é atualizado) ou calcular da tabela específica
+      const caixaAtual = await executeQuery('SELECT total_sangrias FROM caixas WHERE id = ?', [caixaId]) as any[]
+      const totalSangriasFromCaixa = parseFloat(caixaAtual[0]?.total_sangrias || 0)
+      const totalSangriasFinal = Math.max(totalSangriasFromCaixa, totalSangriasCalculado)
       
       // Atualizar caixa com fechamento
       const updateQuery = `
@@ -208,7 +252,7 @@ export async function PUT(
         totaisVendas.total_pix || 0,
         totaisVendas.total_fiado || 0,
         totaisMovimentacoes.total_suprimentos || 0,
-        totaisMovimentacoes.total_sangrias || 0,
+        totalSangriasFinal,
         data.diferenca_caixa || 0,
         data.status_reconciliacao || null,
         valorFinal,
