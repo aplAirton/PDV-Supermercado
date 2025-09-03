@@ -40,7 +40,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     // Configurações padrão da empresa (pode vir de configuração)
     const empresaDefault = {
-      nome: 'SUPERMERCADO EXEMPLO',
+      nome: 'PDV AIRTON',
       endereco: 'Rua das Flores, 123 - Centro',
       cidade: 'Sua Cidade - UF',
       telefone: '(11) 1234-5678',

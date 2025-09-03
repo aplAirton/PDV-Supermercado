@@ -8,7 +8,7 @@ import "../styles/funcionarios.css"
 
 export const metadata: Metadata = {
   title: "PDV Airton",
-  description: "Sistema de PDV para Supermercado com Gerenciamento de Fiado",
+  description: "Sistema de PDV",
     generator: 'v0.app'
 }
 

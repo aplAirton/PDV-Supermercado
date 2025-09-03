@@ -150,7 +150,7 @@ export async function GET(request: NextRequest) {
       </head>
       <body>
         <div class="cabecalho">
-          <div class="empresa-nome">Supermercado PDV Airton</div>
+          <div class="empresa-nome">PDV Airton</div>
           <div class="empresa-info">Rua Principal, 123 - Centro</div>
           <div class="empresa-info">Tel: (11) 9999-9999</div>
           <div class="empresa-info">CNPJ: 12.345.678/0001-90</div>

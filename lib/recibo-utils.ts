@@ -13,7 +13,7 @@ export interface ClienteInfo {
 }
 
 export const empresaDefault: EmpresaInfo = {
-  nome: 'Supermercado PDV Airton',
+  nome: 'PDV Airton',
   endereco: 'Rua Principal, 123 - Centro',
   telefone: '(11) 9999-9999',
   cnpj: '12.345.678/0001-90'

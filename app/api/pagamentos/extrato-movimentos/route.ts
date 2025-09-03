@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
 
     // Informações da empresa (usando dados padrão)
     const empresaInfo = {
-      nome: "PDV Supermercado",
+      nome: "PDV Airton",
       endereco: "Rua Exemplo, 123 - Centro",
       cidade: "Cidade - UF",
       telefone: "(00) 0000-0000",

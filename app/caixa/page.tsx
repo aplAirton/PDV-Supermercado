@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Calculator, User, DollarSign, Clock, TrendingUp, Plus, Settings, AlertCircle, CheckCircle, Loader2, ArrowUp, ArrowDown, Lock, FileText, Printer, ArrowRightLeft, Check, X } from 'lucide-react'
+import { Calculator, User, DollarSign, Clock, TrendingUp, Plus, Settings, AlertCircle, CheckCircle, Loader2, ArrowUp, ArrowDown, Lock, FileText, Printer, ArrowRightLeft, Check, X, Banknote, CreditCard, Smartphone, Receipt, Handshake, ShoppingCart } from 'lucide-react'
 import LoadingModal from '../../components/loading-modal'
 import '../../styles/caixa.css'
 
@@ -355,6 +355,7 @@ export default function CaixaPage() {
 
       if (caixasRes.ok) {
         const caixasData = await caixasRes.json()
+        console.log('Dados dos caixas carregados:', caixasData)
         setCaixas(caixasData)
       }
 
@@ -391,6 +392,12 @@ export default function CaixaPage() {
 
       if ((!cpfInput || !senhaInput) && !storedFuncionario) {
         setErroSenhaAbertura('CPF e senha são obrigatórios')
+        return
+      }
+
+      // Validar se CPF tem exatamente 11 dígitos
+      if (cpfInput && cpfInput.length !== 11) {
+        setErroSenhaAbertura('CPF deve ter exatamente 11 dígitos')
         return
       }
 
@@ -567,7 +574,9 @@ export default function CaixaPage() {
 
   const verResumo = async (caixa: Caixa) => {
     try {
-      setLoadingResumo(true)
+  // garantir que o caixa selecionado esteja definido para o modal
+  setCaixaSelecionado(caixa)
+  setLoadingResumo(true)
       
       const response = await fetch(`/api/caixa/${caixa.id}/resumo`)
       const resumo = await response.json()
@@ -883,45 +892,18 @@ export default function CaixaPage() {
         </div>
       </div>
 
-      {/* Cards de Resumo */}
-      <div className="totals-grid">
-        <div className="total-card">
-          <div className="card-icon caixas-abertos">
-            <CheckCircle size={24} />
-          </div>
-          <div className="card-content">
-            <span className="card-label">Caixas Abertos</span>
-            <span className="card-value">{caixasAbertos.length}</span>
-          </div>
-        </div>
-
-        <div className="total-card">
-          <div className="card-icon dinheiro-caixa">
-            <Calculator size={24} />
-          </div>
-          <div className="card-content">
-            <span className="card-label">Total em Caixas</span>
-            <span className="card-value">
-              {formatarValor(caixasAbertos.reduce((sum, c) => sum + c.total_vendas, 0))}
-            </span>
-          </div>
-        </div>
-
-        <div className="total-card">
-          <div className="card-icon vendas-hoje">
-            <User size={24} />
-          </div>
-          <div className="card-content">
-            <span className="card-label">Funcionários Ativos</span>
-            <span className="card-value">{funcionarios.filter(f => f.ativo).length}</span>
-          </div>
-        </div>
-      </div>
+  {/* resumo removido conforme solicitado */}
 
       {/* Card do Caixa Aberto */}
       {caixasAbertos.length > 0 && (
         <div className="caixa-aberto-card">
-          {caixasAbertos.map((caixa) => (
+          {caixasAbertos.map((caixa) => {
+            console.log('Dados do caixa aberto:', caixa)
+            const valorInicial = Number(caixa.valor_inicial) || 0
+            const totalVendas = Number(caixa.total_vendas) || 0
+            const totalCaixa = valorInicial + totalVendas
+            
+            return (
             <div key={caixa.id}>
               <div className="caixa-aberto-header">
                 <div className="caixa-aberto-title">
@@ -930,42 +912,63 @@ export default function CaixaPage() {
                 </div>
                 <div className="caixa-aberto-info">
                   Aberto em {formatarData(caixa.data_abertura)}<br />
-                  Valor inicial: {formatarValor(caixa.valor_inicial)}
+                  Valor inicial: {formatarValor(valorInicial)}
                 </div>
               </div>
 
               <div className="caixa-aberto-stats">
                 <div className="total-caixa">
-                  <div className="stat-label">Total do Caixa</div>
-                  <div className="stat-value">{formatarValor(caixa.valor_inicial + caixa.total_vendas)}</div>
+                  <div className="stat-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    <Calculator size={18} style={{ color: '#10b981' }} />
+                    Total do Caixa
+                  </div>
+                  <div className="stat-value">{formatarValor(totalCaixa)}</div>
                 </div>
 
                 <div className="formas-pagamento">
                   <h4>Formas de Pagamento</h4>
                   <div className="formas-pagamento-grid">
                     <div className="forma-item">
-                      <span>Dinheiro</span>
-                      <span>{formatarValor(caixa.total_dinheiro)}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Banknote size={14} style={{ color: '#059669' }} />
+                        <span>Dinheiro</span>
+                      </div>
+                      <span>{formatarValor(Number(caixa.total_dinheiro) || 0)}</span>
                     </div>
                     <div className="forma-item">
-                      <span>Cartão Débito</span>
-                      <span>{formatarValor(caixa.total_cartao_debito)}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <CreditCard size={14} style={{ color: '#2563eb' }} />
+                        <span>Cartão Débito</span>
+                      </div>
+                      <span>{formatarValor(Number(caixa.total_cartao_debito) || 0)}</span>
                     </div>
                     <div className="forma-item">
-                      <span>Cartão Crédito</span>
-                      <span>{formatarValor(caixa.total_cartao_credito)}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <CreditCard size={14} style={{ color: '#dc2626' }} />
+                        <span>Cartão Crédito</span>
+                      </div>
+                      <span>{formatarValor(Number(caixa.total_cartao_credito) || 0)}</span>
                     </div>
                     <div className="forma-item">
-                      <span>PIX</span>
-                      <span>{formatarValor(caixa.total_pix)}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Smartphone size={14} style={{ color: '#7c3aed' }} />
+                        <span>PIX</span>
+                      </div>
+                      <span>{formatarValor(Number(caixa.total_pix) || 0)}</span>
                     </div>
                     <div className="forma-item">
-                      <span>Fiado</span>
-                      <span>{formatarValor(caixa.total_fiado)}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Handshake size={14} style={{ color: '#ea580c' }} />
+                        <span>Fiado</span>
+                      </div>
+                      <span>{formatarValor(Number(caixa.total_fiado) || 0)}</span>
                     </div>
                     <div className="forma-item">
-                      <span>Total Vendas</span>
-                      <span>{formatarValor(caixa.total_vendas)}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <ShoppingCart size={14} style={{ color: '#10b981' }} />
+                        <span>Total Vendas</span>
+                      </div>
+                      <span>{formatarValor(totalVendas)}</span>
                     </div>
                   </div>
                 </div>
@@ -973,17 +976,7 @@ export default function CaixaPage() {
 
               <div className="caixa-aberto-actions">
                 <button
-                  onClick={() => {
-                    setCaixaSelecionado(caixa)
-                    setShowResumoModal(true)
-                  }}
-                  className="btn-caixa-action"
-                >
-                  <FileText size={16} />
-                  Ver Resumo
-                </button>
-                <button
-                  onClick={() => verResumo(caixa)}
+                  onClick={() => imprimirResumoCaixa(caixa.id)}
                   className="btn-caixa-action"
                 >
                   <Printer size={16} />
@@ -1002,8 +995,7 @@ export default function CaixaPage() {
                 <button
                   onClick={() => {
                     setCaixaSelecionado(caixa)
-                    setEtapaFechamento('login')
-                    setShowFecharModal(true)
+                    iniciarFechamentoCaixa()
                   }}
                   className="btn-caixa-action danger"
                 >
@@ -1012,7 +1004,8 @@ export default function CaixaPage() {
                 </button>
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
@@ -1060,10 +1053,7 @@ export default function CaixaPage() {
                   <td>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <button
-                        onClick={() => {
-                          setCaixaSelecionado(caixa)
-                          setShowResumoModal(true)
-                        }}
+                        onClick={() => verResumo(caixa)}
                         className="btn btn-sm btn-outline"
                         title="Ver resumo do caixa"
                       >
@@ -1071,7 +1061,7 @@ export default function CaixaPage() {
                         Resumo
                       </button>
                       <button
-                        onClick={() => verResumo(caixa)}
+                        onClick={() => imprimirResumoCaixa(caixa.id)}
                         className="btn btn-sm btn-secondary"
                         title="Imprimir resumo do caixa"
                       >
@@ -1106,19 +1096,25 @@ export default function CaixaPage() {
                 <>
                   <div className="form-group" style={{ marginBottom: '16px' }}>
                     <label htmlFor="cpf" style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>
-                      CPF do Funcionário
+                      CPF do Funcionário (11 dígitos)
                     </label>
                     <input
                       id="cpf"
                       type="text"
                       value={loginForm.cpf}
-                      onChange={(e) => setLoginForm({...loginForm, cpf: e.target.value})}
+                      onChange={(e) => {
+                        // Permitir apenas números e limitar a 11 dígitos
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 11)
+                        setLoginForm({...loginForm, cpf: value})
+                        if (erroSenhaAbertura) setErroSenhaAbertura('')
+                      }}
                       required
-                      placeholder="000.000.000-00"
+                      placeholder="(apenas números)"
+                      maxLength={11}
                       style={{
                         width: '100%',
                         padding: '10px 12px',
-                        border: '1px solid #d1d5db',
+                        border: erroSenhaAbertura ? '1px solid #ef4444' : '1px solid #d1d5db',
                         borderRadius: '8px',
                         fontSize: '14px',
                         outline: 'none'
