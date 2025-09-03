@@ -187,40 +187,6 @@ export async function GET(
         </div>
       </div>
 
-      ${(sangriasDetalhadas.length > 0 || suprimentosDetalhados.length > 0) ? `
-      <div class="documento-titulo">MOVIMENTAÇÕES DETALHADAS</div>
-      
-      ${sangriasDetalhadas.length > 0 ? `
-      <div class="movimentacoes-section">
-        <div class="movimentacoes-titulo">SANGRIAS</div>
-        ${sangriasDetalhadas.map(sangria => `
-        <div class="movimentacao-item">
-          <div class="movimentacao-info">
-            <span class="movimentacao-horario">${formatarData(sangria.data_criacao)}</span>
-            <span class="movimentacao-desc">${sangria.descricao || 'Sangria'}</span>
-          </div>
-          <span class="movimentacao-valor">- R$ ${formatarValor(Number(sangria.valor))}</span>
-        </div>
-        `).join('')}
-      </div>
-      ` : ''}
-
-      ${suprimentosDetalhados.length > 0 ? `
-      <div class="movimentacoes-section">
-        <div class="movimentacoes-titulo">SUPRIMENTOS</div>
-        ${suprimentosDetalhados.map(suprimento => `
-        <div class="movimentacao-item">
-          <div class="movimentacao-info">
-            <span class="movimentacao-horario">${formatarData(suprimento.data_criacao)}</span>
-            <span class="movimentacao-desc">${suprimento.descricao || 'Suprimento'}</span>
-          </div>
-          <span class="movimentacao-valor">+ R$ ${formatarValor(Number(suprimento.valor))}</span>
-        </div>
-        `).join('')}
-      </div>
-      ` : ''}
-      ` : ''}
-
       <div class="documento-titulo">RESUMO DE VENDAS</div>
       
       <div class="detalhes">
@@ -234,7 +200,7 @@ export async function GET(
         </div>
       </div>
 
-      ${movimentacoes.length > 0 || sangriasDetalhadas.length > 0 ? `
+      ${movimentacoes.length > 0 ? `
       <div class="documento-titulo">MOVIMENTAÇÕES</div>
       
       <div class="movimentos-lista">
@@ -249,20 +215,6 @@ export async function GET(
             <div class="movimento-desc">${mov.descricao}</div>
             <div class="movimento-valor ${mov.tipo === 'suprimento' ? 'movimento-credito' : 'movimento-debito'}">
               ${mov.tipo === 'suprimento' ? '+' : '-'} R$ ${formatarValor(Number(mov.valor))}
-            </div>
-          </div>
-        `).join('')}
-        ${sangriasDetalhadas.map((sangria: any) => `
-          <div class="movimento-item">
-            <div class="movimento-data">${sangria.data_criacao ? new Date(sangria.data_criacao).toLocaleString('pt-BR', { 
-              day: '2-digit', 
-              month: '2-digit', 
-              hour: '2-digit', 
-              minute: '2-digit' 
-            }) : ''}</div>
-            <div class="movimento-desc">SANGRIA: ${sangria.descricao}</div>
-            <div class="movimento-valor movimento-debito">
-              - R$ ${formatarValor(Number(sangria.valor))}
             </div>
           </div>
         `).join('')}

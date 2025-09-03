@@ -1610,38 +1610,56 @@ export default function CaixaPage() {
                   <div><strong>Suprimentos:</strong> {formatarValor(resumoFechamento.valores.suprimentos)}</div>
                   <div><strong>Sangrias:</strong> {formatarValor(resumoFechamento.valores.sangrias)}</div>
                 </div>
-                <div>
-                  <h5>Reconciliação</h5>
-                  <div><strong>Valor Esperado:</strong> {formatarValor(resumoFechamento.valores.esperado)}</div>
-                  <div><strong>Valor Contado:</strong> {formatarValor(resumoFechamento.valores.contado)}</div>
-                  <div style={{ 
-                    color: resumoFechamento.valores.diferenca === 0 ? '#22c55e' : 
-                           resumoFechamento.valores.diferenca > 0 ? '#3b82f6' : '#ef4444',
-                    fontWeight: 'bold'
-                  }}>
-                    <strong>Diferença:</strong> {formatarValor(Math.abs(resumoFechamento.valores.diferenca))}
-                    {resumoFechamento.valores.diferenca > 0 && ' (Sobra)'}
-                    {resumoFechamento.valores.diferenca < 0 && ' (Falta)'}
-                    {resumoFechamento.valores.diferenca === 0 && ' (Perfeito)'}
+                {resumoFechamento.status === 'fechado' && (
+                  <div>
+                    <h5>Reconciliação</h5>
+                    <div><strong>Valor Esperado:</strong> {formatarValor(resumoFechamento.valores.esperado)}</div>
+                    <div><strong>Valor Contado:</strong> {formatarValor(resumoFechamento.valores.contado)}</div>
+                    <div style={{ 
+                      color: resumoFechamento.valores.diferenca === 0 ? '#22c55e' : 
+                             resumoFechamento.valores.diferenca > 0 ? '#3b82f6' : '#ef4444',
+                      fontWeight: 'bold'
+                    }}>
+                      <strong>Diferença:</strong> {formatarValor(Math.abs(resumoFechamento.valores.diferenca))}
+                      {resumoFechamento.valores.diferenca > 0 && ' (Sobra)'}
+                      {resumoFechamento.valores.diferenca < 0 && ' (Falta)'}
+                      {resumoFechamento.valores.diferenca === 0 && ' (Perfeito)'}
+                    </div>
                   </div>
-                </div>
+                )}
+                {resumoFechamento.status === 'aberto' && (
+                  <div>
+                    <h5>Status</h5>
+                    <div style={{ 
+                      color: '#22c55e',
+                      fontWeight: 'bold'
+                    }}>
+                      <strong>Caixa Aberto</strong>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>
+                      Valores de reconciliação serão calculados no fechamento
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <div className="resumo-status" style={{ 
-                padding: '15px', 
-                borderRadius: '8px',
-                textAlign: 'center',
-                backgroundColor: resumoFechamento.status_reconciliacao === 'perfeito' ? '#f0fdf4' : 
-                                resumoFechamento.status_reconciliacao === 'sobra' ? '#eff6ff' : '#fef2f2',
-                color: resumoFechamento.status_reconciliacao === 'perfeito' ? '#22c55e' : 
-                       resumoFechamento.status_reconciliacao === 'sobra' ? '#3b82f6' : '#ef4444'
-              }}>
-                <strong>Status: {
-                  resumoFechamento.status_reconciliacao === 'perfeito' ? 'CAIXA PERFEITO ✓' :
-                  resumoFechamento.status_reconciliacao === 'sobra' ? 'SOBRA NO CAIXA' :
-                  'FALTA NO CAIXA'
-                }</strong>
-              </div>
+              {resumoFechamento.status === 'fechado' && (
+                <div className="resumo-status" style={{ 
+                  padding: '15px', 
+                  borderRadius: '8px',
+                  textAlign: 'center',
+                  backgroundColor: resumoFechamento.status_reconciliacao === 'perfeito' ? '#f0fdf4' : 
+                                  resumoFechamento.status_reconciliacao === 'sobra' ? '#eff6ff' : '#fef2f2',
+                  color: resumoFechamento.status_reconciliacao === 'perfeito' ? '#22c55e' : 
+                         resumoFechamento.status_reconciliacao === 'sobra' ? '#3b82f6' : '#ef4444'
+                }}>
+                  <strong>Status: {
+                    resumoFechamento.status_reconciliacao === 'perfeito' ? 'CAIXA PERFEITO ✓' :
+                    resumoFechamento.status_reconciliacao === 'sobra' ? 'SOBRA NO CAIXA' :
+                    'FALTA NO CAIXA'
+                  }</strong>
+                </div>
+              )}
 
               <div className="resumo-vendas" style={{ marginTop: '20px' }}>
                 <h5>Resumo de Vendas</h5>
@@ -1651,23 +1669,6 @@ export default function CaixaPage() {
             </div>
 
             <div className="modal-footer">
-              {resumoFechamento.status === 'aberto' && (
-                <button 
-                  onClick={() => {
-                    setCaixaSelecionado(caixas.find(c => c.id === resumoFechamento.id) || null)
-                    setShowSangriaModal(true)
-                  }}
-                  className="btn"
-                  style={{ 
-                    backgroundColor: '#ef4444', 
-                    color: 'white',
-                    border: '1px solid #ef4444'
-                  }}
-                >
-                  <ArrowDown size={16} style={{ marginRight: '6px' }} />
-                  Sangria
-                </button>
-              )}
               <button 
                 onClick={() => imprimirResumoCaixa(resumoFechamento.id)}
                 className="btn btn-primary"
