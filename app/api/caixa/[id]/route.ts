@@ -182,34 +182,27 @@ export async function PUT(
     const caixa = caixas[0]
     
     if (data.status === 'fechado') {
-      // Calcular totais de vendas do caixa
-      const vendasQuery = `
-        SELECT 
-          COALESCE(SUM(total), 0) as total_vendas,
-          COALESCE(SUM(valor_dinheiro), 0) as total_dinheiro,
-          COALESCE(SUM(valor_cartao_debito), 0) as total_cartao_debito,
-          COALESCE(SUM(valor_cartao_credito), 0) as total_cartao_credito,
-          COALESCE(SUM(valor_pix), 0) as total_pix,
-          COALESCE(SUM(valor_fiado), 0) as total_fiado
-        FROM vendas 
-        WHERE caixa_id = ?
-      `
-      const vendas = await executeQuery(vendasQuery, [caixaId]) as any[]
-      const totaisVendas = vendas[0] || {}
+      // Usar valores diretamente da tabela caixas (mantidos pelos triggers)
+      const valorInicial = parseFloat(caixa.valor_inicial || 0)
+      const totalVendas = parseFloat(caixa.total_vendas || 0)
+      const totalDinheiro = parseFloat(caixa.total_dinheiro || 0)
+      const totalCartaoDebito = parseFloat(caixa.total_cartao_debito || 0)
+      const totalCartaoCredito = parseFloat(caixa.total_cartao_credito || 0)
+      const totalPix = parseFloat(caixa.total_pix || 0)
+      const totalFiado = parseFloat(caixa.total_fiado || 0)
+      const totalSuprimentos = parseFloat(caixa.total_suprimentos || 0)
+      const totalSangrias = parseFloat(caixa.total_sangrias || 0)
       
-      // Buscar totais de movimentações financeiras (sangrias e suprimentos)
-      const movimentacoesQuery = `
-        SELECT 
-          COALESCE(SUM(CASE WHEN tipo = 'suprimento' THEN valor ELSE 0 END), 0) as total_suprimentos,
-          COALESCE(SUM(CASE WHEN tipo = 'sangria' THEN valor ELSE 0 END), 0) as total_sangrias
-        FROM caixa_movimentacoes_financeiras 
-        WHERE caixa_id = ?
-      `
-      const movimentacoes = await executeQuery(movimentacoesQuery, [caixaId]) as any[]
-      const totaisMovimentacoes = movimentacoes[0] || {}
+      // Calcular valor esperado (apenas dinheiro físico que deve estar no caixa)
+      const valorEsperado = valorInicial + totalDinheiro + totalSuprimentos - totalSangrias
       
-      const totalSangriasCalculado = totaisMovimentacoes.total_sangrias || 0
-      const totalSuprimentosCalculado = totaisMovimentacoes.total_suprimentos || 0
+      const valorContado = parseFloat(data.valor_contado_dinheiro) || 0
+      const diferencaCalculada = valorContado - valorEsperado
+      
+      // Determinar status de reconciliação
+      let statusReconciliacao = 'perfeito'
+      if (diferencaCalculada > 0) statusReconciliacao = 'sobra'
+      else if (diferencaCalculada < 0) statusReconciliacao = 'falta'
       
       // Atualizar caixa com fechamento
       const updateQuery = `
@@ -219,39 +212,41 @@ export async function PUT(
           funcionario_fechamento_id = ?,
           valor_contado_dinheiro = ?,
           observacoes_fechamento = ?,
-          total_vendas = ?,
-          total_dinheiro = ?,
-          total_cartao_debito = ?,
-          total_cartao_credito = ?,
-          total_pix = ?,
-          total_fiado = ?,
-          total_suprimentos = ?,
-          total_sangrias = ?,
           diferenca_caixa = ?,
           status_reconciliacao = ?,
           valor_final = ?
         WHERE id = ?
       `
       
-      const valorFinal = parseFloat(data.valor_contado_dinheiro || 0)
+      const valorFinal = valorContado
       
       await executeQuery(updateQuery, [
-        caixa.funcionario_id, // funcionário que está fechando
-        data.valor_contado_dinheiro || 0,
+        caixa.funcionario_abertura_id, // funcionário que está fechando
+        valorContado,
         data.observacoes_fechamento || '',
-        totaisVendas.total_vendas || 0,
-        totaisVendas.total_dinheiro || 0,
-        totaisVendas.total_cartao_debito || 0,
-        totaisVendas.total_cartao_credito || 0,
-        totaisVendas.total_pix || 0,
-        totaisVendas.total_fiado || 0,
-        totalSuprimentosCalculado,
-        totalSangriasCalculado,
-        data.diferenca_caixa || 0,
-        data.status_reconciliacao || null,
+        diferencaCalculada,
+        statusReconciliacao,
         valorFinal,
         caixaId
       ])
+      
+      return NextResponse.json({
+        message: 'Caixa fechado com sucesso',
+        valorEsperado,
+        valorContado,
+        diferenca: diferencaCalculada,
+        statusReconciliacao,
+        resumo: {
+          totalVendas,
+          totalDinheiro,
+          totalCartaoDebito,
+          totalCartaoCredito,
+          totalPix,
+          totalFiado,
+          totalSuprimentos,
+          totalSangrias
+        }
+      })
     } else if (data.acao === 'movimentacao_financeira' || data.acao === 'movimentacao') {
       // Movimentações financeiras (sangria, suprimento)
       const { tipo, valor, descricao } = data

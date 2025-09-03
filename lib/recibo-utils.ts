@@ -273,6 +273,176 @@ export const getEstilosBase = () => `
     font-weight: bold;
   }
   
+  /* Estilos para tabelas de itens */
+  .tabela-itens {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0;
+    font-size: 10px;
+  }
+  
+  .tabela-itens th {
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    padding: 6px;
+    font-weight: bold;
+    font-size: 10px;
+    text-align: left;
+  }
+  
+  .tabela-itens td {
+    border: 1px solid #eee;
+    padding: 6px;
+    font-size: 10px;
+    vertical-align: top;
+  }
+  
+  .col-produto {
+    width: 45%;
+    text-align: left;
+  }
+  
+  .col-qtd {
+    width: 12%;
+    text-align: center;
+  }
+  
+  .col-valor {
+    width: 20%;
+    text-align: right;
+  }
+  
+  .col-subtotal {
+    width: 23%;
+    text-align: right;
+    font-weight: bold;
+  }
+  
+  .produto-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  
+  .produto-nome {
+    font-weight: bold;
+    font-size: 10px;
+    line-height: 1.2;
+  }
+  
+  .produto-codigo {
+    font-size: 8px;
+    color: #666;
+    font-style: italic;
+  }
+  
+  .item-row {
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .separator-row {
+    height: 5px;
+  }
+  
+  .separator-row td {
+    border: none;
+    border-bottom: 1px dotted #ccc;
+  }
+  
+  .itens-total {
+    text-align: right;
+    margin-top: 8px;
+    padding: 5px;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    font-size: 10px;
+  }
+  
+  /* Estilos para tabelas de valores e formas de pagamento */
+  .tabela-valores {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0;
+    font-size: 11px;
+  }
+  
+  .tabela-valores td {
+    padding: 6px;
+    border-bottom: 1px dotted #ccc;
+  }
+  
+  .forma-pagamento-row td {
+    font-weight: bold;
+  }
+  
+  .forma-nome {
+    text-align: left;
+    width: 60%;
+  }
+  
+  .forma-valor-col {
+    text-align: right;
+    width: 40%;
+  }
+  
+  .total-row td {
+    font-weight: bold;
+    padding: 4px 6px;
+  }
+  
+  .total-label {
+    text-align: left;
+    width: 60%;
+  }
+  
+  .total-valor {
+    text-align: right;
+    width: 40%;
+  }
+  
+  .total-final-row {
+    border-top: 2px solid #000;
+    border-bottom: 2px solid #000;
+  }
+  
+  .desconto-row {
+    background-color: #fff8dc;
+    border: 1px solid #ddd;
+  }
+  
+  .desconto-row td {
+    padding: 6px;
+    font-weight: bold;
+    color: #d9534f;
+  }
+  
+  .desconto-label {
+    text-align: left;
+    width: 60%;
+  }
+  
+  .desconto-valor {
+    text-align: right;
+    width: 40%;
+  }
+  
+  .total-final-row td {
+    font-weight: bold;
+    font-size: 12px;
+    padding: 8px 6px;
+    background-color: #f5f5f5;
+  }
+  
+  .total-final-label {
+    text-align: left;
+    width: 60%;
+  }
+  
+  .total-final-valor {
+    text-align: right;
+    width: 40%;
+  }
+  
   @media print {
     body {
       padding: 10px;

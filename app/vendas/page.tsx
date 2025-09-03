@@ -6,7 +6,7 @@ import ConfirmationModal from '@/components/confirmation-modal'
 import VirtualKeyboard from '@/components/virtual-keyboard'
 import Loading from "@/components/loading"
 import SearchHint from "@/components/search-hint"
-import { Search, Plus, Minus, Trash2, ShoppingCart, X, Settings, ChevronDown, ChevronUp, Loader2, User } from "lucide-react"
+import { Search, Plus, Minus, Trash2, ShoppingCart, X, Settings, ChevronDown, ChevronUp, Loader2, User, Receipt } from "lucide-react"
 import '../../styles/components.css'
 
 interface Produto {
@@ -52,8 +52,9 @@ export default function VendasPage() {
   const [loading, setLoading] = useState(false)
   const [loadingProdutos, setLoadingProdutos] = useState(false)
   const [loadingClientes, setLoadingClientes] = useState(false)
+  // Estados relacionados ao cupom
   const [vendaConcluida, setVendaConcluida] = useState(false)
-  const [cupomTexto, setCupomTexto] = useState<string | null>(null)
+  const [vendaIdConcluida, setVendaIdConcluida] = useState<number | null>(null)
   const [ultimaVenda, setUltimaVenda] = useState<any>(null)
 
   // Estados para modal de identificação de cliente
@@ -548,11 +549,19 @@ export default function VendasPage() {
         }
       }
 
+      // Calcular valor original antes do desconto para enviar para a API
+      const totalOriginal = totalBeforeDiscount
+      const descontoValorCalculado = discountAmount
+
       const vendaData = {
         cliente_id: clienteSelecionado?.id || null,
-        total: totalRounded,
+        total: totalRounded, // Total já com desconto
+        total_original: totalOriginal, // Total antes do desconto
         pagamentos: pagamentos.map((p) => ({ tipo_pagamento: p.tipo, valor: parseCurrency(p.valor) })),
         troco,
+        desconto_tipo: discountType !== 'none' ? discountType : null,
+        desconto_valor: descontoValorCalculado, // Valor real do desconto
+        desconto_percentual: discountType === 'percent' ? parsedDiscount : 0,
         itens: carrinho.map((item) => ({
           produto_id: item.produto.id,
           quantidade: item.quantidade,
@@ -560,6 +569,15 @@ export default function VendasPage() {
           subtotal: item.subtotal,
         })),
       }
+
+      console.log('[VENDAS] Dados do desconto sendo enviados:', {
+        discountType,
+        parsedDiscount,
+        discountAmount,
+        descontoValorCalculado,
+        totalOriginal,
+        totalRounded
+      })
 
       const response = await fetch("/api/vendas", {
         method: "POST",
@@ -571,29 +589,29 @@ export default function VendasPage() {
         toast({ title: 'Venda finalizada', description: 'Venda finalizada com sucesso!', variant: 'success' })
         setCarrinho([])
         setClienteSelecionado(null)
-  setPagamentos([{ tipo: "dinheiro", valor: "" }])
-  setShowPagamentoModal(false)
-  try { searchInputRef.current?.focus() } catch (e) { }
+        setPagamentos([{ tipo: "dinheiro", valor: "" }])
+        setDiscountType('none')
+        setDiscountValue('')
+        setShowPagamentoModal(false)
+        try { searchInputRef.current?.focus() } catch (e) { }
         // Atualiza a listagem atual (caso haja uma busca ativa)
         if (codigoBusca && codigoBusca.trim().length >= 2) {
           buscarProdutos(codigoBusca, 'search')
         }
         carregarClientes() // Atualizar débitos
 
-        // Buscar cupom gerado para essa venda e marcar estado de venda concluída
+        // Buscar ID da venda criada para exibir cupom
         try {
           const respJson = await response.json()
           const vendaId = respJson.vendaId
-          const cupResp = await fetch(`/api/cupons/by-venda/${vendaId}`)
-          if (cupResp.ok) {
-            const cup = await cupResp.json()
-            setCupomTexto(cup.conteudo_texto)
+          if (vendaId) {
+            setVendaIdConcluida(vendaId)
             setVendaConcluida(true)
             // Buscar dados da última venda para exibir no resumo
             await buscarUltimaVenda()
           }
         } catch (err) {
-          console.error('Erro ao buscar cupom:', err)
+          console.error('Erro ao processar resposta da venda:', err)
         }
        } else {
          throw new Error("Erro ao finalizar venda")
@@ -633,26 +651,6 @@ export default function VendasPage() {
     
     // Processar novamente sem setTimeout para evitar duplicação
     processarPagamento()
-  }
-
-  const buscarCupomFiscal = async () => {
-    if (carrinho.length === 0) return
-
-    try {
-      const response = await fetch(`/api/cupom-fiscal?codigo_venda=${btoa(JSON.stringify(carrinho))}`)
-      const data = await response.json()
-
-      if (response.ok) {
-        setCupomTexto(data.cupom || null)
-        setVendaConcluida(true)
-      } else {
-        console.error('[CUPOM FISCAL] Erro na API:', data)
-        setCupomTexto(null)
-      }
-    } catch (error) {
-      console.error("[CUPOM FISCAL] Erro ao buscar cupom:", error)
-      setCupomTexto(null)
-    }
   }
 
   return (
@@ -813,7 +811,7 @@ export default function VendasPage() {
               <button className="btn btn-outline" onClick={() => {
                 // reiniciar estado para nova venda
                 setVendaConcluida(false)
-                setCupomTexto(null)
+                setVendaIdConcluida(null)
                 setCarrinho([])
                 setClienteSelecionado(null)
                 setPagamentos([{ tipo: 'dinheiro', valor: '' }])
@@ -1057,29 +1055,34 @@ export default function VendasPage() {
               <button
                 className="btn btn-primary btn-full"
                 onClick={() => {
-                  if (cupomTexto) {
-                      const w = window.open('', '_blank')
-                      if (w) {
-                        w.document.write(`<pre class="cupom-pre">${cupomTexto.replace(/</g,'&lt;')}</pre>`) 
-                        w.document.close()
-                        // Tenta abrir a janela de impressão automaticamente e fecha a janela ao final
-                        try {
-                          w.focus()
-                          // esperar o conteúdo renderizar antes de chamar print
-                          setTimeout(() => {
-                            try { w.print() } catch (e) { /* ignore */ }
-                            try { w.close() } catch (e) { /* ignore */ }
-                          }, 200)
-                        } catch (e) {
-                          // fallback: apenas focar
+                  if (vendaIdConcluida) {
+                    // Abrir cupom HTML em nova janela
+                    const cupomUrl = `/api/vendas/${vendaIdConcluida}/cupom`
+                    const w = window.open(cupomUrl, '_blank', 'width=800,height=600,scrollbars=yes')
+                    if (w) {
+                      w.focus()
+                      // Esperar carregar e tentar imprimir
+                      setTimeout(() => {
+                        try { 
+                          w.print() 
+                        } catch (e) { 
+                          console.log('Print automático não disponível') 
                         }
-                      }
-                    } else {
-                      toast({ title: 'Cupom indisponível', description: 'Cupom ainda não disponível', variant: 'destructive' })
+                      }, 1000)
                     }
+                  } else {
+                    toast({ 
+                      title: 'Cupom indisponível', 
+                      description: 'ID da venda não disponível', 
+                      variant: 'destructive' 
+                    })
+                  }
                 }}
               >
-                Imprimir cupom fiscal
+                <div className="btn-content">
+                  <Receipt size={20} />
+                  Imprimir Cupom Fiscal
+                </div>
               </button>
             </div>
           )}

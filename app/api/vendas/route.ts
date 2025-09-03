@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     console.log(`[vendas][${requestId}] Incoming request body:`, JSON.stringify(body))
-    const { cliente_id, itens, total, pagamentos, troco } = body
+    const { cliente_id, itens, total, total_original, pagamentos, troco, desconto_tipo, desconto_valor, desconto_percentual } = body
 
     // Validações básicas
     if (!Array.isArray(pagamentos) || pagamentos.length === 0) {
@@ -197,6 +197,33 @@ export async function POST(request: NextRequest) {
       
       const vendaIdResult = await tx.$queryRaw`SELECT LAST_INSERT_ID() as id`
       const venda = { id: Number((vendaIdResult as any[])[0].id) }
+
+      // Tentar atualizar campos de desconto se as colunas existirem
+      if (desconto_tipo && Number(desconto_valor) > 0) {
+        try {
+          console.log(`[vendas][${requestId}] Salvando desconto:`, { 
+            tipo: desconto_tipo, 
+            valor: desconto_valor, 
+            percentual: desconto_percentual,
+            total_original: total_original,
+            total_final: total
+          })
+          
+          await tx.$executeRaw`
+            UPDATE vendas 
+            SET desconto_tipo = ${desconto_tipo}, 
+                desconto_valor = ${Number(desconto_valor) || 0}, 
+                desconto_percentual = ${Number(desconto_percentual) || 0}
+            WHERE id = ${venda.id}
+          `
+        } catch (err: any) {
+          // Se erro 1054 (coluna não encontrada), ignore - colunas ainda não foram criadas
+          if (!err.message?.includes('1054') && !err.message?.includes('Unknown column')) {
+            throw err
+          }
+          console.log('[vendas] Colunas de desconto ainda não existem no banco - desconto será ignorado por enquanto')
+        }
+      }
 
       console.log('[vendas] Venda criada id=', venda.id)
 

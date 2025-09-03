@@ -35,31 +35,27 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     
     const caixa = caixas[0]
     
-    // Calcular valores esperados
+    // Usar valores diretos da tabela caixas (atualizados por triggers)
     const valorInicial = parseFloat(caixa.valor_inicial || 0)
-    const totalVendasDinheiro = parseFloat(caixa.total_dinheiro || 0)
+    const totalVendas = parseFloat(caixa.total_vendas || 0)
+    const totalDinheiro = parseFloat(caixa.total_dinheiro || 0) 
+    const totalCartaoDebito = parseFloat(caixa.total_cartao_debito || 0)
+    const totalCartaoCredito = parseFloat(caixa.total_cartao_credito || 0)
+    const totalPix = parseFloat(caixa.total_pix || 0)
+    const totalFiado = parseFloat(caixa.total_fiado || 0)
     const totalSuprimentos = parseFloat(caixa.total_suprimentos || 0)
     const totalSangrias = parseFloat(caixa.total_sangrias || 0)
     
-    const valorEsperado = valorInicial + totalVendasDinheiro + totalSuprimentos - totalSangrias
+    // Valor esperado no caixa (apenas dinheiro físico)
+    const valorEsperado = valorInicial + totalDinheiro + totalSuprimentos - totalSangrias
     
     const valorContado = parseFloat(caixa.valor_contado_dinheiro || 0)
     const diferenca = valorContado - valorEsperado
-    
-    // Buscar detalhes das vendas
-    const vendasQuery = `
-      SELECT COUNT(*) as total_transacoes,
-             COALESCE(SUM(total), 0) as total_vendas_calculado,
-             COALESCE(SUM(valor_dinheiro), 0) as vendas_dinheiro,
-             COALESCE(SUM(valor_cartao_debito), 0) as vendas_cartao_debito,
-             COALESCE(SUM(valor_cartao_credito), 0) as vendas_cartao_credito,
-             COALESCE(SUM(valor_pix), 0) as vendas_pix,
-             COALESCE(SUM(valor_fiado), 0) as vendas_fiado
-      FROM vendas
-      WHERE caixa_id = ?
-    `
-    const vendas = await executeQuery(vendasQuery, [caixaId]) as any[]
-    const resumoVendas = vendas[0] || { total_transacoes: 0, total_vendas_calculado: 0 }
+
+    // Buscar contagem de transações (simples query para performance)
+    const vendasCountQuery = `SELECT COUNT(*) as total_transacoes FROM vendas WHERE caixa_id = ?`
+    const vendas = await executeQuery(vendasCountQuery, [caixaId]) as any[]
+    const totalTransacoes = vendas[0]?.total_transacoes || 0
     
     const resumo = {
       id: caixa.id,
@@ -70,8 +66,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       operador_fechamento: caixa.operador_fechamento,
       valores: {
         inicial: valorInicial,
-        vendas: parseFloat(caixa.total_vendas || 0),
-        vendas_dinheiro: totalVendasDinheiro,
+        vendas: totalVendas,
+        vendas_dinheiro: totalDinheiro,
         suprimentos: totalSuprimentos,
         sangrias: totalSangrias,
         esperado: valorEsperado,
@@ -79,13 +75,13 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         diferenca: diferenca
       },
       vendas: {
-        total_transacoes: resumoVendas.total_transacoes,
-        valor_total: parseFloat(resumoVendas.total_vendas_calculado || 0),
-        valor_dinheiro: parseFloat(resumoVendas.vendas_dinheiro || 0),
-        valor_cartao_debito: parseFloat(resumoVendas.vendas_cartao_debito || 0),
-        valor_cartao_credito: parseFloat(resumoVendas.vendas_cartao_credito || 0),
-        valor_pix: parseFloat(resumoVendas.vendas_pix || 0),
-        valor_fiado: parseFloat(resumoVendas.vendas_fiado || 0)
+        total_transacoes: totalTransacoes,
+        valor_total: totalVendas,
+        valor_dinheiro: totalDinheiro,
+        valor_cartao_debito: totalCartaoDebito,
+        valor_cartao_credito: totalCartaoCredito,
+        valor_pix: totalPix,
+        valor_fiado: totalFiado
       },
       status_reconciliacao: caixa.status_reconciliacao,
       diferenca_caixa: parseFloat(caixa.diferenca_caixa || 0)

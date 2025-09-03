@@ -14,7 +14,7 @@ export async function GET(
       return NextResponse.json({ error: 'ID de caixa inválido' }, { status: 400 })
     }
 
-    // Buscar dados do caixa
+    // Buscar dados do caixa com totais já calculados pelos triggers
     const caixaResults = await executeQuery(`
       SELECT 
         c.*,
@@ -31,26 +31,26 @@ export async function GET(
       return NextResponse.json({ error: 'Caixa não encontrado' }, { status: 404 })
     }
 
-    // Buscar vendas do caixa com detalhamento de formas de pagamento
-    const vendas = await executeQuery(`
-      SELECT 
-        v.id,
-        v.total,
-        v.data_venda,
-        v.valor_dinheiro,
-        v.valor_cartao_debito,
-        v.valor_cartao_credito,
-        v.valor_pix,
-        v.valor_fiado,
-        c.nome as cliente_nome
-      FROM vendas v
-      LEFT JOIN clientes c ON v.cliente_id = c.id
-      WHERE v.caixa_id = ?
-      ORDER BY v.data_venda
-    `, [caixaId]) as any[]
+    // Usar valores já calculados pelos triggers na tabela caixas
+    const totaisPorForma = {
+      dinheiro: Number(caixaData.total_dinheiro || 0),
+      cartao_debito: Number(caixaData.total_cartao_debito || 0),
+      cartao_credito: Number(caixaData.total_cartao_credito || 0),
+      pix: Number(caixaData.total_pix || 0),
+      fiado: Number(caixaData.total_fiado || 0)
+    }
 
-    // Buscar movimentações financeiras do caixa (sangrias e suprimentos)
-    const movQuery = `
+    const totalSuprimentos = Number(caixaData.total_suprimentos || 0)
+    const totalSangrias = Number(caixaData.total_sangrias || 0)
+    const totalVendasCalculado = Number(caixaData.total_vendas || 0)
+
+    // Valor esperado no caixa (apenas dinheiro físico que deve estar presente)
+    const valorEsperado = Number(caixaData.valor_inicial) + totaisPorForma.dinheiro + totalSuprimentos - totalSangrias
+    const valorContado = Number(caixaData.valor_contado_dinheiro || caixaData.valor_final || 0)
+    const diferenca = valorContado - valorEsperado
+
+    // Buscar apenas movimentações para detalhamento (se necessário)
+    const movimentacoes = await executeQuery(`
       SELECT 
         id,
         tipo,
@@ -60,35 +60,14 @@ export async function GET(
       FROM caixa_movimentacoes_financeiras
       WHERE caixa_id = ?
       ORDER BY data_criacao
-    `
+    `, [caixaId]) as any[]
 
-    const movimentacoes = await executeQuery(movQuery, [caixaId]) as any[]
-
-    // Separar movimentações por tipo
-    const sangriasDetalhadas = movimentacoes.filter(m => m.tipo === 'sangria')
-    const suprimentosDetalhados = movimentacoes.filter(m => m.tipo === 'suprimento')
-
-    // Calcular totais usando os dados das movimentações
-    const totalVendas = Number(caixaData.total_vendas || 0)
-    const totalSangrias = sangriasDetalhadas.reduce((sum, s) => sum + Number(s.valor || 0), 0)
-    const totalSuprimentos = suprimentosDetalhados.reduce((sum, s) => sum + Number(s.valor || 0), 0)
-
-    // Calcular totais por forma de pagamento diretamente das vendas (não da tabela caixas que pode estar zerada)
-    const totaisPorForma = {
-      dinheiro: vendas.reduce((sum, v) => sum + Number(v.valor_dinheiro || 0), 0),
-      cartao_debito: vendas.reduce((sum, v) => sum + Number(v.valor_cartao_debito || 0), 0),
-      cartao_credito: vendas.reduce((sum, v) => sum + Number(v.valor_cartao_credito || 0), 0),
-      pix: vendas.reduce((sum, v) => sum + Number(v.valor_pix || 0), 0),
-      fiado: vendas.reduce((sum, v) => sum + Number(v.valor_fiado || 0), 0)
-    }
-
-    // Recalcular total de vendas baseado nas vendas reais
-    const totalVendasCalculado = vendas.reduce((sum, v) => sum + Number(v.total || 0), 0)
-    const totalVendasFinal = Math.max(totalVendas, totalVendasCalculado)
-
-    const valorEsperado = Number(caixaData.valor_inicial) + totalVendasFinal + totalSuprimentos - totalSangrias
-    const valorContado = Number(caixaData.valor_contado_dinheiro || caixaData.valor_final || 0)
-    const diferenca = valorContado - valorEsperado
+    // Buscar quantidade de vendas
+    const vendasCountResult = await executeQuery(
+      'SELECT COUNT(*) as total FROM vendas WHERE caixa_id = ?',
+      [caixaId]
+    ) as any[]
+    const quantidadeVendas = vendasCountResult[0].total
 
     const statusReconciliacao = diferenca === 0 ? 'PERFEITO' : 
                               diferenca > 0 ? 'SOBRA' : 'FALTA'
@@ -131,7 +110,7 @@ export async function GET(
         </div>
         <div class="linha">
           <span>Total de Vendas:</span>
-          <span class="valor">R$ ${formatarValor(totalVendasFinal)}</span>
+          <span class="valor">R$ ${formatarValor(totalVendasCalculado)}</span>
         </div>
         ${totalSangrias > 0 ? `
         <div class="linha">
@@ -192,11 +171,11 @@ export async function GET(
       <div class="detalhes">
         <div class="linha">
           <span>Total de Transações:</span>
-          <span class="valor">${vendas.length}</span>
+          <span class="valor">${quantidadeVendas}</span>
         </div>
         <div class="linha">
           <span>Ticket Médio:</span>
-          <span class="valor">R$ ${formatarValor(vendas.length > 0 ? totalVendasFinal / vendas.length : 0)}</span>
+          <span class="valor">R$ ${formatarValor(quantidadeVendas > 0 ? totalVendasCalculado / quantidadeVendas : 0)}</span>
         </div>
       </div>
 

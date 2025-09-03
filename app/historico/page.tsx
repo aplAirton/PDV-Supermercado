@@ -9,6 +9,9 @@ interface Venda {
   total: number
   forma_pagamento: string
   data_venda: string
+  desconto_tipo?: string | null
+  desconto_valor?: number | null
+  desconto_percentual?: number | null
   itens: {
     produto_nome: string
     quantidade: number
@@ -105,6 +108,23 @@ export default function HistoricoPage() {
   const verDetalhes = (venda: Venda) => {
     setVendaSelecionada(venda)
     setShowModal(true)
+  }
+
+  const imprimirCupomSegundaVia = (vendaId: number) => {
+    // Abrir cupom HTML em nova janela
+    const cupomUrl = `/api/vendas/${vendaId}/cupom`
+    const w = window.open(cupomUrl, '_blank', 'width=800,height=600,scrollbars=yes')
+    if (w) {
+      w.focus()
+      // Esperar carregar e tentar imprimir
+      setTimeout(() => {
+        try { 
+          w.print() 
+        } catch (e) { 
+          console.log('Print automático não disponível') 
+        }
+      }, 1000)
+    }
   }
 
   const imprimirCupom = async (venda: Venda | null) => {
@@ -292,6 +312,7 @@ export default function HistoricoPage() {
                   <th>Data/Hora</th>
                   <th>Cliente</th>
                   <th>Total</th>
+                  <th>Desconto</th>
                   <th>Pagamento</th>
                   <th>Ações</th>
                 </tr>
@@ -303,6 +324,20 @@ export default function HistoricoPage() {
                     <td>{formatarData(venda.data_venda)}</td>
                     <td>{venda.cliente_nome || "Cliente Avulso"}</td>
                     <td>R$ {(Number(venda.total) || 0).toFixed(2)}</td>
+                    <td>
+                      {venda.desconto_tipo && (Number(venda.desconto_valor) > 0 || Number(venda.desconto_percentual) > 0) ? (
+                        <span style={{ 
+                          color: '#d9534f', 
+                          fontWeight: 'bold',
+                          fontSize: '0.875rem'
+                        }}>
+                          {venda.desconto_tipo === 'percent' ? `${Number(venda.desconto_percentual)}%` : 'R$'} 
+                          {' '}(-R$ {Number(venda.desconto_valor || 0).toFixed(2)})
+                        </span>
+                      ) : (
+                        <span style={{ color: '#999', fontSize: '0.875rem' }}>-</span>
+                      )}
+                    </td>
                     <td>
                       <span
                         style={{
@@ -317,10 +352,20 @@ export default function HistoricoPage() {
                       </span>
                     </td>
                     <td>
-                      <button className="btn btn-sm btn-outline" onClick={() => verDetalhes(venda)}>
-                        <Eye size={16} />
-                        Ver Detalhes
-                      </button>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        <button className="btn btn-sm btn-outline" onClick={() => verDetalhes(venda)}>
+                          <Eye size={16} />
+                          Ver Detalhes
+                        </button>
+                        <button 
+                          className="btn btn-sm btn-primary" 
+                          onClick={() => imprimirCupomSegundaVia(venda.id)}
+                          title="Imprimir 2ª via do cupom"
+                        >
+                          <Printer size={16} />
+                          2ª Via
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -424,6 +469,31 @@ export default function HistoricoPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Seção: Desconto (se houver) */}
+              {vendaSelecionada.desconto_tipo && (Number(vendaSelecionada.desconto_valor) > 0 || Number(vendaSelecionada.desconto_percentual) > 0) && (
+                <div style={{ 
+                  background: '#fff8dc', 
+                  padding: '12px', 
+                  borderRadius: '6px',
+                  border: '1px solid #ddd',
+                  marginBottom: '12px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '14px', fontWeight: '500', color: '#d9534f' }}>
+                        Desconto Aplicado
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#d9534f' }}>
+                      {vendaSelecionada.desconto_tipo === 'percent' 
+                        ? `${Number(vendaSelecionada.desconto_percentual)}%`
+                        : 'Valor fixo'
+                      } (-R$ {Number(vendaSelecionada.desconto_valor || 0).toFixed(2)})
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {/* Seção: Itens da Venda */}
               <div style={{ marginBottom: '12px' }}>

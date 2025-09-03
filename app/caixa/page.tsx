@@ -1659,40 +1659,113 @@ export default function CaixaPage() {
 
               <div className="resumo-valores" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
                 <div>
-                  <h5>Valores do Caixa</h5>
-                  <div><strong>Valor Inicial:</strong> {formatarValor(resumoFechamento.valores.inicial)}</div>
-                  <div><strong>Total Vendas:</strong> {formatarValor(resumoFechamento.valores.vendas)}</div>
-                  <div><strong>Suprimentos:</strong> {formatarValor(resumoFechamento.valores.suprimentos)}</div>
-                  <div><strong>Sangrias:</strong> {formatarValor(resumoFechamento.valores.sangrias)}</div>
+                  <h5 style={{ marginBottom: '15px', color: '#374151', borderBottom: '2px solid #e5e7eb', paddingBottom: '8px' }}>Valores do Caixa</h5>
+                  <div className="valores-lista" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>Valor Inicial:</span>
+                      <strong style={{ color: '#6b7280' }}>{formatarValor(resumoFechamento.valores.inicial)}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>Total Vendas:</span>
+                      <strong style={{ color: '#22c55e' }}>+ {formatarValor(resumoFechamento.valores.vendas)}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>Suprimentos:</span>
+                      <strong style={{ color: '#22c55e' }}>+ {formatarValor(resumoFechamento.valores.suprimentos)}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>Sangrias:</span>
+                      <strong style={{ color: '#ef4444' }}>- {formatarValor(resumoFechamento.valores.sangrias)}</strong>
+                    </div>
+                    <hr style={{ margin: '10px 0', borderColor: '#e5e7eb' }} />
+                    <div style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center',
+                      padding: '8px',
+                      backgroundColor: '#f3f4f6',
+                      borderRadius: '6px',
+                      border: '2px solid #d1d5db'
+                    }}>
+                      <span style={{ fontWeight: 'bold', fontSize: '14px' }}>TOTAL CAIXA:</span>
+                      <strong style={{ 
+                        color: '#1f2937', 
+                        fontSize: '16px',
+                        fontWeight: 'bold'
+                      }}>
+                        {formatarValor(
+                          resumoFechamento.valores.inicial + 
+                          resumoFechamento.valores.vendas + 
+                          resumoFechamento.valores.suprimentos - 
+                          resumoFechamento.valores.sangrias
+                        )}
+                      </strong>
+                    </div>
+                  </div>
                 </div>
                 {resumoFechamento.status === 'fechado' && (
                   <div>
-                    <h5>Reconciliação</h5>
-                    <div><strong>Valor Esperado:</strong> {formatarValor(resumoFechamento.valores.esperado)}</div>
-                    <div><strong>Valor Contado:</strong> {formatarValor(resumoFechamento.valores.contado)}</div>
-                    <div style={{ 
-                      color: resumoFechamento.valores.diferenca === 0 ? '#22c55e' : 
-                             resumoFechamento.valores.diferenca > 0 ? '#3b82f6' : '#ef4444',
-                      fontWeight: 'bold'
-                    }}>
-                      <strong>Diferença:</strong> {formatarValor(Math.abs(resumoFechamento.valores.diferenca))}
-                      {resumoFechamento.valores.diferenca > 0 && ' (Sobra)'}
-                      {resumoFechamento.valores.diferenca < 0 && ' (Falta)'}
-                      {resumoFechamento.valores.diferenca === 0 && ' (Perfeito)'}
+                    <h5 style={{ marginBottom: '15px', color: '#374151', borderBottom: '2px solid #e5e7eb', paddingBottom: '8px' }}>Reconciliação</h5>
+                    <div className="reconciliacao-lista" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>Valor Esperado:</span>
+                        <strong style={{ color: '#6b7280' }}>{formatarValor(resumoFechamento.valores.esperado)}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>Valor Contado:</span>
+                        <strong style={{ color: '#6b7280' }}>{formatarValor(resumoFechamento.valores.contado)}</strong>
+                      </div>
+                      <hr style={{ margin: '10px 0', borderColor: '#e5e7eb' }} />
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center',
+                        padding: '8px',
+                        backgroundColor: resumoFechamento.valores.diferenca === 0 ? '#f0fdf4' : 
+                                        resumoFechamento.valores.diferenca > 0 ? '#eff6ff' : '#fef2f2',
+                        borderRadius: '6px',
+                        border: `2px solid ${resumoFechamento.valores.diferenca === 0 ? '#22c55e' : 
+                                              resumoFechamento.valores.diferenca > 0 ? '#3b82f6' : '#ef4444'}`
+                      }}>
+                        <span style={{ fontWeight: 'bold', fontSize: '14px' }}>DIFERENÇA:</span>
+                        <strong style={{ 
+                          color: resumoFechamento.valores.diferenca === 0 ? '#22c55e' : 
+                                 resumoFechamento.valores.diferenca > 0 ? '#3b82f6' : '#ef4444',
+                          fontSize: '16px',
+                          fontWeight: 'bold'
+                        }}>
+                          {formatarValor(Math.abs(resumoFechamento.valores.diferenca))}
+                          {resumoFechamento.valores.diferenca > 0 && ' (Sobra)'}
+                          {resumoFechamento.valores.diferenca < 0 && ' (Falta)'}
+                          {resumoFechamento.valores.diferenca === 0 && ' (Perfeito)'}
+                        </strong>
+                      </div>
                     </div>
                   </div>
                 )}
                 {resumoFechamento.status === 'aberto' && (
                   <div>
-                    <h5>Status</h5>
+                    <h5 style={{ marginBottom: '15px', color: '#374151', borderBottom: '2px solid #e5e7eb', paddingBottom: '8px' }}>Status do Caixa</h5>
                     <div style={{ 
-                      color: '#22c55e',
-                      fontWeight: 'bold'
+                      padding: '20px',
+                      textAlign: 'center',
+                      backgroundColor: '#f0fdf4',
+                      borderRadius: '12px',
+                      border: '2px solid #22c55e'
                     }}>
-                      <strong>Caixa Aberto</strong>
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>
-                      Valores de reconciliação serão calculados no fechamento
+                      <div style={{ 
+                        color: '#22c55e',
+                        fontWeight: 'bold',
+                        fontSize: '16px',
+                        marginBottom: '8px'
+                      }}>
+                        🟢 CAIXA ABERTO
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#6b7280', lineHeight: '1.4' }}>
+                        Em operação<br/>
+                        Valores de reconciliação serão<br/>
+                        calculados no fechamento
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1720,12 +1793,6 @@ export default function CaixaPage() {
                   </div>
                 </div>
               )}
-
-              <div className="resumo-vendas" style={{ marginTop: '20px' }}>
-                <h5>Resumo de Vendas</h5>
-                <div><strong>Total de Transações:</strong> {resumoFechamento.vendas.total_transacoes}</div>
-                <div><strong>Valor Total:</strong> {formatarValor(resumoFechamento.vendas.valor_total)}</div>
-              </div>
             </div>
 
             <div className="modal-footer">
