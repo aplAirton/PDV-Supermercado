@@ -6,7 +6,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const caixaId = params.id
+    const { id } = await params
+    const caixaId = id
     
     // Buscar detalhes do caixa
     const caixaQuery = `
@@ -31,9 +32,9 @@ export async function GET(
     
     // Buscar movimentações do caixa
     const movimentacoesQuery = `
-      SELECT * FROM caixa_movimentacoes 
+      SELECT * FROM caixa_movimentacoes_financeiras 
       WHERE caixa_id = ? 
-      ORDER BY data_movimentacao DESC
+      ORDER BY data_criacao DESC
     `
     
     const movimentacoes = await executeQuery(movimentacoesQuery, [caixaId])
@@ -56,7 +57,8 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const caixaId = params.id
+    const { id } = await params
+    const caixaId = id
     const data = await request.json()
     const { acao, valor, observacoes } = data
     
@@ -88,13 +90,14 @@ export async function PATCH(
       if (tipo === 'sangria') {
         // Para sangrias, usar tabela específica e atualizar total
         
-        // 1. Inserir registro na tabela caixa_sangrias
+        // 1. Inserir registro na tabela caixa_movimentacoes_financeiras
         const insertSangriaQuery = `
-          INSERT INTO caixa_sangrias (
+          INSERT INTO caixa_movimentacoes_financeiras (
             caixa_id, 
             valor, 
-            descricao
-          ) VALUES (?, ?, ?)
+            descricao,
+            tipo
+          ) VALUES (?, ?, ?, 'sangria')
         `
         
         await executeQuery(insertSangriaQuery, [caixaId, valor, descricao || 'Sangria do caixa'])
@@ -114,17 +117,17 @@ export async function PATCH(
         })
         
       } else {
-        // Para outras movimentações, usar tabela caixa_movimentacoes
+        // Para outras movimentações, usar tabela caixa_movimentacoes_financeiras
         const insertQuery = `
-          INSERT INTO caixa_movimentacoes (
+          INSERT INTO caixa_movimentacoes_financeiras (
             caixa_id, 
-            tipo, 
             valor, 
-            descricao
+            descricao,
+            tipo
           ) VALUES (?, ?, ?, ?)
         `
         
-        await executeQuery(insertQuery, [caixaId, tipo, valor, descricao])
+        await executeQuery(insertQuery, [caixaId, valor, descricao, tipo])
         
         return NextResponse.json({ 
           success: true, 
@@ -151,7 +154,8 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const caixaId = params.id
+    const { id } = await params
+    const caixaId = id
     const data = await request.json()
     
     if (!caixaId) {
@@ -193,29 +197,19 @@ export async function PUT(
       const vendas = await executeQuery(vendasQuery, [caixaId]) as any[]
       const totaisVendas = vendas[0] || {}
       
-      // Buscar totais de movimentações (suprimentos)
+      // Buscar totais de movimentações financeiras (sangrias e suprimentos)
       const movimentacoesQuery = `
         SELECT 
-          COALESCE(SUM(CASE WHEN tipo = 'suprimento' THEN valor ELSE 0 END), 0) as total_suprimentos
-        FROM caixa_movimentacoes 
+          COALESCE(SUM(CASE WHEN tipo = 'suprimento' THEN valor ELSE 0 END), 0) as total_suprimentos,
+          COALESCE(SUM(CASE WHEN tipo = 'sangria' THEN valor ELSE 0 END), 0) as total_sangrias
+        FROM caixa_movimentacoes_financeiras 
         WHERE caixa_id = ?
       `
       const movimentacoes = await executeQuery(movimentacoesQuery, [caixaId]) as any[]
       const totaisMovimentacoes = movimentacoes[0] || {}
       
-      // Buscar total de sangrias da nova tabela específica
-      const sangriasQuery = `
-        SELECT COALESCE(SUM(valor), 0) as total_sangrias_tabela
-        FROM caixa_sangrias 
-        WHERE caixa_id = ?
-      `
-      const sangriasResult = await executeQuery(sangriasQuery, [caixaId]) as any[]
-      const totalSangriasCalculado = sangriasResult[0]?.total_sangrias_tabela || 0
-      
-      // Usar o valor da tabela caixas (que já é atualizado) ou calcular da tabela específica
-      const caixaAtual = await executeQuery('SELECT total_sangrias FROM caixas WHERE id = ?', [caixaId]) as any[]
-      const totalSangriasFromCaixa = parseFloat(caixaAtual[0]?.total_sangrias || 0)
-      const totalSangriasFinal = Math.max(totalSangriasFromCaixa, totalSangriasCalculado)
+      const totalSangriasCalculado = totaisMovimentacoes.total_sangrias || 0
+      const totalSuprimentosCalculado = totaisMovimentacoes.total_suprimentos || 0
       
       // Atualizar caixa com fechamento
       const updateQuery = `
@@ -251,20 +245,85 @@ export async function PUT(
         totaisVendas.total_cartao_credito || 0,
         totaisVendas.total_pix || 0,
         totaisVendas.total_fiado || 0,
-        totaisMovimentacoes.total_suprimentos || 0,
-        totalSangriasFinal,
+        totalSuprimentosCalculado,
+        totalSangriasCalculado,
         data.diferenca_caixa || 0,
         data.status_reconciliacao || null,
         valorFinal,
         caixaId
       ])
+    } else if (data.acao === 'movimentacao_financeira' || data.acao === 'movimentacao') {
+      // Movimentações financeiras (sangria, suprimento)
+      const { tipo, valor, descricao } = data
+      
+      if (!tipo || !valor) {
+        return NextResponse.json(
+          { error: 'Tipo e valor são obrigatórios para movimentações' },
+          { status: 400 }
+        )
+      }
+      
+      if (tipo === 'sangria' || tipo === 'suprimento') {
+        // Ambos sangria e suprimento usam a mesma tabela caixa_movimentacoes_financeiras
+        const insertMovimentacaoQuery = `
+          INSERT INTO caixa_movimentacoes_financeiras (
+            caixa_id, 
+            valor, 
+            descricao,
+            tipo
+          ) VALUES (?, ?, ?, ?)
+        `
+        
+        await executeQuery(insertMovimentacaoQuery, [
+          caixaId, 
+          valor, 
+          descricao || `${tipo === 'sangria' ? 'Sangria do caixa' : 'Suprimento ao caixa'}`,
+          tipo
+        ])
+        
+        // Atualizar totais na tabela caixas
+        if (tipo === 'sangria') {
+          const updateTotalQuery = `
+            UPDATE caixas 
+            SET total_sangrias = COALESCE(total_sangrias, 0) + ?
+            WHERE id = ?
+          `
+          await executeQuery(updateTotalQuery, [valor, caixaId])
+        } else {
+          const updateTotalQuery = `
+            UPDATE caixas 
+            SET total_suprimentos = COALESCE(total_suprimentos, 0) + ?
+            WHERE id = ?
+          `
+          await executeQuery(updateTotalQuery, [valor, caixaId])
+        }
+      } else {
+        return NextResponse.json(
+          { error: 'Tipo de movimentação não reconhecido' },
+          { status: 400 }
+        )
+      }
+      
+      return NextResponse.json({ 
+        success: true, 
+        message: `${tipo === 'sangria' ? 'Sangria' : 'Suprimento'} de R$ ${parseFloat(valor).toFixed(2)} registrada com sucesso` 
+      })
     } else {
-      // Atualização geral do caixa
+      // Atualização geral do caixa (apenas para campos válidos)
       const updateFields: string[] = []
       const updateValues: any[] = []
       
+      // Lista de campos válidos da tabela caixas
+      const camposValidos = [
+        'status', 'data_fechamento', 'funcionario_fechamento_id', 
+        'valor_contado_dinheiro', 'observacoes_fechamento', 'total_vendas',
+        'total_dinheiro', 'total_cartao_debito', 'total_cartao_credito',
+        'total_pix', 'total_fiado', 'total_suprimentos', 'total_sangrias',
+        'diferenca_caixa', 'status_reconciliacao', 'valor_final'
+      ]
+      
       Object.keys(data).forEach(key => {
-        if (key !== 'id') {
+        if (key !== 'id' && camposValidos.includes(key)) {
           updateFields.push(`${key} = ?`)
           updateValues.push(data[key])
         }
@@ -272,7 +331,7 @@ export async function PUT(
       
       if (updateFields.length === 0) {
         return NextResponse.json(
-          { error: 'Nenhum campo para atualizar' },
+          { error: 'Nenhum campo válido para atualizar' },
           { status: 400 }
         )
       }

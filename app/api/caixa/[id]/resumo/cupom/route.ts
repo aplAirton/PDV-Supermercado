@@ -49,53 +49,29 @@ export async function GET(
       ORDER BY v.data_venda
     `, [caixaId]) as any[]
 
-    // Verificar se a coluna `data_criacao` existe na tabela para montar consulta segura
-    const colCheck = await executeQuery(
-      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
-       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'caixa_movimentacoes' AND COLUMN_NAME = 'data_criacao'`,
-      []
-    ) as any[]
-
-    const hasDataCriacao = (colCheck && colCheck.length > 0)
-
-    // Buscar movimentações do caixa (ordena por data_criacao se disponível, caso contrário por id)
+    // Buscar movimentações financeiras do caixa (sangrias e suprimentos)
     const movQuery = `
       SELECT 
         id,
         tipo,
         valor,
-        descricao${hasDataCriacao ? ', data_criacao' : ''}
-      FROM caixa_movimentacoes
+        descricao,
+        data_criacao
+      FROM caixa_movimentacoes_financeiras
       WHERE caixa_id = ?
-      ORDER BY ${hasDataCriacao ? 'data_criacao' : 'id'}
+      ORDER BY data_criacao
     `
 
     const movimentacoes = await executeQuery(movQuery, [caixaId]) as any[]
 
-    // Buscar sangrias específicas da tabela caixa_sangrias
-    const sangriasQuery = `
-      SELECT 
-        id,
-        valor,
-        descricao,
-        data_criacao
-      FROM caixa_sangrias 
-      WHERE caixa_id = ?
-      ORDER BY data_criacao DESC
-    `
-    
-    let sangriasDetalhadas: any[] = []
-    try {
-      sangriasDetalhadas = await executeQuery(sangriasQuery, [caixaId]) as any[]
-    } catch (error) {
-      // Tabela pode não existir ainda, continuar sem sangrias detalhadas
-      console.log('Tabela caixa_sangrias não encontrada, usando total_sangrias da tabela caixas')
-    }
+    // Separar movimentações por tipo
+    const sangriasDetalhadas = movimentacoes.filter(m => m.tipo === 'sangria')
+    const suprimentosDetalhados = movimentacoes.filter(m => m.tipo === 'suprimento')
 
-    // Calcular totais usando os dados já calculados da tabela caixas
+    // Calcular totais usando os dados das movimentações
     const totalVendas = Number(caixaData.total_vendas || 0)
-    const totalSuprimentos = Number(caixaData.total_suprimentos || 0)
-    const totalSangrias = Number(caixaData.total_sangrias || 0)
+    const totalSangrias = sangriasDetalhadas.reduce((sum, s) => sum + Number(s.valor || 0), 0)
+    const totalSuprimentos = suprimentosDetalhados.reduce((sum, s) => sum + Number(s.valor || 0), 0)
 
     // Calcular totais por forma de pagamento diretamente das vendas (não da tabela caixas que pode estar zerada)
     const totaisPorForma = {
@@ -210,6 +186,40 @@ export async function GET(
           </div>
         </div>
       </div>
+
+      ${(sangriasDetalhadas.length > 0 || suprimentosDetalhados.length > 0) ? `
+      <div class="documento-titulo">MOVIMENTAÇÕES DETALHADAS</div>
+      
+      ${sangriasDetalhadas.length > 0 ? `
+      <div class="movimentacoes-section">
+        <div class="movimentacoes-titulo">SANGRIAS</div>
+        ${sangriasDetalhadas.map(sangria => `
+        <div class="movimentacao-item">
+          <div class="movimentacao-info">
+            <span class="movimentacao-horario">${formatarData(sangria.data_criacao)}</span>
+            <span class="movimentacao-desc">${sangria.descricao || 'Sangria'}</span>
+          </div>
+          <span class="movimentacao-valor">- R$ ${formatarValor(Number(sangria.valor))}</span>
+        </div>
+        `).join('')}
+      </div>
+      ` : ''}
+
+      ${suprimentosDetalhados.length > 0 ? `
+      <div class="movimentacoes-section">
+        <div class="movimentacoes-titulo">SUPRIMENTOS</div>
+        ${suprimentosDetalhados.map(suprimento => `
+        <div class="movimentacao-item">
+          <div class="movimentacao-info">
+            <span class="movimentacao-horario">${formatarData(suprimento.data_criacao)}</span>
+            <span class="movimentacao-desc">${suprimento.descricao || 'Suprimento'}</span>
+          </div>
+          <span class="movimentacao-valor">+ R$ ${formatarValor(Number(suprimento.valor))}</span>
+        </div>
+        `).join('')}
+      </div>
+      ` : ''}
+      ` : ''}
 
       <div class="documento-titulo">RESUMO DE VENDAS</div>
       

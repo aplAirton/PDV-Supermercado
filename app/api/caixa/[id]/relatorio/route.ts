@@ -6,7 +6,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const caixaId = params.id
+    const { id } = await params
+    const caixaId = id
     
     // Buscar dados do caixa
     const caixaQuery = `
@@ -43,11 +44,11 @@ export async function GET(
     
     const vendas = await executeQuery(vendasQuery, [caixaId]) as any[]
     
-    // Buscar movimentações do caixa
+    // Buscar movimentações financeiras do caixa
     const movimentacoesQuery = `
-      SELECT * FROM caixa_movimentacoes 
+      SELECT * FROM caixa_movimentacoes_financeiras 
       WHERE caixa_id = ? 
-      ORDER BY data_movimentacao ASC
+      ORDER BY data_criacao ASC
     `
     
     const movimentacoes = await executeQuery(movimentacoesQuery, [caixaId]) as any[]

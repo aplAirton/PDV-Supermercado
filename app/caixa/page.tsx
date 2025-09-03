@@ -87,6 +87,20 @@ export default function CaixaPage() {
     senha: ''
   })
   
+  // Estados para fechamento em etapas
+  const [etapaFechamento, setEtapaFechamento] = useState<'login' | 'contagem' | 'resumo'>('login')
+  const [funcionarioFechamento, setFuncionarioFechamento] = useState<Funcionario | null>(null)
+  const [resumoFechamento, setResumoFechamento] = useState<any>(null)
+  const [showValidacaoSenhaFechamento, setShowValidacaoSenhaFechamento] = useState(false)
+  const [showContagemDinheiro, setShowContagemDinheiro] = useState(false)
+  const [showResumoFechamento, setShowResumoFechamento] = useState(false)
+  const [processandoFechamento, setProcessandoFechamento] = useState(false)
+  
+  // Estados para feedbacks de erro de senha
+  const [erroSenhaAbertura, setErroSenhaAbertura] = useState<string>('')
+  const [erroSenhaFechamento, setErroSenhaFechamento] = useState<string>('')
+  const [erroSenhaMovimentacao, setErroSenhaMovimentacao] = useState<string>('')
+  
   const [novoForm, setNovoForm] = useState({
     valor_inicial: '',
     observacoes: ''
@@ -97,8 +111,6 @@ export default function CaixaPage() {
     valor_contado_dinheiro: '',
     observacoes: ''
   })
-
-  const [resumoFechamento, setResumoFechamento] = useState<any>(null)
 
   useEffect(() => {
     verificarStatusCaixa()
@@ -118,13 +130,57 @@ export default function CaixaPage() {
     }
   }
 
-  const fecharCaixa = async () => {
+  // === FUNÇÕES DE ABERTURA ===
+  
+  const cancelarAberturaCaixa = () => {
+    // Cancelamento transacional - limpa todos os estados de abertura
+    setShowNovoModal(false)
+    setEtapaAbertura('login')
+    setLoginForm({ cpf: '', senha: '' })
+    setNovoForm({ valor_inicial: '', observacoes: '' })
+    setFuncionarioAbertura(null)
+    sessionStorage.removeItem('funcionario_caixa')
+    // Limpar erros
+    setErroSenhaAbertura('')
+  }
+
+  // === FUNÇÕES DE FECHAMENTO EM ETAPAS ===
+  
+  const iniciarFechamentoCaixa = () => {
     if (!caixaSelecionado) return
     
-    setLoadingFecharCaixa(true)
+    // Reset de estados
+    setEtapaFechamento('login')
+    setFuncionarioFechamento(null)
+    setResumoFechamento(null)
+    setFecharForm({ senha: '', valor_contado_dinheiro: '', observacoes: '' })
+    
+    // Iniciar fluxo
+    setShowValidacaoSenhaFechamento(true)
+  }
+
+  const cancelarFechamentoCaixa = () => {
+    // Cancelamento transacional - limpa todos os estados
+    setShowValidacaoSenhaFechamento(false)
+    setShowContagemDinheiro(false)
+    setShowResumoFechamento(false)
+    setEtapaFechamento('login')
+    setFuncionarioFechamento(null)
+    setResumoFechamento(null)
+    setFecharForm({ senha: '', valor_contado_dinheiro: '', observacoes: '' })
+    setProcessandoFechamento(false)
+    // Limpar erros
+    setErroSenhaFechamento('')
+  }
+
+  const validarSenhaFechamento = async () => {
+    if (!caixaSelecionado || !fecharForm.senha) return
+
+    // Limpar erros anteriores
+    setErroSenhaFechamento('')
+    setProcessandoFechamento(true) // Adicionar loading
     try {
-      // Primeiro, validar senha do funcionário
-      const validacaoResponse = await fetch('/api/caixa/validar-senha', {
+      const response = await fetch('/api/caixa/validar-senha', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -133,16 +189,32 @@ export default function CaixaPage() {
         })
       })
 
-      if (!validacaoResponse.ok) {
-        const error = await validacaoResponse.json()
-        toast({
-          title: "Erro de autenticação",
-          description: error.error || "Senha incorreta",
-          variant: "destructive"
-        })
+      if (!response.ok) {
+        const error = await response.json()
+        setErroSenhaFechamento(error.error || "Senha incorreta")
         return
       }
 
+      const funcionario = await response.json()
+      setFuncionarioFechamento(funcionario)
+      
+      // Avançar para próxima etapa
+      setEtapaFechamento('contagem')
+      setShowValidacaoSenhaFechamento(false)
+      setShowContagemDinheiro(true)
+    } catch (error) {
+      console.error('Erro na validação:', error)
+      setErroSenhaFechamento("Falha na validação da senha")
+    } finally {
+      setProcessandoFechamento(false)
+    }
+  }
+
+  const processarContagem = async () => {
+    if (!caixaSelecionado || !fecharForm.valor_contado_dinheiro) return
+
+    setProcessandoFechamento(true) // Adicionar loading
+    try {
       // Buscar resumo de lançamentos do caixa
       const resumoResponse = await fetch(`/api/caixa/${caixaSelecionado.id}/resumo`)
       const resumoData = await resumoResponse.json()
@@ -156,54 +228,88 @@ export default function CaixaPage() {
       const valorEsperado = resumoData.valores.esperado
       const diferenca = valorContado - valorEsperado
 
-      // Fechar o caixa com reconciliação
+      // Preparar resumo completo
+      const resumoCompleto = {
+        id: caixaSelecionado.id,
+        funcionario_nome: caixaSelecionado.funcionario_nome,
+        funcionario_cargo: funcionarioFechamento?.cargo || '',
+        data_abertura: caixaSelecionado.data_abertura,
+        data_fechamento: new Date().toISOString(),
+        valores: {
+          inicial: caixaSelecionado.valor_inicial,
+          vendas: resumoData.valores?.vendas || 0,
+          suprimentos: resumoData.valores?.suprimentos || 0,
+          sangrias: resumoData.valores?.sangrias || 0,
+          esperado: valorEsperado,
+          contado: valorContado,
+          diferenca: diferenca
+        },
+        vendas: resumoData.vendas || { total_transacoes: 0, valor_total: 0 },
+        status_reconciliacao: diferenca === 0 ? 'perfeito' : diferenca > 0 ? 'sobra' : 'falta',
+        observacoes: fecharForm.observacoes
+      }
+      
+      setResumoFechamento(resumoCompleto)
+      
+      // Avançar para próxima etapa
+      setEtapaFechamento('resumo')
+      setShowContagemDinheiro(false)
+      setShowResumoFechamento(true)
+      
+    } catch (error) {
+      console.error('Erro ao processar contagem:', error)
+      toast({
+        title: "Erro",
+        description: "Falha ao processar contagem",
+        variant: "destructive"
+      })
+    } finally {
+      setProcessandoFechamento(false)
+    }
+  }
+
+  const confirmarFechamentoCaixa = async () => {
+    if (!caixaSelecionado || !resumoFechamento) return
+
+    setProcessandoFechamento(true)
+    try {
+      // Realizar o fechamento efetivo
       const response = await fetch(`/api/caixa/${caixaSelecionado.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           status: 'fechado',
-          valor_contado_dinheiro: valorContado,
-          observacoes_fechamento: fecharForm.observacoes,
-          diferenca_caixa: diferenca,
-          status_reconciliacao: diferenca === 0 ? 'perfeito' : diferenca > 0 ? 'sobra' : 'falta'
+          valor_contado_dinheiro: resumoFechamento.valores.contado,
+          observacoes_fechamento: resumoFechamento.observacoes,
+          diferenca_caixa: resumoFechamento.valores.diferenca,
+          status_reconciliacao: resumoFechamento.status_reconciliacao
         })
       })
 
       const result = await response.json()
 
       if (response.ok) {
-        // Preparar dados do resumo
-        const resumoCompleto = {
-          id: caixaSelecionado.id,
-          funcionario_nome: caixaSelecionado.funcionario_nome,
-          data_abertura: caixaSelecionado.data_abertura,
-          data_fechamento: new Date().toISOString(),
-          valores: {
-            inicial: caixaSelecionado.valor_inicial,
-            vendas: resumoData.valores?.vendas || 0,
-            suprimentos: resumoData.valores?.suprimentos || 0,
-            sangrias: resumoData.valores?.sangrias || 0,
-            esperado: valorEsperado,
-            contado: valorContado,
-            diferenca: diferenca
-          },
-          vendas: resumoData.vendas || { total_transacoes: 0, valor_total: 0 },
-          status_reconciliacao: diferenca === 0 ? 'perfeito' : diferenca > 0 ? 'sobra' : 'falta'
-        }
-        
-        setResumoFechamento(resumoCompleto)
-
-        // Fechamento realizado com sucesso - sem toast irritante
-        
-        setShowFecharModal(false)
+        // Sucesso - fechar modais de fechamento e mostrar resumo final
+        setShowResumoFechamento(false)
         setCaixaSelecionado(null)
-        setFecharForm({ senha: '', valor_contado_dinheiro: '', observacoes: '' })
         
-        // Mostrar o modal de resumo após fechar
+        // Mostrar o modal de resumo final
         setShowResumoModal(true)
         
         carregarDados()
         verificarStatusCaixa()
+        
+        // Reset estados de fechamento
+        setEtapaFechamento('login')
+        setFuncionarioFechamento(null)
+        setFecharForm({ senha: '', valor_contado_dinheiro: '', observacoes: '' })
+        
+        // Limpar informações de login armazenadas
+        sessionStorage.removeItem('funcionario_caixa')
+        setFuncionarioAbertura(null)
+        setLoginForm({ cpf: '', senha: '' })
+        setNovoForm({ valor_inicial: '', observacoes: '' })
+        
       } else {
         toast({
           title: "Erro ao fechar caixa",
@@ -219,8 +325,14 @@ export default function CaixaPage() {
         variant: "destructive"
       })
     } finally {
-      setLoadingFecharCaixa(false)
+      setProcessandoFechamento(false)
     }
+  }
+
+  // Função antiga mantida para compatibilidade (não será mais usada)
+  const fecharCaixa = async () => {
+    // Redireciona para o novo fluxo
+    iniciarFechamentoCaixa()
   }
 
   const carregarDados = async () => {
@@ -263,6 +375,9 @@ export default function CaixaPage() {
   const abrirCaixa = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    // Limpar erros anteriores
+    setErroSenhaAbertura('')
+    
     if (etapaAbertura === 'login') {
       // Validar login (mais robusto)
       const cpfInput = (loginForm.cpf || '').toString().trim()
@@ -272,11 +387,7 @@ export default function CaixaPage() {
       const storedFuncionario = sessionStorage.getItem('funcionario_caixa')
 
       if ((!cpfInput || !senhaInput) && !storedFuncionario) {
-        toast({
-          title: "Erro",
-          description: "CPF e senha são obrigatórios",
-          variant: "destructive"
-        })
+        setErroSenhaAbertura('CPF e senha são obrigatórios')
         return
       }
 
@@ -317,19 +428,11 @@ export default function CaixaPage() {
           // Toast removido - transição silenciosa
         } else {
           const error = await response.json()
-          toast({
-            title: "Erro de login",
-            description: error.error || "CPF ou senha incorretos",
-            variant: "destructive"
-          })
+          setErroSenhaAbertura(error.error || "CPF ou senha incorretos")
         }
       } catch (error) {
         console.error('Erro:', error)
-        toast({
-          title: "Erro de conexão",
-          description: "Não foi possível validar as credenciais",
-          variant: "destructive"
-        })
+        setErroSenhaAbertura("Não foi possível validar as credenciais")
       } finally {
         setLoadingAbrirCaixa(false)
       }
@@ -567,19 +670,11 @@ export default function CaixaPage() {
         setShowTipoMovimentoModal(true)
       } else {
         const error = await response.json()
-        toast({
-          title: "Erro de autenticação",
-          description: error.error || "Senha incorreta",
-          variant: "destructive"
-        })
+        setErroSenhaMovimentacao(error.error || "Senha incorreta")
       }
     } catch (error) {
       console.error('Erro:', error)
-      toast({
-        title: "Erro de conexão",
-        description: "Não foi possível validar a senha",
-        variant: "destructive"
-      })
+      setErroSenhaMovimentacao("Falha na validação da senha")
     }
   }
 
@@ -657,6 +752,8 @@ export default function CaixaPage() {
     setMovimentoForm({ valor: '', descricao: '' })
     setTipoMovimentoSelecionado(null)
     setCaixaSelecionado(null)
+    // Limpar erros
+    setErroSenhaMovimentacao('')
   }
 
   const imprimirResumoCaixa = async (caixaId: number) => {
@@ -719,6 +816,12 @@ export default function CaixaPage() {
           <button
             onClick={() => setShowNovoModal(true)}
             className="btn btn-primary"
+            disabled={caixasAbertos.length > 0}
+            style={{ 
+              opacity: caixasAbertos.length > 0 ? 0.5 : 1,
+              cursor: caixasAbertos.length > 0 ? 'not-allowed' : 'pointer'
+            }}
+            title={caixasAbertos.length > 0 ? 'Há um caixa aberto. Feche-o antes de abrir um novo.' : 'Abrir novo caixa'}
           >
             <Plus size={16} />
             Abrir Caixa
@@ -841,7 +944,7 @@ export default function CaixaPage() {
                           <button
                             onClick={() => {
                               setCaixaSelecionado(caixa)
-                              setShowFecharModal(true)
+                              iniciarFechamentoCaixa()
                             }}
                             className="btn btn-sm btn-outline danger"
                             title="Fechar caixa"
@@ -944,14 +1047,7 @@ export default function CaixaPage() {
             <div className="modal-header">
               <h3>Abrir Novo Caixa</h3>
               <button
-                onClick={() => {
-                  setShowNovoModal(false)
-                  setEtapaAbertura('login')
-                  setLoginForm({ cpf: '', senha: '' })
-                  setNovoForm({ valor_inicial: '', observacoes: '' })
-                  setFuncionarioAbertura(null)
-                  sessionStorage.removeItem('funcionario_caixa')
-                }}
+                onClick={cancelarAberturaCaixa}
                 className="modal-close"
               >
                 ×
@@ -991,18 +1087,35 @@ export default function CaixaPage() {
                       id="senha"
                       type="password"
                       value={loginForm.senha}
-                      onChange={(e) => setLoginForm({...loginForm, senha: e.target.value})}
+                      onChange={(e) => {
+                        setLoginForm({...loginForm, senha: e.target.value})
+                        if (erroSenhaAbertura) setErroSenhaAbertura('') // Limpar erro ao digitar
+                      }}
                       required
                       placeholder="Digite a senha"
                       style={{
                         width: '100%',
                         padding: '10px 12px',
-                        border: '1px solid #d1d5db',
+                        border: erroSenhaAbertura ? '1px solid #ef4444' : '1px solid #d1d5db',
                         borderRadius: '8px',
                         fontSize: '14px',
                         outline: 'none'
                       }}
                     />
+                    {erroSenhaAbertura && (
+                      <div style={{
+                        marginTop: '8px',
+                        padding: '12px',
+                        backgroundColor: '#fef2f2',
+                        border: '1px solid #fecaca',
+                        borderRadius: '6px',
+                        display: 'flex',
+                        alignItems: 'center'
+                      }}>
+                        <AlertCircle size={16} style={{ color: '#ef4444', marginRight: '8px' }} />
+                        <span style={{ color: '#dc2626', fontSize: '13px' }}>{erroSenhaAbertura}</span>
+                      </div>
+                    )}
                   </div>
                 </>
               ) : (
@@ -1057,20 +1170,26 @@ export default function CaixaPage() {
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
                 <button 
                   type="button" 
-                  onClick={() => {
-                    setShowNovoModal(false)
-                    setEtapaAbertura('login')
-                    setLoginForm({ cpf: '', senha: '' })
-                    setNovoForm({ valor_inicial: '', observacoes: '' })
-                    setFuncionarioAbertura(null)
-                    sessionStorage.removeItem('funcionario_caixa')
-                  }} 
+                  onClick={cancelarAberturaCaixa} 
                   className="btn btn-outline"
+                  disabled={loadingAbrirCaixa}
                 >
                   Cancelar
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  {etapaAbertura === 'login' ? 'Validar Login' : 'Abrir Caixa'}
+                <button 
+                  type="submit" 
+                  className="btn btn-primary"
+                  disabled={loadingAbrirCaixa}
+                  style={{ opacity: loadingAbrirCaixa ? 0.5 : 1 }}
+                >
+                  {loadingAbrirCaixa ? (
+                    <>
+                      <Loader2 size={16} style={{ marginRight: '6px', animation: 'spin 1s linear infinite' }} />
+                      {etapaAbertura === 'login' ? 'Validando...' : 'Abrindo...'}
+                    </>
+                  ) : (
+                    etapaAbertura === 'login' ? 'Validar Login' : 'Abrir Caixa'
+                  )}
                 </button>
               </div>
             </form>
@@ -1078,85 +1197,368 @@ export default function CaixaPage() {
         </div>
       )}
 
-      {/* Modal Fechar Caixa */}
-      {showFecharModal && caixaSelecionado && (
+      {/* Modais de Fechamento em Etapas */}
+      
+      {/* Modal 1: Validação de Senha para Fechamento */}
+      {showValidacaoSenhaFechamento && caixaSelecionado && (
         <div className="modal-overlay">
-          <div className="modal-content">
+          <div className="modal-content" style={{ maxWidth: '450px', width: '90%' }}>
             <div className="modal-header">
-              <h3>Fechar Caixa</h3>
+              <h3>Fechar Caixa - Validação</h3>
               <button
-                onClick={() => {
-                  setShowFecharModal(false)
-                  setCaixaSelecionado(null)
-                }}
+                onClick={cancelarFechamentoCaixa}
                 className="modal-close"
               >
                 ×
               </button>
             </div>
-            <form onSubmit={(e) => { e.preventDefault(); fecharCaixa(); }}>
-              <div className="modal-body">
-                <div className="info-section">
-                  <p><strong>Funcionário:</strong> {caixaSelecionado.funcionario_nome}</p>
-                  <p><strong>Valor Inicial:</strong> {formatarValor(caixaSelecionado.valor_inicial)}</p>
-                  <p><strong>Aberto em:</strong> {formatarData(caixaSelecionado.data_abertura)}</p>
+
+            <div style={{ padding: '20px' }}>
+              <div className="info-section" style={{ 
+                backgroundColor: '#fef2f2', 
+                border: '1px solid #fecaca', 
+                borderRadius: '8px', 
+                padding: '16px', 
+                marginBottom: '20px' 
+              }}>
+                <h4 style={{ margin: '0 0 12px 0', color: '#dc2626' }}>Informações do Caixa</h4>
+                <p style={{ margin: '4px 0' }}><strong>Funcionário:</strong> {caixaSelecionado.funcionario_nome}</p>
+                <p style={{ margin: '4px 0' }}><strong>Valor Inicial:</strong> {formatarValor(caixaSelecionado.valor_inicial)}</p>
+                <p style={{ margin: '4px 0' }}><strong>Aberto em:</strong> {formatarData(caixaSelecionado.data_abertura)}</p>
+              </div>
+
+              <p style={{ marginBottom: '20px', color: '#374151' }}>
+                Digite sua senha para iniciar o processo de fechamento:
+              </p>
+
+              <div className="form-group">
+                <label htmlFor="senha-fechamento">Senha do Operador *</label>
+                <input
+                  id="senha-fechamento"
+                  type="password"
+                  placeholder="Digite sua senha"
+                  value={fecharForm.senha}
+                  onChange={(e) => {
+                    setFecharForm({...fecharForm, senha: e.target.value})
+                    if (erroSenhaFechamento) setErroSenhaFechamento('') // Limpar erro ao digitar
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: erroSenhaFechamento ? '1px solid #ef4444' : '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '14px'
+                  }}
+                  onKeyPress={(e) => e.key === 'Enter' && validarSenhaFechamento()}
+                />
+                {erroSenhaFechamento && (
+                  <div style={{
+                    marginTop: '8px',
+                    padding: '12px',
+                    backgroundColor: '#fef2f2',
+                    border: '1px solid #fecaca',
+                    borderRadius: '6px',
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}>
+                    <AlertCircle size={16} style={{ color: '#ef4444', marginRight: '8px' }} />
+                    <span style={{ color: '#dc2626', fontSize: '13px' }}>{erroSenhaFechamento}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button 
+                onClick={validarSenhaFechamento}
+                className="btn btn-primary"
+                disabled={!fecharForm.senha || processandoFechamento}
+                style={{ opacity: (!fecharForm.senha || processandoFechamento) ? 0.5 : 1 }}
+              >
+                {processandoFechamento ? (
+                  <>
+                    <Loader2 size={16} style={{ marginRight: '6px', animation: 'spin 1s linear infinite' }} />
+                    Validando...
+                  </>
+                ) : (
+                  'Validar e Continuar'
+                )}
+              </button>
+              <button 
+                onClick={cancelarFechamentoCaixa}
+                className="btn btn-outline"
+                disabled={processandoFechamento}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal 2: Contagem de Dinheiro */}
+      {showContagemDinheiro && caixaSelecionado && funcionarioFechamento && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '500px', width: '90%' }}>
+            <div className="modal-header">
+              <h3>Fechar Caixa - Contagem</h3>
+              <button
+                onClick={cancelarFechamentoCaixa}
+                className="modal-close"
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ padding: '20px' }}>
+              <div style={{ 
+                backgroundColor: '#f0f9ff', 
+                border: '1px solid #bae6fd', 
+                borderRadius: '8px', 
+                padding: '16px', 
+                marginBottom: '20px' 
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                  <Calculator size={20} style={{ marginRight: '8px', color: '#0369a1' }} />
+                  <strong style={{ color: '#0369a1' }}>Contagem do Dinheiro em Caixa</strong>
+                </div>
+                <p style={{ margin: '0', fontSize: '14px', color: '#374151' }}>
+                  Conte fisicamente todo o dinheiro presente no caixa e informe o valor total encontrado.
+                </p>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="valor-contado">
+                  Valor Total Contado em Dinheiro *
+                </label>
+                <input
+                  id="valor-contado"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0,00"
+                  value={fecharForm.valor_contado_dinheiro}
+                  onChange={(e) => setFecharForm({...fecharForm, valor_contado_dinheiro: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '16px',
+                    fontWeight: 'bold'
+                  }}
+                />
+                <small style={{ color: '#6b7280', fontSize: '13px' }}>
+                  Informe o valor exato encontrado na contagem física
+                </small>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="observacoes-contagem">Observações do Fechamento</label>
+                <textarea
+                  id="observacoes-contagem"
+                  placeholder="Observações sobre o fechamento (opcional)"
+                  value={fecharForm.observacoes}
+                  onChange={(e) => setFecharForm({...fecharForm, observacoes: e.target.value})}
+                  rows={3}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    resize: 'vertical'
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button 
+                onClick={processarContagem}
+                className="btn btn-primary"
+                disabled={!fecharForm.valor_contado_dinheiro || parseFloat(fecharForm.valor_contado_dinheiro) < 0 || processandoFechamento}
+                style={{ opacity: (!fecharForm.valor_contado_dinheiro || parseFloat(fecharForm.valor_contado_dinheiro) < 0 || processandoFechamento) ? 0.5 : 1 }}
+              >
+                {processandoFechamento ? (
+                  <>
+                    <Loader2 size={16} style={{ marginRight: '6px', animation: 'spin 1s linear infinite' }} />
+                    Processando...
+                  </>
+                ) : (
+                  <>
+                    <Calculator size={16} style={{ marginRight: '6px' }} />
+                    Processar Contagem
+                  </>
+                )}
+              </button>
+              <button 
+                onClick={cancelarFechamentoCaixa}
+                className="btn btn-outline"
+                disabled={processandoFechamento}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal 3: Resumo do Fechamento */}
+      {showResumoFechamento && resumoFechamento && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '600px', width: '95%' }}>
+            <div className="modal-header">
+              <h3>Fechar Caixa - Confirmação</h3>
+              <button
+                onClick={cancelarFechamentoCaixa}
+                className="modal-close"
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ padding: '20px' }}>
+              <div style={{ 
+                backgroundColor: '#fffbeb', 
+                border: '1px solid #fde68a', 
+                borderRadius: '8px', 
+                padding: '16px', 
+                marginBottom: '20px' 
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
+                  <FileText size={20} style={{ marginRight: '8px', color: '#d97706' }} />
+                  <strong style={{ color: '#d97706' }}>Resumo do Fechamento</strong>
+                </div>
+                <p style={{ margin: '0', fontSize: '14px', color: '#374151' }}>
+                  Revise cuidadosamente as informações antes de confirmar o fechamento do caixa.
+                </p>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                {/* Coluna 1 - Informações Gerais */}
+                <div>
+                  <h4 style={{ margin: '0 0 12px 0', color: '#374151', fontSize: '16px' }}>Informações Gerais</h4>
+                  <div style={{ fontSize: '14px', lineHeight: '1.6' }}>
+                    <p style={{ margin: '4px 0' }}><strong>Funcionário:</strong> {resumoFechamento.funcionario_nome}</p>
+                    <p style={{ margin: '4px 0' }}><strong>Cargo:</strong> {resumoFechamento.funcionario_cargo}</p>
+                    <p style={{ margin: '4px 0' }}><strong>Data/Hora:</strong> {formatarData(resumoFechamento.data_fechamento)}</p>
+                    {resumoFechamento.observacoes && (
+                      <p style={{ margin: '8px 0 4px 0' }}><strong>Observações:</strong></p>
+                    )}
+                    {resumoFechamento.observacoes && (
+                      <p style={{ margin: '0', fontSize: '13px', color: '#6b7280' }}>{resumoFechamento.observacoes}</p>
+                    )}
+                  </div>
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="senha_fechamento">Senha do Operador</label>
-                  <input
-                    id="senha_fechamento"
-                    type="password"
-                    value={fecharForm.senha}
-                    onChange={(e) => setFecharForm({...fecharForm, senha: e.target.value})}
-                    placeholder="Digite sua senha"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="valor_contado_dinheiro">Valor Contado em Dinheiro</label>
-                  <input
-                    id="valor_contado_dinheiro"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={fecharForm.valor_contado_dinheiro}
-                    onChange={(e) => setFecharForm({...fecharForm, valor_contado_dinheiro: e.target.value})}
-                    placeholder="0,00"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="observacoes_fechamento">Observações de Fechamento</label>
-                  <textarea
-                    id="observacoes_fechamento"
-                    value={fecharForm.observacoes}
-                    onChange={(e) => setFecharForm({...fecharForm, observacoes: e.target.value})}
-                    placeholder="Observações sobre o fechamento..."
-                    rows={3}
-                  />
+                {/* Coluna 2 - Valores */}
+                <div>
+                  <h4 style={{ margin: '0 0 12px 0', color: '#374151', fontSize: '16px' }}>Valores Financeiros</h4>
+                  <div style={{ fontSize: '14px', lineHeight: '1.6' }}>
+                    <p style={{ margin: '4px 0' }}>
+                      <strong>Valor Inicial:</strong> {formatarValor(resumoFechamento.valores.inicial)}
+                    </p>
+                    <p style={{ margin: '4px 0' }}>
+                      <strong>Vendas:</strong> {formatarValor(resumoFechamento.valores.vendas)}
+                    </p>
+                    {resumoFechamento.valores.suprimentos > 0 && (
+                      <p style={{ margin: '4px 0', color: '#16a34a' }}>
+                        <strong>Suprimentos:</strong> +{formatarValor(resumoFechamento.valores.suprimentos)}
+                      </p>
+                    )}
+                    {resumoFechamento.valores.sangrias > 0 && (
+                      <p style={{ margin: '4px 0', color: '#dc2626' }}>
+                        <strong>Sangrias:</strong> -{formatarValor(resumoFechamento.valores.sangrias)}
+                      </p>
+                    )}
+                    <hr style={{ margin: '8px 0', border: 'none', borderTop: '1px solid #e5e7eb' }} />
+                    <p style={{ margin: '4px 0' }}>
+                      <strong>Esperado:</strong> {formatarValor(resumoFechamento.valores.esperado)}
+                    </p>
+                    <p style={{ margin: '4px 0' }}>
+                      <strong>Contado:</strong> {formatarValor(resumoFechamento.valores.contado)}
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              <div className="modal-footer">
-                <button 
-                  type="button" 
-                  onClick={() => {
-                    setShowFecharModal(false)
-                    setCaixaSelecionado(null)
-                    setFecharForm({ senha: '', valor_contado_dinheiro: '', observacoes: '' })
-                  }} 
-                  className="btn btn-outline"
-                >
-                  Cancelar
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  Fechar Caixa
-                </button>
+              {/* Status da Reconciliação */}
+              <div style={{ 
+                padding: '16px', 
+                borderRadius: '8px',
+                backgroundColor: resumoFechamento.status_reconciliacao === 'perfeito' ? '#f0fdf4' : 
+                                 resumoFechamento.status_reconciliacao === 'sobra' ? '#fffbeb' : '#fef2f2',
+                border: `1px solid ${resumoFechamento.status_reconciliacao === 'perfeito' ? '#bbf7d0' : 
+                                     resumoFechamento.status_reconciliacao === 'sobra' ? '#fde68a' : '#fecaca'}`,
+                marginBottom: '20px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                  {resumoFechamento.status_reconciliacao === 'perfeito' ? (
+                    <CheckCircle size={20} style={{ marginRight: '8px', color: '#16a34a' }} />
+                  ) : (
+                    <AlertCircle size={20} style={{ marginRight: '8px', color: resumoFechamento.status_reconciliacao === 'sobra' ? '#d97706' : '#dc2626' }} />
+                  )}
+                  <strong style={{ 
+                    color: resumoFechamento.status_reconciliacao === 'perfeito' ? '#16a34a' : 
+                           resumoFechamento.status_reconciliacao === 'sobra' ? '#d97706' : '#dc2626' 
+                  }}>
+                    {resumoFechamento.status_reconciliacao === 'perfeito' ? 'Caixa Conferido' : 
+                     resumoFechamento.status_reconciliacao === 'sobra' ? 'Sobra no Caixa' : 'Falta no Caixa'}
+                  </strong>
+                </div>
+                <p style={{ 
+                  margin: '0', 
+                  fontSize: '18px', 
+                  fontWeight: 'bold',
+                  color: resumoFechamento.status_reconciliacao === 'perfeito' ? '#16a34a' : 
+                         resumoFechamento.status_reconciliacao === 'sobra' ? '#d97706' : '#dc2626'
+                }}>
+                  Diferença: {resumoFechamento.valores.diferenca >= 0 ? '+' : ''}{formatarValor(resumoFechamento.valores.diferenca)}
+                </p>
+                {resumoFechamento.status_reconciliacao !== 'perfeito' && (
+                  <p style={{ margin: '8px 0 0 0', fontSize: '13px', color: '#6b7280' }}>
+                    {resumoFechamento.status_reconciliacao === 'sobra' 
+                      ? 'Há dinheiro a mais no caixa do que o esperado.'
+                      : 'Há menos dinheiro no caixa do que o esperado.'
+                    }
+                  </p>
+                )}
               </div>
-            </form>
+            </div>
+
+            <div className="modal-footer">
+              <button 
+                onClick={confirmarFechamentoCaixa}
+                disabled={processandoFechamento}
+                className="btn"
+                style={{ 
+                  backgroundColor: processandoFechamento ? '#9ca3af' : '#dc2626', 
+                  color: 'white',
+                  border: `1px solid ${processandoFechamento ? '#9ca3af' : '#dc2626'}`,
+                  opacity: processandoFechamento ? 0.5 : 1
+                }}
+              >
+                {processandoFechamento ? (
+                  <>
+                    <Loader2 size={16} style={{ marginRight: '6px', animation: 'spin 1s linear infinite' }} />
+                    Processando...
+                  </>
+                ) : (
+                  <>
+                    <Lock size={16} style={{ marginRight: '6px' }} />
+                    Confirmar Fechamento
+                  </>
+                )}
+              </button>
+              <button 
+                onClick={cancelarFechamentoCaixa}
+                disabled={processandoFechamento}
+                className="btn btn-outline"
+              >
+                Cancelar
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1420,16 +1822,33 @@ export default function CaixaPage() {
                   type="password"
                   placeholder="Digite sua senha"
                   value={validacaoSenhaForm.senha}
-                  onChange={(e) => setValidacaoSenhaForm({senha: e.target.value})}
+                  onChange={(e) => {
+                    setValidacaoSenhaForm({senha: e.target.value})
+                    if (erroSenhaMovimentacao) setErroSenhaMovimentacao('') // Limpar erro ao digitar
+                  }}
                   style={{
                     width: '100%',
                     padding: '12px',
-                    border: '1px solid #d1d5db',
+                    border: erroSenhaMovimentacao ? '1px solid #ef4444' : '1px solid #d1d5db',
                     borderRadius: '6px',
                     fontSize: '14px'
                   }}
                   onKeyPress={(e) => e.key === 'Enter' && validarSenhaMovimentacao()}
                 />
+                {erroSenhaMovimentacao && (
+                  <div style={{
+                    marginTop: '8px',
+                    padding: '12px',
+                    backgroundColor: '#fef2f2',
+                    border: '1px solid #fecaca',
+                    borderRadius: '6px',
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}>
+                    <AlertCircle size={16} style={{ color: '#ef4444', marginRight: '8px' }} />
+                    <span style={{ color: '#dc2626', fontSize: '13px' }}>{erroSenhaMovimentacao}</span>
+                  </div>
+                )}
               </div>
             </div>
 

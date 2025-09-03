@@ -148,6 +148,54 @@ export const getEstilosBase = () => `
     font-weight: bold;
   }
   
+  .movimentacoes-section {
+    margin-bottom: 15px;
+  }
+  
+  .movimentacoes-titulo {
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 8px;
+    padding: 5px;
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    font-size: 11px;
+  }
+  
+  .movimentacao-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px dotted #ccc;
+    font-size: 10px;
+  }
+  
+  .movimentacao-item:last-child {
+    border-bottom: none;
+  }
+  
+  .movimentacao-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  
+  .movimentacao-horario {
+    font-size: 9px;
+    color: #666;
+  }
+  
+  .movimentacao-desc {
+    font-size: 10px;
+  }
+  
+  .movimentacao-valor {
+    font-weight: bold;
+    font-size: 10px;
+  }
+  
   .movimento-saldo {
     width: 23%;
     text-align: right;
