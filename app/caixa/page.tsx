@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Calculator, User, DollarSign, Clock, TrendingUp, Plus, Settings, AlertCircle, CheckCircle, Loader2, ArrowUp, ArrowDown, Filter, Lock, FileText, Printer } from 'lucide-react'
+import { Calculator, User, DollarSign, Clock, TrendingUp, Plus, Settings, AlertCircle, CheckCircle, Loader2, ArrowUp, ArrowDown, Filter, Lock, FileText, Printer, ArrowRightLeft } from 'lucide-react'
 import LoadingModal from '../../components/loading-modal'
 import '../../styles/caixa.css'
 
@@ -60,6 +60,14 @@ export default function CaixaPage() {
     descricao: ''
   })
   const [processandoSangria, setProcessandoSangria] = useState(false)
+  const [showMovimentacaoModal, setShowMovimentacaoModal] = useState(false)
+  const [showValidacaoSenhaModal, setShowValidacaoSenhaModal] = useState(false)
+  const [showTipoMovimentoModal, setShowTipoMovimentoModal] = useState(false)
+  const [showFormMovimentoModal, setShowFormMovimentoModal] = useState(false)
+  const [validacaoSenhaForm, setValidacaoSenhaForm] = useState({ senha: '' })
+  const [tipoMovimentoSelecionado, setTipoMovimentoSelecionado] = useState<'sangria' | 'suprimento' | null>(null)
+  const [movimentoForm, setMovimentoForm] = useState({ valor: '', descricao: '' })
+  const [processandoMovimento, setProcessandoMovimento] = useState(false)
   const [caixaSelecionado, setCaixaSelecionado] = useState<Caixa | null>(null)
   const [filtro, setFiltro] = useState<'todos' | 'aberto' | 'fechado'>('todos')
   const [caixaAtual, setCaixaAtual] = useState<{
@@ -528,6 +536,129 @@ export default function CaixaPage() {
     }
   }
 
+  const iniciarMovimentacao = (caixa: Caixa) => {
+    setCaixaSelecionado(caixa)
+    setShowValidacaoSenhaModal(true)
+  }
+
+  const validarSenhaMovimentacao = async () => {
+    if (!caixaSelecionado || !validacaoSenhaForm.senha) {
+      toast({
+        title: "Erro",
+        description: "Senha é obrigatória",
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      const response = await fetch('/api/caixa/validar-senha', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          funcionario_id: caixaSelecionado.funcionario_id,
+          senha: validacaoSenhaForm.senha
+        })
+      })
+
+      if (response.ok) {
+        setShowValidacaoSenhaModal(false)
+        setValidacaoSenhaForm({ senha: '' })
+        setShowTipoMovimentoModal(true)
+      } else {
+        const error = await response.json()
+        toast({
+          title: "Erro de autenticação",
+          description: error.error || "Senha incorreta",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error('Erro:', error)
+      toast({
+        title: "Erro de conexão",
+        description: "Não foi possível validar a senha",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const selecionarTipoMovimento = (tipo: 'sangria' | 'suprimento') => {
+    setTipoMovimentoSelecionado(tipo)
+    setShowTipoMovimentoModal(false)
+    setShowFormMovimentoModal(true)
+  }
+
+  const realizarMovimentacao = async () => {
+    if (!caixaSelecionado || !tipoMovimentoSelecionado) return
+    
+    const valor = parseFloat(movimentoForm.valor)
+    if (isNaN(valor) || valor <= 0) {
+      toast({
+        title: "Erro",
+        description: "Informe um valor válido",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setProcessandoMovimento(true)
+    
+    try {
+      const response = await fetch(`/api/caixa/${caixaSelecionado.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          acao: 'movimentacao_financeira',
+          tipo: tipoMovimentoSelecionado,
+          valor: valor,
+          descricao: movimentoForm.descricao || `${tipoMovimentoSelecionado === 'sangria' ? 'Sangria' : 'Suprimento'} do caixa`
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Erro ao realizar movimentação')
+      }
+
+      toast({
+        title: "Sucesso",
+        description: `${tipoMovimentoSelecionado === 'sangria' ? 'Sangria' : 'Suprimento'} de ${formatarValor(valor)} realizada com sucesso`,
+        variant: "default"
+      })
+
+      // Limpar formulários e fechar modais
+      setMovimentoForm({ valor: '', descricao: '' })
+      setShowFormMovimentoModal(false)
+      setTipoMovimentoSelecionado(null)
+      setCaixaSelecionado(null)
+
+      // Atualizar lista de caixas
+      await carregarDados()
+
+    } catch (error) {
+      console.error('Erro ao realizar movimentação:', error)
+      toast({
+        title: "Erro",
+        description: "Não foi possível realizar a movimentação",
+        variant: "destructive"
+      })
+    } finally {
+      setProcessandoMovimento(false)
+    }
+  }
+
+  const cancelarMovimentacao = () => {
+    setShowValidacaoSenhaModal(false)
+    setShowTipoMovimentoModal(false)
+    setShowFormMovimentoModal(false)
+    setValidacaoSenhaForm({ senha: '' })
+    setMovimentoForm({ valor: '', descricao: '' })
+    setTipoMovimentoSelecionado(null)
+    setCaixaSelecionado(null)
+  }
+
   const imprimirResumoCaixa = async (caixaId: number) => {
     try {
       const url = `/api/caixa/${caixaId}/resumo/cupom`
@@ -725,6 +856,23 @@ export default function CaixaPage() {
                           >
                             <Lock size={14} />
                             Fechar
+                          </button>
+                          <button
+                            onClick={() => iniciarMovimentacao(caixa)}
+                            className="btn btn-sm btn-outline"
+                            title="Realizar movimentação financeira"
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '6px',
+                              backgroundColor: '#f0fdf4',
+                              borderColor: '#bbf7d0',
+                              color: '#16a34a',
+                              margin: '0 4px'
+                            }}
+                          >
+                            <ArrowRightLeft size={14} />
+                            Movimentação
                           </button>
                           <button
                             onClick={() => verResumo(caixa)}
@@ -1237,6 +1385,287 @@ export default function CaixaPage() {
                   setSangriaForm({ valor: '', descricao: '' })
                 }} 
                 disabled={processandoSangria}
+                className="btn btn-outline"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Validação Senha para Movimentação */}
+      {showValidacaoSenhaModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '400px', width: '90%' }}>
+            <div className="modal-header">
+              <h3>Validação de Senha</h3>
+              <button
+                onClick={cancelarMovimentacao}
+                className="modal-close"
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ padding: '20px' }}>
+              <p style={{ marginBottom: '20px', color: '#374151' }}>
+                Digite sua senha para acessar as movimentações financeiras:
+              </p>
+
+              <div className="form-group">
+                <label htmlFor="validacao-senha">Senha *</label>
+                <input
+                  id="validacao-senha"
+                  type="password"
+                  placeholder="Digite sua senha"
+                  value={validacaoSenhaForm.senha}
+                  onChange={(e) => setValidacaoSenhaForm({senha: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '14px'
+                  }}
+                  onKeyPress={(e) => e.key === 'Enter' && validarSenhaMovimentacao()}
+                />
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button 
+                onClick={validarSenhaMovimentacao}
+                className="btn btn-primary"
+                disabled={!validacaoSenhaForm.senha}
+              >
+                Validar
+              </button>
+              <button 
+                onClick={cancelarMovimentacao}
+                className="btn btn-outline"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Tipo de Movimento */}
+      {showTipoMovimentoModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '500px', width: '90%' }}>
+            <div className="modal-header">
+              <h3>Selecionar Tipo de Movimentação</h3>
+              <button
+                onClick={cancelarMovimentacao}
+                className="modal-close"
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ padding: '30px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                {/* Card Suprimento */}
+                <button
+                  onClick={() => selecionarTipoMovimento('suprimento')}
+                  style={{
+                    padding: '30px 20px',
+                    border: '2px solid #10b981',
+                    borderRadius: '12px',
+                    backgroundColor: '#f0fdf4',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    textAlign: 'center',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '12px'
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.backgroundColor = '#dcfce7'
+                    e.currentTarget.style.transform = 'translateY(-2px)'
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f0fdf4'
+                    e.currentTarget.style.transform = 'translateY(0)'
+                  }}
+                >
+                  <ArrowUp size={32} color="#10b981" />
+                  <div>
+                    <h4 style={{ margin: '0 0 8px 0', color: '#10b981', fontSize: '18px' }}>Suprimento</h4>
+                    <p style={{ margin: '0', color: '#374151', fontSize: '14px' }}>
+                      Adicionar dinheiro ao caixa
+                    </p>
+                  </div>
+                </button>
+
+                {/* Card Sangria */}
+                <button
+                  onClick={() => selecionarTipoMovimento('sangria')}
+                  style={{
+                    padding: '30px 20px',
+                    border: '2px solid #ef4444',
+                    borderRadius: '12px',
+                    backgroundColor: '#fef2f2',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    textAlign: 'center',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '12px'
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.backgroundColor = '#fee2e2'
+                    e.currentTarget.style.transform = 'translateY(-2px)'
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.backgroundColor = '#fef2f2'
+                    e.currentTarget.style.transform = 'translateY(0)'
+                  }}
+                >
+                  <ArrowDown size={32} color="#ef4444" />
+                  <div>
+                    <h4 style={{ margin: '0 0 8px 0', color: '#ef4444', fontSize: '18px' }}>Sangria</h4>
+                    <p style={{ margin: '0', color: '#374151', fontSize: '14px' }}>
+                      Retirar dinheiro do caixa
+                    </p>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button 
+                onClick={cancelarMovimentacao}
+                className="btn btn-outline"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Formulário de Movimento */}
+      {showFormMovimentoModal && tipoMovimentoSelecionado && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '500px', width: '90%' }}>
+            <div className="modal-header">
+              <h3>{tipoMovimentoSelecionado === 'sangria' ? 'Realizar Sangria' : 'Realizar Suprimento'}</h3>
+              <button
+                onClick={cancelarMovimentacao}
+                className="modal-close"
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ padding: '20px' }}>
+              <div style={{ 
+                marginBottom: '20px', 
+                padding: '15px', 
+                backgroundColor: tipoMovimentoSelecionado === 'sangria' ? '#fef2f2' : '#f0fdf4', 
+                borderRadius: '8px', 
+                color: tipoMovimentoSelecionado === 'sangria' ? '#dc2626' : '#16a34a' 
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                  {tipoMovimentoSelecionado === 'sangria' ? (
+                    <ArrowDown size={20} style={{ marginRight: '8px' }} />
+                  ) : (
+                    <ArrowUp size={20} style={{ marginRight: '8px' }} />
+                  )}
+                  <strong>
+                    {tipoMovimentoSelecionado === 'sangria' ? 'Sangria do Caixa' : 'Suprimento ao Caixa'}
+                  </strong>
+                </div>
+                <p style={{ margin: '0', fontSize: '14px' }}>
+                  {tipoMovimentoSelecionado === 'sangria' 
+                    ? 'Esta operação irá retirar dinheiro do caixa.'
+                    : 'Esta operação irá adicionar dinheiro ao caixa.'
+                  }
+                </p>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="movimento-valor">
+                  Valor {tipoMovimentoSelecionado === 'sangria' ? 'da Sangria' : 'do Suprimento'} *
+                </label>
+                <input
+                  id="movimento-valor"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  placeholder="0,00"
+                  value={movimentoForm.valor}
+                  onChange={(e) => setMovimentoForm({...movimentoForm, valor: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '16px',
+                    fontWeight: 'bold'
+                  }}
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="movimento-descricao">Descrição/Motivo</label>
+                <textarea
+                  id="movimento-descricao"
+                  placeholder={`Motivo ${tipoMovimentoSelecionado === 'sangria' ? 'da sangria' : 'do suprimento'} (opcional)`}
+                  value={movimentoForm.descricao}
+                  onChange={(e) => setMovimentoForm({...movimentoForm, descricao: e.target.value})}
+                  rows={3}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    resize: 'vertical'
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button 
+                onClick={realizarMovimentacao}
+                disabled={processandoMovimento || !movimentoForm.valor || parseFloat(movimentoForm.valor) <= 0}
+                className="btn"
+                style={{ 
+                  backgroundColor: processandoMovimento ? '#9ca3af' : 
+                                   tipoMovimentoSelecionado === 'sangria' ? '#ef4444' : '#10b981', 
+                  color: 'white',
+                  border: `1px solid ${processandoMovimento ? '#9ca3af' : 
+                                      tipoMovimentoSelecionado === 'sangria' ? '#ef4444' : '#10b981'}`,
+                  opacity: processandoMovimento || !movimentoForm.valor || parseFloat(movimentoForm.valor) <= 0 ? 0.5 : 1
+                }}
+              >
+                {processandoMovimento ? (
+                  <>
+                    <Loader2 size={16} style={{ marginRight: '6px', animation: 'spin 1s linear infinite' }} />
+                    Processando...
+                  </>
+                ) : (
+                  <>
+                    {tipoMovimentoSelecionado === 'sangria' ? (
+                      <ArrowDown size={16} style={{ marginRight: '6px' }} />
+                    ) : (
+                      <ArrowUp size={16} style={{ marginRight: '6px' }} />
+                    )}
+                    Confirmar {tipoMovimentoSelecionado === 'sangria' ? 'Sangria' : 'Suprimento'}
+                  </>
+                )}
+              </button>
+              <button 
+                onClick={cancelarMovimentacao}
+                disabled={processandoMovimento}
                 className="btn btn-outline"
               >
                 Cancelar
