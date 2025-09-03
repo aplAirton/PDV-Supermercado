@@ -147,14 +147,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Calcular valores por forma de pagamento para as colunas específicas
-    const valorDinheiro = pagamentosNorm.filter((p: any) => p.tipo === 'dinheiro').reduce((s: number, p: any) => s + Number(p.valor), 0)
+    // IMPORTANTE: Descontar o troco apenas do dinheiro, pois outras formas não podem gerar troco
+    const valorDinheiroDigitado = pagamentosNorm.filter((p: any) => p.tipo === 'dinheiro').reduce((s: number, p: any) => s + Number(p.valor), 0)
     const valorCartaoDebito = pagamentosNorm.filter((p: any) => p.tipo === 'cartao_debito').reduce((s: number, p: any) => s + Number(p.valor), 0)
     const valorCartaoCredito = pagamentosNorm.filter((p: any) => p.tipo === 'cartao_credito').reduce((s: number, p: any) => s + Number(p.valor), 0)
     const valorPix = pagamentosNorm.filter((p: any) => p.tipo === 'pix').reduce((s: number, p: any) => s + Number(p.valor), 0)
     const valorFiado = pagamentosNorm.filter((p: any) => p.tipo === 'fiado').reduce((s: number, p: any) => s + Number(p.valor), 0)
 
+    // O valor em dinheiro para a venda é o digitado MENOS o troco (se houver)
+    const valorDinheiro = Math.max(0, valorDinheiroDigitado - Number(troco || 0))
+
     console.log(`[vendas][${requestId}] Valores por forma de pagamento:`, {
-      dinheiro: valorDinheiro,
+      dinheiro_digitado: valorDinheiroDigitado,
+      dinheiro_efetivo: valorDinheiro, // Valor real utilizado para a venda
+      troco: Number(troco || 0),
       cartao_debito: valorCartaoDebito,
       cartao_credito: valorCartaoCredito,
       pix: valorPix,

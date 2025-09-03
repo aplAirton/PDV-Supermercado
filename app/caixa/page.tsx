@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Calculator, User, DollarSign, Clock, TrendingUp, Plus, Settings, AlertCircle, CheckCircle, Loader2, ArrowUp, ArrowDown, Filter, Lock, FileText, Printer, ArrowRightLeft, Check, X } from 'lucide-react'
+import { Calculator, User, DollarSign, Clock, TrendingUp, Plus, Settings, AlertCircle, CheckCircle, Loader2, ArrowUp, ArrowDown, Lock, FileText, Printer, ArrowRightLeft, Check, X } from 'lucide-react'
 import LoadingModal from '../../components/loading-modal'
 import '../../styles/caixa.css'
 
@@ -69,7 +69,6 @@ export default function CaixaPage() {
   const [movimentoForm, setMovimentoForm] = useState({ valor: '', descricao: '' })
   const [processandoMovimento, setProcessandoMovimento] = useState(false)
   const [caixaSelecionado, setCaixaSelecionado] = useState<Caixa | null>(null)
-  const [filtro, setFiltro] = useState<'todos' | 'aberto' | 'fechado'>('todos')
   const [caixaAtual, setCaixaAtual] = useState<{
     id: number
     funcionario_nome: string
@@ -837,7 +836,7 @@ export default function CaixaPage() {
   }
 
   const caixasAbertos = caixas.filter(c => c.status === 'aberto')
-  const caixasFiltrados = filtro === 'todos' ? caixas : caixas.filter(c => c.status === filtro)
+  const caixasFechados = caixas.filter(c => c.status === 'fechado')
 
   if (loading) {
     return (
@@ -919,42 +918,108 @@ export default function CaixaPage() {
         </div>
       </div>
 
-      {/* Filtros */}
-      <div className="filters-panel">
-        <div className="filters-grid">
-          <div className="filter-group">
-            <label>
-              <Filter size={18} style={{ marginRight: '8px' }} />
-              Filtrar por status:
-            </label>
-            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-              <button
-                onClick={() => setFiltro('todos')}
-                className={`btn btn-sm ${filtro === 'todos' ? 'btn-primary' : 'btn-outline'}`}
-              >
-                Todos ({caixas.length})
-              </button>
-              <button
-                onClick={() => setFiltro('aberto')}
-                className={`btn btn-sm ${filtro === 'aberto' ? 'btn-primary' : 'btn-outline'}`}
-              >
-                Abertos ({caixas.filter(c => c.status === 'aberto').length})
-              </button>
-              <button
-                onClick={() => setFiltro('fechado')}
-                className={`btn btn-sm ${filtro === 'fechado' ? 'btn-primary' : 'btn-outline'}`}
-              >
-                Fechados ({caixas.filter(c => c.status === 'fechado').length})
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Card do Caixa Aberto */}
+      {caixasAbertos.length > 0 && (
+        <div className="caixa-aberto-card">
+          {caixasAbertos.map((caixa) => (
+            <div key={caixa.id}>
+              <div className="caixa-aberto-header">
+                <div className="caixa-aberto-title">
+                  <h2>Caixa #{caixa.id} • {caixa.funcionario_nome}</h2>
+                  <div className="status">Caixa em Operação</div>
+                </div>
+                <div className="caixa-aberto-info">
+                  Aberto em {formatarData(caixa.data_abertura)}<br />
+                  Valor inicial: {formatarValor(caixa.valor_inicial)}
+                </div>
+              </div>
 
-      {/* Lista de Caixas */}
+              <div className="caixa-aberto-stats">
+                <div className="total-caixa">
+                  <div className="stat-label">Total do Caixa</div>
+                  <div className="stat-value">{formatarValor(caixa.valor_inicial + caixa.total_vendas)}</div>
+                </div>
+
+                <div className="formas-pagamento">
+                  <h4>Formas de Pagamento</h4>
+                  <div className="formas-pagamento-grid">
+                    <div className="forma-item">
+                      <span>Dinheiro</span>
+                      <span>{formatarValor(caixa.total_dinheiro)}</span>
+                    </div>
+                    <div className="forma-item">
+                      <span>Cartão Débito</span>
+                      <span>{formatarValor(caixa.total_cartao_debito)}</span>
+                    </div>
+                    <div className="forma-item">
+                      <span>Cartão Crédito</span>
+                      <span>{formatarValor(caixa.total_cartao_credito)}</span>
+                    </div>
+                    <div className="forma-item">
+                      <span>PIX</span>
+                      <span>{formatarValor(caixa.total_pix)}</span>
+                    </div>
+                    <div className="forma-item">
+                      <span>Fiado</span>
+                      <span>{formatarValor(caixa.total_fiado)}</span>
+                    </div>
+                    <div className="forma-item">
+                      <span>Total Vendas</span>
+                      <span>{formatarValor(caixa.total_vendas)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="caixa-aberto-actions">
+                <button
+                  onClick={() => {
+                    setCaixaSelecionado(caixa)
+                    setShowResumoModal(true)
+                  }}
+                  className="btn-caixa-action"
+                >
+                  <FileText size={16} />
+                  Ver Resumo
+                </button>
+                <button
+                  onClick={() => verResumo(caixa)}
+                  className="btn-caixa-action"
+                >
+                  <Printer size={16} />
+                  Imprimir Resumo
+                </button>
+                <button
+                  onClick={() => {
+                    setCaixaSelecionado(caixa)
+                    setShowTipoMovimentoModal(true)
+                  }}
+                  className="btn-caixa-action primary"
+                >
+                  <ArrowRightLeft size={16} />
+                  Movimentação
+                </button>
+                <button
+                  onClick={() => {
+                    setCaixaSelecionado(caixa)
+                    setEtapaFechamento('login')
+                    setShowFecharModal(true)
+                  }}
+                  className="btn-caixa-action danger"
+                >
+                  <Lock size={16} />
+                  Fechar Caixa
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Histórico de Caixas */}
       <div className="caixas-table-container">
         <div className="table-header">
-          <h3>Caixas ({caixasFiltrados.length})</h3>
+          <h3>Histórico de Caixas ({caixasFechados.length})</h3>
         </div>
         
         <div className="caixas-table">
@@ -970,7 +1035,7 @@ export default function CaixaPage() {
               </tr>
             </thead>
             <tbody>
-              {caixasFiltrados.map((caixa) => (
+              {caixasFechados.map((caixa) => (
                 <tr key={caixa.id}>
                   <td>
                     <div className="user-info">
@@ -980,7 +1045,7 @@ export default function CaixaPage() {
                   </td>
                   <td>
                     <span className={`status-badge ${caixa.status}`}>
-                      {caixa.status === 'aberto' ? 'Aberto' : 'Fechado'}
+                      Fechado
                     </span>
                   </td>
                   <td className="currency">
@@ -994,98 +1059,25 @@ export default function CaixaPage() {
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      {caixa.status === 'aberto' ? (
-                        <>
-                          <button
-                            onClick={() => {
-                              setCaixaSelecionado(caixa)
-                              iniciarFechamentoCaixa()
-                            }}
-                            className="btn btn-sm btn-outline danger"
-                            title="Fechar caixa"
-                            style={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              gap: '6px',
-                              backgroundColor: '#fef2f2',
-                              borderColor: '#fecaca',
-                              color: '#dc2626'
-                            }}
-                          >
-                            <Lock size={14} />
-                            Fechar
-                          </button>
-                          <button
-                            onClick={() => iniciarMovimentacao(caixa)}
-                            className="btn btn-sm btn-outline"
-                            title="Realizar movimentação financeira"
-                            style={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              gap: '6px',
-                              backgroundColor: '#f0fdf4',
-                              borderColor: '#bbf7d0',
-                              color: '#16a34a',
-                              margin: '0 4px'
-                            }}
-                          >
-                            <ArrowRightLeft size={14} />
-                            Movimentação
-                          </button>
-                          <button
-                            onClick={() => verResumo(caixa)}
-                            className="btn btn-sm btn-outline"
-                            title="Ver resumo atual do caixa"
-                            style={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              gap: '6px',
-                              backgroundColor: '#eff6ff',
-                              borderColor: '#bfdbfe',
-                              color: '#2563eb'
-                            }}
-                          >
-                            <FileText size={14} />
-                            Resumo
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            onClick={() => verResumo(caixa)}
-                            className="btn btn-sm btn-outline"
-                            title="Ver resumo do fechamento"
-                            style={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              gap: '6px',
-                              backgroundColor: '#eff6ff',
-                              borderColor: '#bfdbfe',
-                              color: '#2563eb',
-                              marginRight: '8px'
-                            }}
-                          >
-                            <FileText size={14} />
-                            Resumo
-                          </button>
-                          <button
-                            onClick={() => imprimirResumoCaixa(caixa.id)}
-                            className="btn btn-sm btn-outline"
-                            title="Imprimir resumo"
-                            style={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              gap: '6px',
-                              backgroundColor: '#f0fdf4',
-                              borderColor: '#bbf7d0',
-                              color: '#16a34a'
-                            }}
-                          >
-                            <Printer size={14} />
-                            Imprimir
-                          </button>
-                        </>
-                      )}
+                      <button
+                        onClick={() => {
+                          setCaixaSelecionado(caixa)
+                          setShowResumoModal(true)
+                        }}
+                        className="btn btn-sm btn-outline"
+                        title="Ver resumo do caixa"
+                      >
+                        <FileText size={14} />
+                        Resumo
+                      </button>
+                      <button
+                        onClick={() => verResumo(caixa)}
+                        className="btn btn-sm btn-secondary"
+                        title="Imprimir resumo do caixa"
+                      >
+                        <Printer size={14} />
+                        Imprimir
+                      </button>
                     </div>
                   </td>
                 </tr>

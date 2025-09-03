@@ -50,6 +50,186 @@
   gap: 16px;
 }
 
+/* Card Caixa Aberto */
+.caixa-aberto-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 32px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border: 2px solid #10b981;
+}
+
+.caixa-aberto-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+.caixa-aberto-title {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.caixa-aberto-title h2 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+  color: #1f2937;
+}
+
+.caixa-aberto-title .status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #10b981;
+  background: #f0fdf4;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid #bbf7d0;
+}
+
+.caixa-aberto-title .status::before {
+  content: "●";
+  color: #10b981;
+  font-size: 8px;
+}
+
+.caixa-aberto-info {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.caixa-aberto-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.total-caixa {
+  background: #f0fdf4;
+  border: 2px solid #10b981;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+}
+
+.total-caixa .stat-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: #10b981;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.total-caixa .stat-value {
+  font-size: 32px;
+  font-weight: 800;
+  color: #1f2937;
+}
+
+.formas-pagamento {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.formas-pagamento h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 12px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.formas-pagamento-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.forma-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  font-size: 13px;
+}
+
+.forma-item span:first-child {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.forma-item span:last-child {
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.caixa-aberto-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.btn-caixa-action {
+  background: #f9fafb;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-caixa-action:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  transform: translateY(-1px);
+}
+
+.btn-caixa-action.primary {
+  background: #10b981;
+  color: white;
+  border-color: #10b981;
+}
+
+.btn-caixa-action.primary:hover {
+  background: #059669;
+  border-color: #059669;
+  transform: translateY(-1px);
+}
+
+.btn-caixa-action.danger {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+.btn-caixa-action.danger:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  transform: translateY(-1px);
+}
+
 .funcionario-info {
   display: flex;
   align-items: center;
