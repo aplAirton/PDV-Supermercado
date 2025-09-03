@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Calculator, User, DollarSign, Clock, TrendingUp, Plus, Settings, AlertCircle, CheckCircle, Loader2, ArrowUp, ArrowDown, Filter, Lock, FileText, Printer, ArrowRightLeft } from 'lucide-react'
+import { Calculator, User, DollarSign, Clock, TrendingUp, Plus, Settings, AlertCircle, CheckCircle, Loader2, ArrowUp, ArrowDown, Filter, Lock, FileText, Printer, ArrowRightLeft, Check, X } from 'lucide-react'
 import LoadingModal from '../../components/loading-modal'
 import '../../styles/caixa.css'
 
@@ -9,9 +9,9 @@ import '../../styles/caixa.css'
 const toast = ({ title, description, variant }: { title: string; description?: string; variant?: string }) => {
   // Sistema de toast silencioso - apenas log no console em desenvolvimento
   if (process.env.NODE_ENV === 'development') {
-    const emoji = variant === 'destructive' ? '❌' : '✅'
+    const status = variant === 'destructive' ? 'ERRO' : 'SUCESSO'
     const message = description ? `${title}: ${description}` : title
-    console.log(`${emoji} ${message}`)
+    console.log(`[${status}] ${message}`)
   }
 }
 
@@ -95,6 +95,10 @@ export default function CaixaPage() {
   const [showContagemDinheiro, setShowContagemDinheiro] = useState(false)
   const [showResumoFechamento, setShowResumoFechamento] = useState(false)
   const [processandoFechamento, setProcessandoFechamento] = useState(false)
+  
+  // Estados para comprovante de abertura
+  const [showComprovanteAbertura, setShowComprovanteAbertura] = useState(false)
+  const [dadosAbertura, setDadosAbertura] = useState<any>(null)
   
   // Estados para feedbacks de erro de senha
   const [erroSenhaAbertura, setErroSenhaAbertura] = useState<string>('')
@@ -453,7 +457,7 @@ export default function CaixaPage() {
         
         // Validação robusta: se não temos dados do funcionário, forçar volta para login
         if (!funcionarioData || !funcionarioData.id) {
-          console.error('❌ Dados do funcionário perdidos!')
+          console.error('[ERRO] Dados do funcionário perdidos!')
           toast({
             title: "Erro de sessão",
             description: "Sessão expirada. Faça login novamente.",
@@ -494,6 +498,17 @@ export default function CaixaPage() {
         if (response.ok) {
           // Abertura realizada com sucesso - sem toast
           
+          // Preparar dados do comprovante de abertura
+          setDadosAbertura({
+            caixa_id: result.caixa_id,
+            funcionario_nome: funcionarioData.nome,
+            funcionario_cargo: funcionarioData.cargo,
+            funcionario_cpf: loginForm.cpf,
+            valor_inicial: parseFloat(novoForm.valor_inicial) || 0,
+            observacoes: novoForm.observacoes,
+            data_abertura: new Date().toISOString()
+          })
+          
           // Atualizar estado do caixa atual
           setCaixaAtual({
             id: result.caixa_id,
@@ -502,13 +517,17 @@ export default function CaixaPage() {
             valor_inicial: parseFloat(novoForm.valor_inicial) || 0
           })
           
-          // Limpar estado e sessionStorage após abrir o caixa
+          // Limpar estado após abrir o caixa
           setShowNovoModal(false)
           setEtapaAbertura('login')
           setLoginForm({ cpf: '', senha: '' })
           setNovoForm({ valor_inicial: '', observacoes: '' })
           setFuncionarioAbertura(null)
           sessionStorage.removeItem('funcionario_caixa')
+          
+          // Mostrar comprovante de abertura
+          setShowComprovanteAbertura(true)
+          
           carregarDados()
         } else {
           toast({
@@ -754,6 +773,42 @@ export default function CaixaPage() {
     setCaixaSelecionado(null)
     // Limpar erros
     setErroSenhaMovimentacao('')
+  }
+
+  const imprimirComprovanteAbertura = async () => {
+    try {
+      if (!dadosAbertura) return
+      
+      // Criar URL com parâmetros para o comprovante de abertura
+      const params = new URLSearchParams({
+        funcionario: dadosAbertura.funcionario_nome,
+        cargo: dadosAbertura.funcionario_cargo,
+        cpf: dadosAbertura.funcionario_cpf,
+        valor_inicial: dadosAbertura.valor_inicial.toString(),
+        observacoes: dadosAbertura.observacoes || '',
+        data_abertura: dadosAbertura.data_abertura
+      })
+      
+      const url = `/api/caixa/${dadosAbertura.caixa_id}/comprovante-abertura?${params.toString()}`
+      const newWindow = window.open(url, '_blank', 'width=400,height=600')
+      
+      if (!newWindow) {
+        toast({
+          title: "Erro ao imprimir",
+          description: "Verifique o bloqueador de pop-ups",
+          variant: "destructive"
+        })
+        return
+      }
+
+    } catch (error) {
+      console.error('Erro ao imprimir comprovante:', error)
+      toast({
+        title: "Erro ao imprimir",
+        description: "Não foi possível imprimir o comprovante",
+        variant: "destructive"
+      })
+    }
   }
 
   const imprimirResumoCaixa = async (caixaId: number) => {
@@ -1653,11 +1708,16 @@ export default function CaixaPage() {
                   color: resumoFechamento.status_reconciliacao === 'perfeito' ? '#22c55e' : 
                          resumoFechamento.status_reconciliacao === 'sobra' ? '#3b82f6' : '#ef4444'
                 }}>
-                  <strong>Status: {
-                    resumoFechamento.status_reconciliacao === 'perfeito' ? 'CAIXA PERFEITO ✓' :
-                    resumoFechamento.status_reconciliacao === 'sobra' ? 'SOBRA NO CAIXA' :
-                    'FALTA NO CAIXA'
-                  }</strong>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    {resumoFechamento.status_reconciliacao === 'perfeito' && <CheckCircle size={20} />}
+                    {resumoFechamento.status_reconciliacao === 'sobra' && <TrendingUp size={20} />}
+                    {resumoFechamento.status_reconciliacao === 'falta' && <AlertCircle size={20} />}
+                    <strong>{
+                      resumoFechamento.status_reconciliacao === 'perfeito' ? 'CAIXA PERFEITO' :
+                      resumoFechamento.status_reconciliacao === 'sobra' ? 'SOBRA NO CAIXA' :
+                      'FALTA NO CAIXA'
+                    }</strong>
+                  </div>
                 </div>
               )}
 
@@ -2089,6 +2149,115 @@ export default function CaixaPage() {
                 className="btn btn-outline"
               >
                 Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Comprovante de Abertura */}
+      {showComprovanteAbertura && dadosAbertura && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '500px', width: '90%' }}>
+            <div className="modal-header">
+              <h3>Caixa Aberto com Sucesso!</h3>
+              <button
+                onClick={() => {
+                  setShowComprovanteAbertura(false)
+                  setDadosAbertura(null)
+                }}
+                className="modal-close"
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ padding: '20px', textAlign: 'center' }}>
+              <div className="success-icon" style={{ 
+                color: '#22c55e',
+                marginBottom: '20px',
+                display: 'flex',
+                justifyContent: 'center'
+              }}>
+                <CheckCircle size={48} />
+              </div>
+              
+              <h4 style={{ color: '#22c55e', marginBottom: '20px' }}>
+                COMPROVANTE DE ABERTURA
+              </h4>
+
+              <div className="comprovante-detalhes" style={{ 
+                backgroundColor: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                padding: '20px',
+                margin: '20px 0',
+                textAlign: 'left'
+              }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+                  <div><strong>Caixa #:</strong> {dadosAbertura.caixa_id}</div>
+                  <div><strong>Data:</strong> {new Date(dadosAbertura.data_abertura).toLocaleDateString('pt-BR')}</div>
+                </div>
+                
+                <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '15px', marginBottom: '15px' }}>
+                  <div style={{ marginBottom: '8px' }}><strong>Operador:</strong> {dadosAbertura.funcionario_nome}</div>
+                  <div style={{ marginBottom: '8px' }}><strong>Cargo:</strong> {dadosAbertura.funcionario_cargo}</div>
+                </div>
+                
+                <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '15px' }}>
+                  <div style={{ 
+                    fontSize: '18px', 
+                    color: '#1e40af', 
+                    fontWeight: 'bold'
+                  }}>
+                    <strong>Valor Inicial:</strong> {formatarValor(dadosAbertura.valor_inicial)}
+                  </div>
+                </div>
+
+                {dadosAbertura.observacoes && (
+                  <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '15px', marginTop: '15px' }}>
+                    <div style={{ marginBottom: '8px' }}><strong>Observações:</strong></div>
+                    <div style={{ 
+                      backgroundColor: '#f1f5f9',
+                      padding: '10px',
+                      borderRadius: '4px',
+                      fontStyle: 'italic'
+                    }}>
+                      {dadosAbertura.observacoes}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ 
+                backgroundColor: '#fef2f2',
+                border: '1px solid #fecaca',
+                borderRadius: '6px',
+                padding: '12px',
+                marginBottom: '20px',
+                fontSize: '13px',
+                color: '#dc2626'
+              }}>
+                <strong>Importante:</strong> Guarde este comprovante como prova da abertura do caixa.
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button 
+                onClick={imprimirComprovanteAbertura}
+                className="btn btn-primary"
+              >
+                <FileText size={16} style={{ marginRight: '6px' }} />
+                Imprimir Comprovante
+              </button>
+              <button 
+                onClick={() => {
+                  setShowComprovanteAbertura(false)
+                  setDadosAbertura(null)
+                }}
+                className="btn btn-outline"
+              >
+                Fechar
               </button>
             </div>
           </div>

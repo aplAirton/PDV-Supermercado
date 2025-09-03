@@ -146,8 +146,23 @@ export async function POST(request: NextRequest) {
       fiado: 'Fiado',
     }
 
+    // Calcular valores por forma de pagamento para as colunas específicas
+    const valorDinheiro = pagamentosNorm.filter((p: any) => p.tipo === 'dinheiro').reduce((s: number, p: any) => s + Number(p.valor), 0)
+    const valorCartaoDebito = pagamentosNorm.filter((p: any) => p.tipo === 'cartao_debito').reduce((s: number, p: any) => s + Number(p.valor), 0)
+    const valorCartaoCredito = pagamentosNorm.filter((p: any) => p.tipo === 'cartao_credito').reduce((s: number, p: any) => s + Number(p.valor), 0)
+    const valorPix = pagamentosNorm.filter((p: any) => p.tipo === 'pix').reduce((s: number, p: any) => s + Number(p.valor), 0)
+    const valorFiado = pagamentosNorm.filter((p: any) => p.tipo === 'fiado').reduce((s: number, p: any) => s + Number(p.valor), 0)
+
+    console.log(`[vendas][${requestId}] Valores por forma de pagamento:`, {
+      dinheiro: valorDinheiro,
+      cartao_debito: valorCartaoDebito,
+      cartao_credito: valorCartaoCredito,
+      pix: valorPix,
+      fiado: valorFiado
+    })
+
     // Calcular total fiado (se houver)
-    const totalFiado = pagamentosNorm.filter((p: any) => (p.tipo || '').toString() === 'fiado').reduce((s: number, p: any) => s + (Number(p.valor) || 0), 0)
+    const totalFiado = valorFiado
 
   // Executar transação com Prisma (timeout aumentado para 15s)
   console.log(`[vendas][${requestId}] Iniciando transação - cliente_id: ${cliente_id} total: ${total} troco: ${troco} totalFiado: ${totalFiado}`)
@@ -171,11 +186,13 @@ export async function POST(request: NextRequest) {
     try {
       console.log(`[vendas][${requestId}] Iniciando transação (tentativa ${attempt}/${maxAttempts})`)
       result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // Criar venda usando raw query para incluir caixa_id
+      // Criar venda usando raw query para incluir caixa_id e colunas específicas de pagamento
       const vendaResult = await tx.$executeRaw`
-        INSERT INTO vendas (cliente_id, total, forma_pagamento_json, valor_pago, troco, caixa_id, data_venda) 
+        INSERT INTO vendas (cliente_id, total, forma_pagamento_json, valor_pago, troco, caixa_id, data_venda, 
+                           valor_dinheiro, valor_cartao_debito, valor_cartao_credito, valor_pix, valor_fiado) 
         VALUES (${cliente_id || null}, ${Number(total) || 0}, ${JSON.stringify(pagamentosNorm || [])}, 
-                ${Number(somaPagamentos) || 0}, ${Number(troco) || 0}, ${caixaId}, NOW())
+                ${Number(somaPagamentos) || 0}, ${Number(troco) || 0}, ${caixaId}, NOW(),
+                ${valorDinheiro}, ${valorCartaoDebito}, ${valorCartaoCredito}, ${valorPix}, ${valorFiado})
       `
       
       const vendaIdResult = await tx.$queryRaw`SELECT LAST_INSERT_ID() as id`
