@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Ban, Calendar, DollarSign, TrendingUp, TrendingDown, Filter, Eye, Search, Download, Printer, CreditCard, Smartphone, Layers, Settings, FileText, LucideFileQuestion, LucideCheckCircle, Loader2 } from 'lucide-react'
+import { Ban, Calendar, DollarSign, TrendingUp, TrendingDown, Filter, Eye, Search, Download, Printer, CreditCard, Smartphone, Layers, Settings, FileText, LucideFileQuestion, LucideCheckCircle, Loader2, Menu } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import '../../styles/pagamentos-new.css'
 
@@ -308,9 +308,25 @@ const renderFormasPagamento = (movimento: MovimentoCaixa) => {
     <div className="pagamentos-container">
       {/* Header */}
       <div className="page-header">
+        <button 
+          className="mobile-menu-btn-header" 
+          onClick={() => {
+            const sidebarElement = document.querySelector('.sidebar') as HTMLElement;
+            if (sidebarElement) {
+              const isOpen = sidebarElement.classList.contains('open');
+              if (isOpen) {
+                sidebarElement.classList.remove('open');
+              } else {
+                sidebarElement.classList.add('open');
+              }
+            }
+          }}
+          aria-label="Toggle menu"
+        >
+          <Menu size={20} />
+        </button>
         <div className="header-info">
           <h1>Controle de Pagamentos</h1>
-          <p>Gestão financeira completa</p>
         </div>
         <div className="header-actions">
           <button 

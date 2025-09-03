@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { User, Plus, Edit, Trash2, Eye, Filter, Search, UserCheck, UserX, Loader2 } from 'lucide-react'
+import { User, Plus, Edit, Trash2, Eye, Filter, Search, UserCheck, UserX, Loader2, Menu } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import '../../styles/funcionarios.css'
 
@@ -327,9 +327,25 @@ export default function FuncionariosPage() {
     <div className="funcionarios-container">
       {/* Header */}
       <div className="page-header">
+        <button 
+          className="mobile-menu-btn-header" 
+          onClick={() => {
+            const sidebarElement = document.querySelector('.sidebar') as HTMLElement;
+            if (sidebarElement) {
+              const isOpen = sidebarElement.classList.contains('open');
+              if (isOpen) {
+                sidebarElement.classList.remove('open');
+              } else {
+                sidebarElement.classList.add('open');
+              }
+            }
+          }}
+          aria-label="Toggle menu"
+        >
+          <Menu size={20} />
+        </button>
         <div className="header-info">
           <h1>Gerenciamento de Funcionários</h1>
-          <p>Cadastre e gerencie informações dos funcionários</p>
         </div>
         <div className="header-actions">
           <button 

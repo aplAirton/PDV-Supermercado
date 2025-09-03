@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ShoppingCart, Package, Users, History, CreditCard, DollarSign, Calculator, UserCog } from "lucide-react"
+import { ShoppingCart, Package, Users, History, CreditCard, DollarSign, Calculator, UserCog, Menu } from "lucide-react"
 import VendasPage from "./vendas/page"
 import ProdutosPage from "./produtos/page"
 import ClientesPage from "./clientes/page"
@@ -60,6 +60,11 @@ const pageConfig = {
 
 export default function HomePage() {
   const [currentPage, setCurrentPage] = useState<Page>("vendas")
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen)
+  }
 
   const renderPage = () => {
     switch (currentPage) {
@@ -91,20 +96,24 @@ export default function HomePage() {
     <div className="app-layout">
       <Sidebar 
         currentPage={currentPage} 
-        onPageChange={setCurrentPage} 
+        onPageChange={setCurrentPage}
+        isOpen={sidebarOpen}
+        onToggle={setSidebarOpen}
       />
 
       <main className="main-content">
         <header className="content-header">
-          <div className="header-content">
-            <div className="header-icon">
-              <IconComponent size={24} />
-            </div>
-            <div className="header-text">
-              <h1 className="content-title">{currentConfig.title}</h1>
-              <p className="content-subtitle">{currentConfig.subtitle}</p>
-            </div>
+          <button 
+            className="mobile-menu-btn-header" 
+            onClick={toggleSidebar}
+            aria-label="Toggle menu"
+          >
+            <Menu size={20} />
+          </button>
+          <div className="header-icon">
+            <IconComponent size={24} />
           </div>
+          <h1 className="content-title">{currentConfig.title}</h1>
         </header>
 
         <div className="content-body">
