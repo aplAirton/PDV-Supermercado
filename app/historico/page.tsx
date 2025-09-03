@@ -35,6 +35,12 @@ export default function HistoricoPage() {
   
   // Estado para controlar a exibição dos filtros
   const [showFilterOptions, setShowFilterOptions] = useState(false)
+  
+  // Estado para controlar a exibição dos filtros mobile
+  const [showMobileFilters, setShowMobileFilters] = useState(false)
+  
+  // Estado para controlar a exibição do resumo mobile
+  const [showMobileResumo, setShowMobileResumo] = useState(false)
 
   useEffect(() => {
     carregarVendas()
@@ -88,6 +94,7 @@ export default function HistoricoPage() {
       cliente: "",
     })
     setShowFilterOptions(false)
+    setShowMobileFilters(false)
   }
 
   const formatarData = (data: string) => {
@@ -359,98 +366,132 @@ export default function HistoricoPage() {
       <div className="mobile-layout">
         {/* Card 1: Filtros Mobile */}
         <div className="historico-filter-card">
-          <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Settings size={18} />
-            Filtros de Busca
-          </h2>
-          
-          <div style={{ marginBottom: '1rem' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.75rem' }}>
-              <div className="form-group">
-                <label className="form-label">Data Início</label>
-                <input
-                  type="date"
-                  className="form-input"
-                  value={filtros.data_inicio}
-                  onChange={(e) => setFiltros({ ...filtros, data_inicio: e.target.value })}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Data Fim</label>
-                <input
-                  type="date"
-                  className="form-input"
-                  value={filtros.data_fim}
-                  onChange={(e) => setFiltros({ ...filtros, data_fim: e.target.value })}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Forma de Pagamento</label>
-                <select
-                  className="form-select"
-                  value={filtros.forma_pagamento}
-                  onChange={(e) => setFiltros({ ...filtros, forma_pagamento: e.target.value })}
-                >
-                  <option value="">Todas</option>
-                  <option value="dinheiro">Dinheiro</option>
-                  <option value="cartao_debito">Cartão Débito</option>
-                  <option value="cartao_credito">Cartão Crédito</option>
-                  <option value="pix">PIX</option>
-                  <option value="fiado">Fiado</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Cliente</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="Nome do cliente"
-                  value={filtros.cliente}
-                  onChange={(e) => setFiltros({ ...filtros, cliente: e.target.value })}
-                />
-              </div>
+          <button
+            type="button"
+            className={`mobile-filter-toggle ${temFiltrosAtivos() ? 'filters-active' : ''}`}
+            onClick={() => setShowMobileFilters(!showMobileFilters)}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Settings size={18} />
+              <span>Filtros de Busca</span>
+              {temFiltrosAtivos() && <span style={{ 
+                color: 'var(--primary)', 
+                fontSize: '1.5rem', 
+                lineHeight: '1',
+                marginLeft: '0.25rem' 
+              }}>•</span>}
             </div>
+            {showMobileFilters ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          </button>
+          
+          <div className={`mobile-filter-content ${showMobileFilters ? 'expanded' : 'collapsed'}`}>
+            <div className="mobile-filter-inner">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.75rem' }}>
+                <div className="form-group">
+                  <label className="form-label">Data Início</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={filtros.data_inicio}
+                    onChange={(e) => setFiltros({ ...filtros, data_inicio: e.target.value })}
+                  />
+                </div>
 
-            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-              <button className="btn btn-primary" onClick={aplicarFiltros} style={{ flex: 1 }}>
-                <Filter size={16} />
-                Aplicar
-              </button>
-              <button className="btn btn-outline" onClick={limparFiltros} style={{ flex: 1 }}>
-                Limpar
-              </button>
+                <div className="form-group">
+                  <label className="form-label">Data Fim</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={filtros.data_fim}
+                    onChange={(e) => setFiltros({ ...filtros, data_fim: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Forma de Pagamento</label>
+                  <select
+                    className="form-select"
+                    value={filtros.forma_pagamento}
+                    onChange={(e) => setFiltros({ ...filtros, forma_pagamento: e.target.value })}
+                  >
+                    <option value="">Todas</option>
+                    <option value="dinheiro">Dinheiro</option>
+                    <option value="cartao_debito">Cartão Débito</option>
+                    <option value="cartao_credito">Cartão Crédito</option>
+                    <option value="pix">PIX</option>
+                    <option value="fiado">Fiado</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Cliente</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Nome do cliente"
+                    value={filtros.cliente}
+                    onChange={(e) => setFiltros({ ...filtros, cliente: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+                <button className="btn btn-primary" onClick={aplicarFiltros} style={{ flex: 1 }}>
+                  <Filter size={16} />
+                  Aplicar
+                </button>
+                <button className="btn btn-outline" onClick={limparFiltros} style={{ flex: 1 }}>
+                  Limpar
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Card 2: Resumo Mobile */}
         <div className="historico-resumo-card-mobile">
-          <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Calendar size={18} />
-            Resumo das Vendas
-          </h2>
+          <button
+            type="button"
+            className="mobile-resumo-toggle"
+            onClick={() => setShowMobileResumo(!showMobileResumo)}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Calendar size={18} />
+              <span>Resumo das Vendas (Período)</span>
+            </div>
+            {showMobileResumo ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          </button>
           
-          <div className="historico-resumo-mobile">
-            <div className="historico-resumo-card">
-              <div className="historico-resumo-valor" style={{ color: "var(--primary-color)", fontSize: '1.5rem' }}>
-                {vendas.length}
+          <div className={`mobile-resumo-content ${showMobileResumo ? 'expanded' : 'collapsed'}`}>
+            <div className="mobile-resumo-inner">
+              <div className="historico-resumo-mobile">
+                <div className="historico-resumo-card vendas">
+                  <div className="resumo-info">
+                    <div className="resumo-valor" style={{ color: "#3b82f6" }}>
+                      {vendas.length}
+                    </div>
+                    <div className="resumo-label">Total de Vendas</div>
+                  </div>
+                </div>
+                
+                <div className="historico-resumo-card valor">
+                  <div className="resumo-info">
+                    <div className="resumo-valor" style={{ color: "#10b981" }}>
+                      R$ {(Number(totalVendas) || 0).toFixed(2)}
+                    </div>
+                    <div className="resumo-label">Valor Total</div>
+                  </div>
+                </div>
+                
+                <div className="historico-resumo-card ticket">
+                  <div className="resumo-info">
+                    <div className="resumo-valor" style={{ color: "#f59e0b" }}>
+                      R$ {vendas.length > 0 ? (totalVendas / vendas.length).toFixed(2) : "0.00"}
+                    </div>
+                    <div className="resumo-label">Ticket Médio</div>
+                  </div>
+                </div>
               </div>
-              <div className="historico-resumo-label" style={{ fontSize: '0.875rem' }}>Total de Vendas</div>
-            </div>
-            <div className="historico-resumo-card">
-              <div className="historico-resumo-valor" style={{ color: "var(--success-color)", fontSize: '1.5rem' }}>
-                R$ {(Number(totalVendas) || 0).toFixed(2)}
-              </div>
-              <div className="historico-resumo-label" style={{ fontSize: '0.875rem' }}>Valor Total</div>
-            </div>
-            <div className="historico-resumo-card">
-              <div className="historico-resumo-valor" style={{ color: "var(--warning-color)", fontSize: '1.5rem' }}>
-                R$ {vendas.length > 0 ? (totalVendas / vendas.length).toFixed(2) : "0.00"}
-              </div>
-              <div className="historico-resumo-label" style={{ fontSize: '0.875rem' }}>Ticket Médio</div>
             </div>
           </div>
         </div>
