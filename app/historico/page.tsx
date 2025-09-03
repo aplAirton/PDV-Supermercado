@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Calendar, Filter, Eye, Printer, Settings, ChevronDown, ChevronUp, Loader2 } from "lucide-react"
+import '../../styles/historico.css'
 
 interface Venda {
   id: number
@@ -40,8 +41,8 @@ export default function HistoricoPage() {
   }, [])
 
   const carregarVendas = async () => {
-  setLoadingVendas(true)
-  try {
+    setLoadingVendas(true)
+    try {
       const params = new URLSearchParams()
       Object.entries(filtros).forEach(([key, value]) => {
         if (value) params.append(key, value)
@@ -68,8 +69,7 @@ export default function HistoricoPage() {
       setVendas(sanitized as Venda[])
     } catch (error) {
       console.error("Erro ao carregar vendas:", error)
-    }
-    finally {
+    } finally {
       // garantir que o indicador de loading seja visível por um pequeno período
       await new Promise((res) => setTimeout(res, 150))
       setLoadingVendas(false)
@@ -129,57 +129,21 @@ export default function HistoricoPage() {
 
   const imprimirCupom = async (venda: Venda | null) => {
     if (!venda) return
-
-    // Tentar buscar o cupom salvo no servidor (mesmo formato gerado ao concluir a venda)
-    try {
-      const resp = await fetch(`/api/cupons/by-venda/${venda.id}`)
-      if (resp.ok) {
-        const data = await resp.json()
-        const conteudo = data.conteudo_texto || data.conteudo || ''
-        if (conteudo) {
-          const w = window.open('', '_blank')
-          if (!w) return
-          w.document.write(`<html><head><title>Cupom Venda #${venda.id}</title></head><body><pre class="cupom-pre">${conteudo.replace(/</g,'&lt;')}</pre></body></html>`)
-          w.document.close()
-          try { w.focus() } catch (e) { /* ignore */ }
-          // esperar o conteúdo renderizar antes de chamar print
-          setTimeout(() => {
-            try { w.print() } catch (e) { /* ignore */ }
-            try { w.close() } catch (e) { /* ignore */ }
-          }, 200)
-          return
+    
+    // Usar a mesma lógica da função que funciona (imprimirCupomSegundaVia)
+    const cupomUrl = `/api/vendas/${venda.id}/cupom`
+    const w = window.open(cupomUrl, '_blank', 'width=800,height=600,scrollbars=yes')
+    if (w) {
+      w.focus()
+      // Esperar carregar e tentar imprimir
+      setTimeout(() => {
+        try { 
+          w.print() 
+        } catch (e) { 
+          console.log('Print automático não disponível') 
         }
-      }
-    } catch (err) {
-      console.error('Erro ao buscar cupom salvo:', err)
-      // fallback para geração local
+      }, 1000)
     }
-
-    // Fallback: gerar um cupom simples localmente caso não exista cupom salvo
-    const linhas: string[] = []
-    linhas.push('--- CUPOM FISCAL ---')
-    linhas.push(`Venda: #${venda.id}`)
-    linhas.push(`Data: ${formatarData(venda.data_venda)}`)
-    linhas.push(`Cliente: ${venda.cliente_nome || 'Cliente Avulso'}`)
-    linhas.push('')
-    linhas.push('Itens:')
-    venda.itens.forEach((it) => {
-      const nome = it.produto_nome
-      const qtd = Number(it.quantidade || 0)
-      const preco = Number(it.preco_unitario || 0)
-      const subtotal = Number(it.subtotal || qtd * preco)
-      linhas.push(`${nome}  x${qtd}  R$ ${preco.toFixed(2)}  -> R$ ${subtotal.toFixed(2)}`)
-    })
-    linhas.push('')
-    linhas.push(`TOTAL: R$ ${(Number(venda.total) || 0).toFixed(2)}`)
-
-    const texto = linhas.join('\n')
-    const w = window.open('', '_blank')
-    if (!w) return
-    w.document.write(`<html><head><title>Cupom Venda #${venda.id}</title></head><body><pre>${texto}</pre></body></html>`)
-    w.document.close()
-    try { w.focus() } catch (e) { /* ignore */ }
-    try { w.print() } catch (e) { /* ignore */ }
   }
 
   const totalVendas = vendas.reduce((sum, venda) => sum + Number(venda.total || 0), 0)
@@ -190,12 +154,13 @@ export default function HistoricoPage() {
   }
 
   return (
-    <div>
-      <div className="card">
-
+    <div className="historico-main-container">
+      {/* Desktop: Layout original */}
+      <div className="card desktop-layout">
+        <h1 className="page-title">Histórico de Vendas</h1>
 
         {/* Filtros */}
-        <div className="card mb-4" style={{ background: "var(--surface)" }}>
+        <div className="historico-filter-section card mb-4" style={{ background: "var(--surface)" }}>
           {/* Botão para mostrar/ocultar filtros */}
           <button
             type="button"
@@ -210,10 +175,10 @@ export default function HistoricoPage() {
             {showFilterOptions ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </button>
 
-          {/* Opções de filtro (visíveis apenas quando expandido) */}
-          <div className={`filter-options ${showFilterOptions ? 'expanded' : 'collapsed'}`}>
+          {/* Opções de filtro */}
+          <div className={`historico-filter-options ${showFilterOptions ? 'expanded' : 'collapsed'}`}>
             <div>
-              <div className="filters-grid">
+              <div className="historico-filters-grid">
                 <div className="form-group">
                   <label className="form-label">Data Início</label>
                   <input
@@ -262,7 +227,7 @@ export default function HistoricoPage() {
                 </div>
               </div>
 
-              <div className="filter-actions">
+              <div className="historico-filter-actions">
                 <button className="btn btn-primary" onClick={aplicarFiltros}>
                   <Filter size={20} />
                   Aplicar Filtros
@@ -276,106 +241,282 @@ export default function HistoricoPage() {
         </div>
 
         {/* Resumo */}
-        <div className="grid grid-cols-3 gap-4 mb-4">
-          <div className="card text-center">
-            <div className="text-2xl font-bold" style={{ color: "var(--primary-color)" }}>
+        <div className="historico-resumo-container">
+          <div className="historico-resumo-card">
+            <div className="historico-resumo-valor" style={{ color: "var(--primary-color)" }}>
               {vendas.length}
             </div>
-            <div className="text-muted">Total de Vendas</div>
+            <div className="historico-resumo-label">Total de Vendas</div>
           </div>
-          <div className="card text-center">
-            <div className="text-2xl font-bold" style={{ color: "var(--success-color)" }}>
+          <div className="historico-resumo-card">
+            <div className="historico-resumo-valor" style={{ color: "var(--success-color)" }}>
               R$ {(Number(totalVendas) || 0).toFixed(2)}
             </div>
-            <div className="text-muted">Valor Total</div>
+            <div className="historico-resumo-label">Valor Total</div>
           </div>
-          <div className="card text-center">
-            <div className="text-2xl font-bold" style={{ color: "var(--warning-color)" }}>
+          <div className="historico-resumo-card">
+            <div className="historico-resumo-valor" style={{ color: "var(--warning-color)" }}>
               R$ {vendas.length > 0 ? (totalVendas / vendas.length).toFixed(2) : "0.00"}
             </div>
-            <div className="text-muted">Ticket Médio</div>
+            <div className="historico-resumo-label">Ticket Médio</div>
           </div>
         </div>
 
-        {/* Tabela de Vendas */}
-        {loadingVendas ? (
-          <div className="p-6 text-center">
-            <Loader2 className="animate-spin mx-auto" size={32} />
-            <div className="text-muted" style={{ marginTop: '0.75rem' }}>Carregando vendas...</div>
-          </div>
-        ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Data/Hora</th>
-                  <th>Cliente</th>
-                  <th>Total</th>
-                  <th>Desconto</th>
-                  <th>Pagamento</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
+        {/* Seção de Vendas */}
+        <div className="historico-vendas-section">
+          {loadingVendas ? (
+            <div className="p-6 text-center">
+              <Loader2 className="animate-spin mx-auto" size={32} />
+              <div className="text-muted" style={{ marginTop: '0.75rem' }}>Carregando vendas...</div>
+            </div>
+          ) : (
+            <>
+              {/* Layout Desktop - Tabela */}
+              <div className="historico-table-container">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Data/Hora</th>
+                      <th>Cliente</th>
+                      <th>Total</th>
+                      <th>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {vendas.map((venda) => (
+                      <tr key={venda.id}>
+                        <td>#{venda.id}</td>
+                        <td>{formatarData(venda.data_venda)}</td>
+                        <td>{venda.cliente_nome || "Cliente Avulso"}</td>
+                        <td>R$ {(Number(venda.total) || 0).toFixed(2)}</td>
+                        <td>
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            <button className="btn btn-sm btn-outline" onClick={() => verDetalhes(venda)}>
+                              <Eye size={16} />
+                              Ver Detalhes
+                            </button>
+                            <button 
+                              className="btn btn-sm btn-primary" 
+                              onClick={() => imprimirCupomSegundaVia(venda.id)}
+                              title="Imprimir 2ª via do cupom"
+                            >
+                              <Printer size={16} />
+                              2ª Via
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Layout Mobile - Cards */}
+              <div className="historico-cards-container">
                 {vendas.map((venda) => (
-                  <tr key={venda.id}>
-                    <td>#{venda.id}</td>
-                    <td>{formatarData(venda.data_venda)}</td>
-                    <td>{venda.cliente_nome || "Cliente Avulso"}</td>
-                    <td>R$ {(Number(venda.total) || 0).toFixed(2)}</td>
-                    <td>
-                      {venda.desconto_tipo && (Number(venda.desconto_valor) > 0 || Number(venda.desconto_percentual) > 0) ? (
-                        <span style={{ 
-                          color: '#d9534f', 
-                          fontWeight: 'bold',
-                          fontSize: '0.875rem'
-                        }}>
-                          {venda.desconto_tipo === 'percent' ? `${Number(venda.desconto_percentual)}%` : 'R$'} 
-                          {' '}(-R$ {Number(venda.desconto_valor || 0).toFixed(2)})
-                        </span>
-                      ) : (
-                        <span style={{ color: '#999', fontSize: '0.875rem' }}>-</span>
-                      )}
-                    </td>
-                    <td>
-                      <span
-                        style={{
-                          padding: "0.25rem 0.5rem",
-                          borderRadius: "0.25rem",
-                          fontSize: "0.875rem",
-                          background: venda.forma_pagamento === "fiado" ? "var(--warning-color)" : "var(--success-color)",
-                          color: "white",
-                        }}
-                      >
-                        {formatarFormaPagamento(venda.forma_pagamento)}
-                      </span>
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        <button className="btn btn-sm btn-outline" onClick={() => verDetalhes(venda)}>
-                          <Eye size={16} />
-                          Ver Detalhes
-                        </button>
-                        <button 
-                          className="btn btn-sm btn-primary" 
-                          onClick={() => imprimirCupomSegundaVia(venda.id)}
-                          title="Imprimir 2ª via do cupom"
-                        >
-                          <Printer size={16} />
-                          2ª Via
-                        </button>
+                  <div key={venda.id} className="historico-card">
+                    <div className="historico-card-header">
+                      <div className="historico-card-id">#{venda.id}</div>
+                      <div className="historico-card-total">R$ {(Number(venda.total) || 0).toFixed(2)}</div>
+                    </div>
+
+                    <div className="historico-card-content">
+                      <div className="historico-card-field">
+                        <span className="historico-field-label">Data/Hora:</span>
+                        <span className="historico-field-value">{formatarData(venda.data_venda)}</span>
                       </div>
-                    </td>
-                  </tr>
+
+                      <div className="historico-card-field">
+                        <span className="historico-field-label">Cliente:</span>
+                        <span className="historico-field-value">{venda.cliente_nome || "Cliente Avulso"}</span>
+                      </div>
+                    </div>
+
+                    <div className="historico-card-actions">
+                      <button className="btn btn-sm btn-outline" onClick={() => verDetalhes(venda)}>
+                        <Eye size={16} />
+                        Ver Detalhes
+                      </button>
+                      <button 
+                        className="btn btn-sm btn-primary" 
+                        onClick={() => imprimirCupomSegundaVia(venda.id)}
+                        title="Imprimir 2ª via do cupom"
+                      >
+                        <Printer size={16} />
+                        2ª Via
+                      </button>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Modal de Detalhes da Venda - Formato Condensado */}
+      {/* Mobile: Cards separados */}
+      <div className="mobile-layout">
+        {/* Card 1: Filtros Mobile */}
+        <div className="historico-filter-card">
+          <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Settings size={18} />
+            Filtros de Busca
+          </h2>
+          
+          <div style={{ marginBottom: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.75rem' }}>
+              <div className="form-group">
+                <label className="form-label">Data Início</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={filtros.data_inicio}
+                  onChange={(e) => setFiltros({ ...filtros, data_inicio: e.target.value })}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Data Fim</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={filtros.data_fim}
+                  onChange={(e) => setFiltros({ ...filtros, data_fim: e.target.value })}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Forma de Pagamento</label>
+                <select
+                  className="form-select"
+                  value={filtros.forma_pagamento}
+                  onChange={(e) => setFiltros({ ...filtros, forma_pagamento: e.target.value })}
+                >
+                  <option value="">Todas</option>
+                  <option value="dinheiro">Dinheiro</option>
+                  <option value="cartao_debito">Cartão Débito</option>
+                  <option value="cartao_credito">Cartão Crédito</option>
+                  <option value="pix">PIX</option>
+                  <option value="fiado">Fiado</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Cliente</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Nome do cliente"
+                  value={filtros.cliente}
+                  onChange={(e) => setFiltros({ ...filtros, cliente: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+              <button className="btn btn-primary" onClick={aplicarFiltros} style={{ flex: 1 }}>
+                <Filter size={16} />
+                Aplicar
+              </button>
+              <button className="btn btn-outline" onClick={limparFiltros} style={{ flex: 1 }}>
+                Limpar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 2: Resumo Mobile */}
+        <div className="historico-resumo-card-mobile">
+          <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Calendar size={18} />
+            Resumo das Vendas
+          </h2>
+          
+          <div className="historico-resumo-mobile">
+            <div className="historico-resumo-card">
+              <div className="historico-resumo-valor" style={{ color: "var(--primary-color)", fontSize: '1.5rem' }}>
+                {vendas.length}
+              </div>
+              <div className="historico-resumo-label" style={{ fontSize: '0.875rem' }}>Total de Vendas</div>
+            </div>
+            <div className="historico-resumo-card">
+              <div className="historico-resumo-valor" style={{ color: "var(--success-color)", fontSize: '1.5rem' }}>
+                R$ {(Number(totalVendas) || 0).toFixed(2)}
+              </div>
+              <div className="historico-resumo-label" style={{ fontSize: '0.875rem' }}>Valor Total</div>
+            </div>
+            <div className="historico-resumo-card">
+              <div className="historico-resumo-valor" style={{ color: "var(--warning-color)", fontSize: '1.5rem' }}>
+                R$ {vendas.length > 0 ? (totalVendas / vendas.length).toFixed(2) : "0.00"}
+              </div>
+              <div className="historico-resumo-label" style={{ fontSize: '0.875rem' }}>Ticket Médio</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 3: Vendas Mobile */}
+        <div className="historico-vendas-card-mobile">
+          <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Eye size={18} />
+            Lista de Vendas ({vendas.length})
+          </h2>
+          
+          {loadingVendas ? (
+            <div className="p-6 text-center">
+              <Loader2 className="animate-spin mx-auto" size={32} />
+              <div className="text-muted" style={{ marginTop: '0.75rem' }}>Carregando vendas...</div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {vendas.map((venda) => (
+                <div key={venda.id} className="historico-card">
+                  <div className="historico-card-header">
+                    <div className="historico-card-id">#{venda.id}</div>
+                    <div className="historico-card-total">R$ {(Number(venda.total) || 0).toFixed(2)}</div>
+                  </div>
+
+                  <div className="historico-card-content">
+                    <div className="historico-card-field">
+                      <span className="historico-field-label">Data/Hora:</span>
+                      <span className="historico-field-value">{formatarData(venda.data_venda)}</span>
+                    </div>
+
+                    <div className="historico-card-field">
+                      <span className="historico-field-label">Cliente:</span>
+                      <span className="historico-field-value">{venda.cliente_nome || "Cliente Avulso"}</span>
+                    </div>
+                  </div>
+
+                  <div className="historico-card-actions">
+                    <button className="btn btn-sm btn-outline" onClick={() => verDetalhes(venda)} style={{ flex: 1 }}>
+                      <Eye size={14} />
+                      Ver Detalhes
+                    </button>
+                    <button 
+                      className="btn btn-sm btn-primary" 
+                      onClick={() => imprimirCupomSegundaVia(venda.id)}
+                      title="Imprimir 2ª via do cupom"
+                      style={{ flex: 1 }}
+                    >
+                      <Printer size={14} />
+                      2ª Via
+                    </button>
+                  </div>
+                </div>
+              ))}
+              
+              {vendas.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                  Nenhuma venda encontrada
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Modal de Detalhes da Venda */}
       {showModal && vendaSelecionada && (
         <div className="modal-overlay">
           <div className="modal" style={{ maxWidth: '500px', width: '90%' }}>

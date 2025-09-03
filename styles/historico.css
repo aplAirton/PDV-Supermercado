@@ -1,0 +1,497 @@
+/* Layout responsivo para histórico de vendas */
+
+/* Container principal para garantir ordem correta */
+.historico-main-container {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 1;
+  gap: 1rem;
+}
+
+/* Layouts Desktop e Mobile */
+.desktop-layout {
+  display: block;
+}
+
+.mobile-layout {
+  display: none;
+}
+
+/* Mobile: Cards separados */
+@media (max-width: 768px) {
+  .desktop-layout {
+    display: none;
+  }
+  
+  .mobile-layout {
+    display: block;
+  }
+  
+  .historico-main-container {
+    gap: 0.75rem;
+  }
+  
+  .historico-filter-card,
+  .historico-resumo-card-mobile,
+  .historico-vendas-card-mobile {
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .historico-filter-card h2,
+  .historico-resumo-card-mobile h2,
+  .historico-vendas-card-mobile h2 {
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-light);
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+  }
+}
+
+/* Seção de Filtros */
+.historico-filter-section {
+  position: relative;
+  z-index: 10;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+  .historico-filter-section {
+    margin-bottom: 0;
+  }
+}
+
+/* Seção de Resumo (estatísticas) */
+.historico-resumo-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+  z-index: 9;
+}
+
+/* Mobile: Card do Resumo */
+@media (max-width: 768px) {
+  .historico-resumo-container {
+    display: none; /* Oculta o resumo desktop no mobile */
+  }
+  
+  .historico-resumo-mobile {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 0.75rem;
+  }
+  
+  .historico-resumo-mobile .historico-resumo-card {
+    text-align: center;
+  }
+}
+
+/* Desktop: Mostra resumo normal */
+@media (min-width: 769px) {
+  .historico-resumo-mobile {
+    display: none;
+  }
+}
+
+.historico-resumo-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 9;
+}
+
+.historico-resumo-valor {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 0.5rem;
+}
+
+.historico-resumo-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* Seção de Filtros */
+.historico-filter-options {
+  overflow: hidden;
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 10;
+}
+
+.historico-filter-options.collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+
+.historico-filter-options.expanded {
+  max-height: 500px;
+  opacity: 1;
+}
+
+.historico-filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+  position: relative;
+  z-index: 10;
+}
+
+.historico-filter-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 10;
+}
+
+/* Seção de Vendas */
+.historico-vendas-section {
+  position: relative;
+  z-index: 8;
+  clear: both;
+}
+
+/* Desktop - Mostrar tabela */
+.historico-table-container {
+  display: block;
+  overflow-x: auto;
+  position: relative;
+  z-index: 8;
+}
+
+/* Mobile - Esconder tabela */
+.historico-cards-container {
+  display: none;
+  position: relative;
+  z-index: 8;
+}
+
+/* Estilos para cards mobile */
+.historico-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 8;
+}
+
+.historico-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.historico-card-id {
+  font-weight: 600;
+  color: #374151;
+  font-size: 1rem;
+}
+
+.historico-card-total {
+  font-weight: 700;
+  color: #059669;
+  font-size: 1.125rem;
+}
+
+.historico-card-content {
+  margin-bottom: 1rem;
+}
+
+.historico-card-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+  padding: 0.25rem 0;
+}
+
+.historico-field-label {
+  font-weight: 500;
+  color: #6b7280;
+  font-size: 0.875rem;
+  min-width: 80px;
+}
+
+.historico-field-value {
+  color: #374151;
+  font-size: 0.875rem;
+  text-align: right;
+  flex: 1;
+  margin-left: 1rem;
+  word-break: break-word;
+}
+
+.historico-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  padding-top: 0.5rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+.historico-card-actions .btn {
+  flex: 1;
+  min-width: 120px;
+  justify-content: center;
+}
+
+/* Responsividade - Mobile */
+@media (max-width: 768px) {
+  /* Container principal mantém ordem */
+  .historico-main-container {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Seção de filtros - sempre no topo */
+  .historico-filter-section {
+    order: 1;
+    position: relative;
+    z-index: 10;
+    margin-bottom: 1rem;
+  }
+  
+  /* Seção de Resumo - Cards individuais em mobile - sempre segunda */
+  .historico-resumo-container {
+    order: 2;
+    display: block;
+    margin-bottom: 1.5rem;
+    position: relative;
+    z-index: 9;
+  }
+  
+  .historico-resumo-card {
+    display: block;
+    margin-bottom: 0.75rem;
+    padding: 1rem;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    position: relative;
+    z-index: 9;
+  }
+  
+  .historico-resumo-card:last-child {
+    margin-bottom: 0;
+  }
+  
+  .historico-resumo-valor {
+    font-size: 1.5rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  .historico-resumo-label {
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+  
+  /* Seção de vendas - sempre por último */
+  .historico-vendas-section {
+    order: 3;
+    position: relative;
+    z-index: 8;
+  }
+  
+  /* Filtros em cards individuais no mobile */
+  .historico-filter-options.expanded {
+    background: transparent;
+    padding: 0;
+    position: relative;
+    z-index: 10;
+  }
+  
+  .historico-filters-grid {
+    display: block;
+    margin-bottom: 1rem;
+    position: relative;
+    z-index: 10;
+  }
+  
+  .historico-filters-grid .form-group {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    position: relative;
+    z-index: 10;
+  }
+  
+  .historico-filters-grid .form-group:last-child {
+    margin-bottom: 0;
+  }
+  
+  .historico-filters-grid .form-label {
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+  
+  .historico-filters-grid .form-input,
+  .historico-filters-grid .form-select {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+    font-size: 0.875rem;
+  }
+  
+  /* Ações de filtro em card separado */
+  .historico-filter-actions {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    flex-direction: row;
+    gap: 0.75rem;
+    position: relative;
+    z-index: 10;
+  }
+  
+  .historico-filter-actions .btn {
+    flex: 1;
+    justify-content: center;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+  }
+  
+  /* Esconder tabela no mobile */
+  .historico-table-container {
+    display: none;
+  }
+  
+  /* Mostrar cards no mobile */
+  .historico-cards-container {
+    display: block;
+    position: relative;
+    z-index: 8;
+  }
+  
+  /* Ajustes para cards de vendas em telas muito pequenas */
+  .historico-card {
+    margin-bottom: 0.75rem;
+    padding: 0.75rem;
+    position: relative;
+    z-index: 8;
+  }
+  
+  .historico-card-actions {
+    flex-direction: column;
+  }
+  
+  .historico-card-actions .btn {
+    width: 100%;
+    min-width: unset;
+  }
+  
+  /* Ajustes para campos em mobile */
+  .historico-card-field {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+  }
+  
+  .historico-field-value {
+    margin-left: 0;
+    margin-top: 0.25rem;
+    text-align: left;
+    font-weight: 500;
+  }
+  
+  .historico-field-label {
+    margin-bottom: 0.125rem;
+  }
+}
+
+/* Layout alternativo para tablets */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .historico-resumo-container {
+    gap: 0.75rem;
+  }
+  
+  .historico-resumo-card {
+    padding: 1.25rem;
+  }
+  
+  .historico-filters-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Responsividade extra para telas muito pequenas */
+@media (max-width: 480px) {
+  /* Cards de resumo em telas muito pequenas */
+  .historico-resumo-card {
+    margin: 0 -0.5rem 0.75rem -0.5rem;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    padding: 0.75rem 1rem;
+  }
+  
+  .historico-resumo-valor {
+    font-size: 1.25rem;
+  }
+  
+  /* Cards de filtros em telas muito pequenas */
+  .historico-filters-grid .form-group {
+    margin: 0 -0.5rem 0.75rem -0.5rem;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    padding: 0.75rem 1rem;
+  }
+  
+  .historico-filter-actions {
+    margin: 0 -0.5rem 0 -0.5rem;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    padding: 0.75rem 1rem;
+  }
+  
+  /* Cards de vendas em telas muito pequenas */
+  .historico-card {
+    margin: 0 -0.5rem 0.75rem -0.5rem;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+  
+  .historico-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .historico-card-total {
+    font-size: 1.25rem;
+  }
+}
