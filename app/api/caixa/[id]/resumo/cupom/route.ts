@@ -108,10 +108,6 @@ export async function GET(
           <span>Valor Inicial:</span>
           <span class="valor">R$ ${formatarValor(Number(caixaData.valor_inicial))}</span>
         </div>
-        <div class="linha">
-          <span>Total de Vendas:</span>
-          <span class="valor">R$ ${formatarValor(totalVendasCalculado)}</span>
-        </div>
         ${totalSangrias > 0 ? `
         <div class="linha">
           <span>Total em Sangrias:</span>
@@ -122,20 +118,6 @@ export async function GET(
         <div class="linha">
           <span>Suprimentos:</span>
           <span class="valor">+ R$ ${formatarValor(totalSuprimentos)}</span>
-        </div>
-        ` : ''}
-        <div class="linha destaque">
-          <span>Valor Esperado:</span>
-          <span class="valor">R$ ${formatarValor(valorEsperado)}</span>
-        </div>
-        ${caixaData.data_fechamento ? `
-        <div class="linha">
-          <span>Valor Contado:</span>
-          <span class="valor">R$ ${formatarValor(valorContado)}</span>
-        </div>
-        <div class="linha destaque" style="color: ${diferenca === 0 ? '#666' : diferenca > 0 ? '#2e7d32' : '#d32f2f'}">
-          <span>${statusReconciliacao}:</span>
-          <span class="valor">R$ ${formatarValor(Math.abs(diferenca))}</span>
         </div>
         ` : ''}
       </div>
@@ -177,6 +159,29 @@ export async function GET(
           <span>Ticket Médio:</span>
           <span class="valor">R$ ${formatarValor(quantidadeVendas > 0 ? totalVendasCalculado / quantidadeVendas : 0)}</span>
         </div>
+        <div class="linha destaque">
+          <span>Total de Vendas:</span>
+          <span class="valor">R$ ${formatarValor(totalVendasCalculado)}</span>
+        </div>
+      </div>
+
+      <div class="documento-titulo">CONFERÊNCIA DE CAIXA</div>
+      
+      <div class="detalhes">
+        <div class="linha destaque">
+          <span>Valor Esperado:</span>
+          <span class="valor">R$ ${formatarValor(valorEsperado)}</span>
+        </div>
+        ${caixaData.data_fechamento ? `
+        <div class="linha">
+          <span>Valor Contado:</span>
+          <span class="valor">R$ ${formatarValor(valorContado)}</span>
+        </div>
+        <div class="linha destaque" style="color: ${diferenca === 0 ? '#666' : diferenca > 0 ? '#2e7d32' : '#d32f2f'}">
+          <span>${statusReconciliacao}:</span>
+          <span class="valor">R$ ${formatarValor(Math.abs(diferenca))}</span>
+        </div>
+        ` : ''}
       </div>
 
       ${movimentacoes.length > 0 ? `

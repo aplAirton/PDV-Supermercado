@@ -1476,15 +1476,12 @@ export default function CaixaPage() {
                         {resumoFechamento.status_reconciliacao === 'perfeito' ? 'PERFEITO' :
                          resumoFechamento.status_reconciliacao === 'sobra' ? 'SOBRA' : 'FALTA'}
                       </div>
-                      <div style={{ fontSize: '14px', opacity: resumoFechamento.status_reconciliacao === 'perfeito' ? '0.7' : '0.9' }}>
-                        Total do Caixa: <strong style={{ fontSize: '18px' }}>
-                          {formatarValor(
-                            (resumoFechamento.vendas?.valor_dinheiro || 0) + 
-                            resumoFechamento.valores.suprimentos - 
-                            resumoFechamento.valores.sangrias
-                          )}
-                        </strong>
-                      </div>
+                      {resumoFechamento.status_reconciliacao !== 'perfeito' && (
+                        <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '15px', opacity: resumoFechamento.status_reconciliacao === 'perfeito' ? '0.7' : '0.9' }}>
+                          {formatarValor(Math.abs(resumoFechamento.valores.diferenca))}
+                        </div>
+                      )}
+
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       {resumoFechamento.status_reconciliacao === 'perfeito' && <CheckCircle size={40} style={{ opacity: 0.6, color: '#22c55e' }} />}
