@@ -207,14 +207,14 @@
 }
 
 .btn-caixa-action.primary {
-  background: #10b981;
-  color: white;
-  border-color: #10b981;
+  background: #f0fdf4;
+  color: #059669;
+  border-color: #bbf7d0;
 }
 
 .btn-caixa-action.primary:hover {
-  background: #059669;
-  border-color: #059669;
+  background: #dcfce7;
+  border-color: #86efac;
   transform: translateY(-1px);
 }
 
@@ -227,6 +227,32 @@
 .btn-caixa-action.danger:hover {
   background: #fee2e2;
   border-color: #fca5a5;
+  transform: translateY(-1px);
+}
+
+/* Botão Ver Resumo - Azul */
+.btn-caixa-action.info {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+}
+
+.btn-caixa-action.info:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+  transform: translateY(-1px);
+}
+
+/* Botão Imprimir - Roxo */
+.btn-caixa-action.secondary {
+  background: #f5f3ff;
+  color: #7c3aed;
+  border-color: #c4b5fd;
+}
+
+.btn-caixa-action.secondary:hover {
+  background: #ede9fe;
+  border-color: #a78bfa;
   transform: translateY(-1px);
 }
 

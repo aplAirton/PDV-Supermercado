@@ -41,6 +41,8 @@ interface Caixa {
   total_cartao_credito: number
   total_pix: number
   total_fiado: number
+  total_suprimentos: number
+  total_sangrias: number
 }
 
 export default function CaixaPage() {
@@ -241,6 +243,7 @@ export default function CaixaPage() {
         valores: {
           inicial: caixaSelecionado.valor_inicial,
           vendas: resumoData.valores?.vendas || 0,
+          vendas_dinheiro: resumoData.valores?.vendas_dinheiro || 0,
           suprimentos: resumoData.valores?.suprimentos || 0,
           sangrias: resumoData.valores?.sangrias || 0,
           esperado: valorEsperado,
@@ -901,7 +904,9 @@ export default function CaixaPage() {
             console.log('Dados do caixa aberto:', caixa)
             const valorInicial = Number(caixa.valor_inicial) || 0
             const totalVendas = Number(caixa.total_vendas) || 0
-            const totalCaixa = valorInicial + totalVendas
+            const totalSuprimentos = Number(caixa.total_suprimentos) || 0
+            const totalSangrias = Number(caixa.total_sangrias) || 0
+            const totalCaixa = valorInicial + totalVendas + totalSuprimentos - totalSangrias
             
             return (
             <div key={caixa.id}>
@@ -929,14 +934,14 @@ export default function CaixaPage() {
               <div className="caixa-aberto-actions">
                 <button
                   onClick={() => verResumo(caixa)}
-                  className="btn-caixa-action"
+                  className="btn-caixa-action info"
                 >
                   <FileText size={16} />
                   Ver Resumo
                 </button>
                 <button
                   onClick={() => imprimirResumoCaixa(caixa.id)}
-                  className="btn-caixa-action"
+                  className="btn-caixa-action secondary"
                 >
                   <Printer size={16} />
                   Imprimir Resumo
@@ -949,7 +954,7 @@ export default function CaixaPage() {
                   className="btn-caixa-action primary"
                 >
                   <ArrowRightLeft size={16} />
-                  Movimentação
+                  Suprimento/Sangria
                 </button>
                 <button
                   onClick={() => {
@@ -1409,9 +1414,34 @@ export default function CaixaPage() {
       {/* Modal 3: Resumo do Fechamento */}
       {showResumoFechamento && resumoFechamento && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: '600px', width: '95%' }}>
+          <div className="modal-content" style={{ maxWidth: '700px', width: '95%' }}>
             <div className="modal-header">
-              <h3>Fechar Caixa - Confirmação</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  width: '50px', 
+                  height: '50px', 
+                  backgroundColor: '#dc2626',
+                  borderRadius: '50%',
+                  color: 'white'
+                }}>
+                  <Lock size={24} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ margin: '0', fontSize: '20px', fontWeight: 'bold' }}>
+                    Fechar Caixa #{resumoFechamento.id}
+                  </h3>
+                  <p style={{ margin: '2px 0 0 0', color: '#6b7280', fontSize: '14px' }}>
+                    Confirme os dados antes de finalizar
+                  </p>
+                </div>
+                <div style={{ textAlign: 'right', color: '#6b7280', fontSize: '14px' }}>
+                  <div style={{ fontWeight: '500', color: '#374151' }}>{resumoFechamento.funcionario_nome}</div>
+                  <div>{formatarData(resumoFechamento.data_fechamento)}</div>
+                </div>
+              </div>
               <button
                 onClick={cancelarFechamentoCaixa}
                 className="modal-close"
@@ -1420,112 +1450,113 @@ export default function CaixaPage() {
               </button>
             </div>
 
-            <div style={{ padding: '20px' }}>
+            <div style={{ padding: '25px' }}>
+              {/* Card de Status da Reconciliação */}
               <div style={{ 
-                backgroundColor: '#fffbeb', 
-                border: '1px solid #fde68a', 
-                borderRadius: '8px', 
-                padding: '16px', 
-                marginBottom: '20px' 
+                background: resumoFechamento.status_reconciliacao === 'perfeito' ? 
+                  '#ffffff' : 
+                  resumoFechamento.status_reconciliacao === 'sobra' ?
+                  'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' :
+                  'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                borderRadius: '15px',
+                padding: '25px',
+                color: resumoFechamento.status_reconciliacao === 'perfeito' ? '#374151' : 'white',
+                marginBottom: '25px',
+                position: 'relative',
+                overflow: 'hidden',
+                border: resumoFechamento.status_reconciliacao === 'perfeito' ? '2px solid #e2e8f0' : 'none'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
-                  <FileText size={20} style={{ marginRight: '8px', color: '#d97706' }} />
-                  <strong style={{ color: '#d97706' }}>Resumo do Fechamento</strong>
-                </div>
-                <p style={{ margin: '0', fontSize: '14px', color: '#374151' }}>
-                  Revise cuidadosamente as informações antes de confirmar o fechamento do caixa.
-                </p>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
-                {/* Coluna 1 - Informações Gerais */}
-                <div>
-                  <h4 style={{ margin: '0 0 12px 0', color: '#374151', fontSize: '16px' }}>Informações Gerais</h4>
-                  <div style={{ fontSize: '14px', lineHeight: '1.6' }}>
-                    <p style={{ margin: '4px 0' }}><strong>Funcionário:</strong> {resumoFechamento.funcionario_nome}</p>
-                    <p style={{ margin: '4px 0' }}><strong>Cargo:</strong> {resumoFechamento.funcionario_cargo}</p>
-                    <p style={{ margin: '4px 0' }}><strong>Data/Hora:</strong> {formatarData(resumoFechamento.data_fechamento)}</p>
-                    {resumoFechamento.observacoes && (
-                      <p style={{ margin: '8px 0 4px 0' }}><strong>Observações:</strong></p>
-                    )}
-                    {resumoFechamento.observacoes && (
-                      <p style={{ margin: '0', fontSize: '13px', color: '#6b7280' }}>{resumoFechamento.observacoes}</p>
-                    )}
+                <div style={{ position: 'relative', zIndex: 2 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+                    <div style={{ flex: 1 }}>
+                      <h4 style={{ margin: '0 0 5px 0', fontSize: '16px', fontWeight: '600', opacity: resumoFechamento.status_reconciliacao === 'perfeito' ? '0.7' : '0.9' }}>
+                        Status do Fechamento
+                      </h4>
+                      <div style={{ fontSize: '28px', fontWeight: 'bold', margin: '0 0 15px 0' }}>
+                        {resumoFechamento.status_reconciliacao === 'perfeito' ? 'PERFEITO' :
+                         resumoFechamento.status_reconciliacao === 'sobra' ? 'SOBRA' : 'FALTA'}
+                      </div>
+                      <div style={{ fontSize: '14px', opacity: resumoFechamento.status_reconciliacao === 'perfeito' ? '0.7' : '0.9' }}>
+                        Total do Caixa: <strong style={{ fontSize: '18px' }}>
+                          {formatarValor(
+                            (resumoFechamento.vendas?.valor_dinheiro || 0) + 
+                            resumoFechamento.valores.suprimentos - 
+                            resumoFechamento.valores.sangrias
+                          )}
+                        </strong>
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      {resumoFechamento.status_reconciliacao === 'perfeito' && <CheckCircle size={40} style={{ opacity: 0.6, color: '#22c55e' }} />}
+                      {resumoFechamento.status_reconciliacao === 'sobra' && <TrendingUp size={40} style={{ opacity: 0.8 }} />}
+                      {resumoFechamento.status_reconciliacao === 'falta' && <AlertCircle size={40} style={{ opacity: 0.8 }} />}
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', fontSize: '14px' }}>
+                    <div>
+                      <div style={{ opacity: resumoFechamento.status_reconciliacao === 'perfeito' ? '0.6' : '0.8', marginBottom: '2px' }}>Esperado (Dinheiro)</div>
+                      <div style={{ fontWeight: '600' }}>{formatarValor(resumoFechamento.valores.esperado)}</div>
+                    </div>
+                    <div>
+                      <div style={{ opacity: resumoFechamento.status_reconciliacao === 'perfeito' ? '0.6' : '0.8', marginBottom: '2px' }}>Contado</div>
+                      <div style={{ fontWeight: '600' }}>{formatarValor(resumoFechamento.valores.contado)}</div>
+                    </div>
                   </div>
                 </div>
-
-                {/* Coluna 2 - Valores */}
-                <div>
-                  <h4 style={{ margin: '0 0 12px 0', color: '#374151', fontSize: '16px' }}>Valores Financeiros</h4>
-                  <div style={{ fontSize: '14px', lineHeight: '1.6' }}>
-                    <p style={{ margin: '4px 0' }}>
-                      <strong>Valor Inicial:</strong> {formatarValor(resumoFechamento.valores.inicial)}
-                    </p>
-                    <p style={{ margin: '4px 0' }}>
-                      <strong>Vendas:</strong> {formatarValor(resumoFechamento.valores.vendas)}
-                    </p>
-                    {resumoFechamento.valores.suprimentos > 0 && (
-                      <p style={{ margin: '4px 0', color: '#16a34a' }}>
-                        <strong>Suprimentos:</strong> +{formatarValor(resumoFechamento.valores.suprimentos)}
-                      </p>
-                    )}
-                    {resumoFechamento.valores.sangrias > 0 && (
-                      <p style={{ margin: '4px 0', color: '#dc2626' }}>
-                        <strong>Sangrias:</strong> -{formatarValor(resumoFechamento.valores.sangrias)}
-                      </p>
-                    )}
-                    <hr style={{ margin: '8px 0', border: 'none', borderTop: '1px solid #e5e7eb' }} />
-                    <p style={{ margin: '4px 0' }}>
-                      <strong>Esperado:</strong> {formatarValor(resumoFechamento.valores.esperado)}
-                    </p>
-                    <p style={{ margin: '4px 0' }}>
-                      <strong>Contado:</strong> {formatarValor(resumoFechamento.valores.contado)}
-                    </p>
-                  </div>
-                </div>
+                <div style={{ 
+                  position: 'absolute', 
+                  top: '-20px', 
+                  right: '-20px', 
+                  width: '80px', 
+                  height: '80px', 
+                  backgroundColor: resumoFechamento.status_reconciliacao === 'perfeito' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(255,255,255,0.1)', 
+                  borderRadius: '50%' 
+                }} />
               </div>
 
-              {/* Status da Reconciliação */}
+              {/* Resumo Financeiro */}
               <div style={{ 
-                padding: '16px', 
-                borderRadius: '8px',
-                backgroundColor: resumoFechamento.status_reconciliacao === 'perfeito' ? '#f0fdf4' : 
-                                 resumoFechamento.status_reconciliacao === 'sobra' ? '#fffbeb' : '#fef2f2',
-                border: `1px solid ${resumoFechamento.status_reconciliacao === 'perfeito' ? '#bbf7d0' : 
-                                     resumoFechamento.status_reconciliacao === 'sobra' ? '#fde68a' : '#fecaca'}`,
-                marginBottom: '20px'
+                backgroundColor: '#f8fafc', 
+                borderRadius: '12px', 
+                padding: '20px',
+                border: '1px solid #e2e8f0'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                  {resumoFechamento.status_reconciliacao === 'perfeito' ? (
-                    <CheckCircle size={20} style={{ marginRight: '8px', color: '#16a34a' }} />
-                  ) : (
-                    <AlertCircle size={20} style={{ marginRight: '8px', color: resumoFechamento.status_reconciliacao === 'sobra' ? '#d97706' : '#dc2626' }} />
-                  )}
-                  <strong style={{ 
-                    color: resumoFechamento.status_reconciliacao === 'perfeito' ? '#16a34a' : 
-                           resumoFechamento.status_reconciliacao === 'sobra' ? '#d97706' : '#dc2626' 
-                  }}>
-                    {resumoFechamento.status_reconciliacao === 'perfeito' ? 'Caixa Conferido' : 
-                     resumoFechamento.status_reconciliacao === 'sobra' ? 'Sobra no Caixa' : 'Falta no Caixa'}
-                  </strong>
-                </div>
-                <p style={{ 
-                  margin: '0', 
-                  fontSize: '18px', 
-                  fontWeight: 'bold',
-                  color: resumoFechamento.status_reconciliacao === 'perfeito' ? '#16a34a' : 
-                         resumoFechamento.status_reconciliacao === 'sobra' ? '#d97706' : '#dc2626'
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '10px', 
+                  marginBottom: '15px',
+                  paddingBottom: '10px',
+                  borderBottom: '2px solid #e2e8f0'
                 }}>
-                  Diferença: {resumoFechamento.valores.diferenca >= 0 ? '+' : ''}{formatarValor(resumoFechamento.valores.diferenca)}
-                </p>
-                {resumoFechamento.status_reconciliacao !== 'perfeito' && (
-                  <p style={{ margin: '8px 0 0 0', fontSize: '13px', color: '#6b7280' }}>
-                    {resumoFechamento.status_reconciliacao === 'sobra' 
-                      ? 'Há dinheiro a mais no caixa do que o esperado.'
-                      : 'Há menos dinheiro no caixa do que o esperado.'
-                    }
-                  </p>
-                )}
+                  <Calculator size={20} style={{ color: '#10b981' }} />
+                  <h4 style={{ margin: '0', fontSize: '18px', fontWeight: 'bold', color: '#374151' }}>
+                    Resumo Financeiro
+                  </h4>
+                </div>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '15px' }}>
+                  <div style={{ textAlign: 'center', padding: '15px', backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '5px' }}>Valor Inicial</div>
+                    <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#374151' }}>{formatarValor(resumoFechamento.valores.inicial)}</div>
+                  </div>
+                  <div style={{ textAlign: 'center', padding: '15px', backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '5px' }}>Total Vendas</div>
+                    <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#059669' }}>{formatarValor(resumoFechamento.valores.vendas)}</div>
+                  </div>
+                  {resumoFechamento.valores.suprimentos > 0 && (
+                    <div style={{ textAlign: 'center', padding: '15px', backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '5px' }}>Suprimentos</div>
+                      <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#059669' }}>+{formatarValor(resumoFechamento.valores.suprimentos)}</div>
+                    </div>
+                  )}
+                  {resumoFechamento.valores.sangrias > 0 && (
+                    <div style={{ textAlign: 'center', padding: '15px', backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '5px' }}>Sangrias</div>
+                      <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#dc2626' }}>-{formatarValor(resumoFechamento.valores.sangrias)}</div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 

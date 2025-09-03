@@ -46,7 +46,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const totalSuprimentos = parseFloat(caixa.total_suprimentos || 0)
     const totalSangrias = parseFloat(caixa.total_sangrias || 0)
     
-    // Valor esperado no caixa (apenas dinheiro físico)
+    // Valor esperado no caixa (dinheiro físico total)
     const valorEsperado = valorInicial + totalDinheiro + totalSuprimentos - totalSangrias
     
     const valorContado = parseFloat(caixa.valor_contado_dinheiro || 0)
