@@ -1018,7 +1018,7 @@ export default function CaixaPage() {
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <button
                         onClick={() => verResumo(caixa)}
-                        className="btn btn-sm btn-outline"
+                        className="btn-caixa-action info"
                         title="Ver resumo do caixa"
                       >
                         <FileText size={14} />
@@ -1026,7 +1026,7 @@ export default function CaixaPage() {
                       </button>
                       <button
                         onClick={() => imprimirResumoCaixa(caixa.id)}
-                        className="btn btn-sm btn-secondary"
+                        className="btn-caixa-action secondary"
                         title="Imprimir resumo do caixa"
                       >
                         <Printer size={14} />
@@ -1038,6 +1038,64 @@ export default function CaixaPage() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Layout responsivo em cards para telas pequenas */}
+        <div className="caixas-cards">
+          {caixasFechados.map((caixa) => (
+            <div key={`card-${caixa.id}`} className="caixa-card">
+              <div className="caixa-card-header">
+                <div className="caixa-card-info">
+                  <h4>
+                    <User size={16} />
+                    {caixa.funcionario_nome}
+                  </h4>
+                  <p>Caixa #{caixa.id}</p>
+                </div>
+                <div className="caixa-card-status">
+                  <span className="status-badge fechado">
+                    Fechado
+                  </span>
+                </div>
+              </div>
+              
+              <div className="caixa-card-details">
+                <div className="caixa-detail-item">
+                  <div className="caixa-detail-label">Total de Vendas</div>
+                  <div className="caixa-detail-value currency">{formatarValor(caixa.total_vendas)}</div>
+                </div>
+                <div className="caixa-detail-item">
+                  <div className="caixa-detail-label">Abertura</div>
+                  <div className="caixa-detail-value">{formatarData(caixa.data_abertura)}</div>
+                </div>
+                <div className="caixa-detail-item">
+                  <div className="caixa-detail-label">Fechamento</div>
+                  <div className="caixa-detail-value">
+                    {caixa.data_fechamento ? formatarData(caixa.data_fechamento) : '-'}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="caixa-card-actions">
+                <button
+                  onClick={() => verResumo(caixa)}
+                  className="btn-caixa-action info"
+                  title="Ver resumo do caixa"
+                >
+                  <FileText size={14} />
+                  Resumo
+                </button>
+                <button
+                  onClick={() => imprimirResumoCaixa(caixa.id)}
+                  className="btn-caixa-action secondary"
+                  title="Imprimir resumo do caixa"
+                >
+                  <Printer size={14} />
+                  Imprimir
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
