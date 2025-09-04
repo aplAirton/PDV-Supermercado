@@ -6,7 +6,8 @@ import ConfirmationModal from '@/components/confirmation-modal'
 import VirtualKeyboard from '@/components/virtual-keyboard'
 import Loading from "@/components/loading"
 import SearchHint from "@/components/search-hint"
-import { Search, Plus, Minus, Trash2, ShoppingCart, X, Settings, ChevronDown, ChevronUp, Loader2, User, Receipt, Check } from "lucide-react"
+import BarcodeScanner from "@/components/barcode-scanner-zxing"
+import { Search, Plus, Minus, Trash2, ShoppingCart, X, Settings, ChevronDown, ChevronUp, Loader2, User, Receipt, Check, Camera, CameraOff } from "lucide-react"
 import '../../styles/components.css'
 
 interface Produto {
@@ -72,6 +73,10 @@ export default function VendasPage() {
   // Estado para controlar a exibição das opções de filtro/desconto
   const [showFilterOptions, setShowFilterOptions] = useState(false)
 
+  // Estados para controlar origem da mudança no campo
+  const [isFromScanner, setIsFromScanner] = useState(false)
+  const scannerTimeoutRef = useRef<number | null>(null)
+
   // Estados para teclado virtual
   const [activeInputIndex, setActiveInputIndex] = useState<number | null>(null)
   const [activeInputField, setActiveInputField] = useState<string>("")
@@ -84,6 +89,9 @@ export default function VendasPage() {
   
   // Estado para controlar o modal do carrinho mobile
   const [showCarrinhoModal, setShowCarrinhoModal] = useState(false)
+  
+  // Estados para câmera de código de barras
+  const [showCameraModal, setShowCameraModal] = useState(false)
 
   const totalBeforeDiscount = carrinho.reduce((sum, item) => sum + Number(item.subtotal), 0)
   const parsedDiscount = Math.max(0, parseCurrency(discountValue || "0")) || 0
@@ -264,6 +272,11 @@ export default function VendasPage() {
   // Debounce otimizado para busca automática
   const debounceRef = useRef<number | null>(null)
   useEffect(() => {
+    // Se o código vem do scanner, não executar busca automática
+    if (isFromScanner) {
+      return
+    }
+
     // Limpa produtos se input muito curto
     if (!codigoBusca || codigoBusca.trim().length < 2) {
       setProdutos([])
@@ -288,8 +301,11 @@ export default function VendasPage() {
       if (debounceRef.current) {
         clearTimeout(debounceRef.current)
       }
+      if (scannerTimeoutRef.current) {
+        clearTimeout(scannerTimeoutRef.current)
+      }
     }
-  }, [codigoBusca])
+  }, [codigoBusca, isFromScanner])
 
   const carregarClientes = async () => {
     setLoadingClientes(true)
@@ -347,6 +363,87 @@ export default function VendasPage() {
   }
 
   // Buscar produto e adicionar ao carrinho; quando utilizado via ENTER tenta correspondência exata
+  const abrirScanner = () => {
+    setShowCameraModal(true)
+  }
+
+  const fecharScanner = () => {
+    setShowCameraModal(false)
+  }
+
+  const processarCodigoEscaneado = (codigo: string) => {
+    // Marcar que o código vem do scanner para evitar loop do useEffect
+    setIsFromScanner(true)
+    setCodigoBusca(codigo)
+    
+    // Limpar flag após um tempo
+    if (scannerTimeoutRef.current) {
+      clearTimeout(scannerTimeoutRef.current)
+    }
+    scannerTimeoutRef.current = window.setTimeout(() => {
+      setIsFromScanner(false)
+    }, 1000)
+
+    // Processar código diretamente após um delay
+    setTimeout(() => {
+      buscarProdutoEscaneado(codigo)
+    }, 150)
+  }
+
+  const buscarProdutoEscaneado = async (codigo: string) => {
+    if (!codigo || codigo.trim().length === 0) return
+
+    if (caixaAberto === false) {
+      toast({ 
+        title: 'Caixa fechado', 
+        description: 'Não é possível buscar produtos sem um caixa aberto!', 
+        variant: 'destructive'
+      })
+      return
+    }
+
+    try {
+      // Buscar produto com código exato
+      await buscarProdutos(codigo, 'exact')
+
+      // Aguardar busca completar
+      setTimeout(() => {
+        // Buscar nos produtos carregados (usar callback para garantir estado atual)
+        setProdutos(produtosAtuais => {
+          const produto = produtosAtuais.find((p) => 
+            p.codigo_barras === codigo || 
+            p.nome.toLowerCase() === codigo.toLowerCase()
+          )
+
+          if (produto) {
+            // Produto encontrado - adicionar ao carrinho
+            adicionarAoCarrinho(produto)
+            // Limpar campo e produtos
+            setCodigoBusca("")
+            setProdutos([])
+            try { searchInputRef.current?.focus() } catch (e) { /* ignore */ }
+          } else {
+            toast({ 
+              title: 'Produto não encontrado', 
+              description: `Código ${codigo} não encontrado!`, 
+              variant: 'warning' 
+            })
+          }
+
+          return produtosAtuais
+        })
+      }, 200)
+      
+    } catch (error) {
+      console.error('Erro ao buscar produto escaneado:', error)
+      toast({ 
+        title: 'Erro', 
+        description: 'Erro ao buscar produto!', 
+        variant: 'destructive' 
+      })
+    }
+  }
+
   const buscarProduto = async (exact = false) => {
     if (!codigoBusca || codigoBusca.trim().length === 0) return
 
@@ -704,6 +801,7 @@ export default function VendasPage() {
           <div className="card-content">
       <div className="form-group form-group-no-shrink">
         <div className="row row-gap">
+          <div style={{ display: 'flex', gap: '0.5rem', flex: 1 }}>
                   <input
                     ref={searchInputRef}
                     type="text"
@@ -715,24 +813,26 @@ export default function VendasPage() {
                       if (e.key === "Enter") {
                         e.preventDefault()
                         buscarProduto(true)
-    
-                        {/* Modal de confirmação para split automático de fiado */}
-                        {showConfirmSplit && pendingSplit && (
-                          <ConfirmationModal
-                            isOpen={showConfirmSplit}
-                            onClose={() => { setShowConfirmSplit(false); setPendingSplit(null) }}
-                            onConfirm={handleConfirmSplit}
-                            title="Confirmar divisão de pagamento"
-                            message={`Cliente tem disponível R$ ${pendingSplit.available.toFixed(2)} para fiado. Deseja anotar R$ ${pendingSplit.available.toFixed(2)} no fiado e cobrar R$ ${pendingSplit.remaining.toFixed(2)} por outra forma de pagamento?`}
-                            type="warning"
-                            confirmText="Dividir e continuar"
-                            cancelText="Cancelar"
-                          />
-                        )}
-
-                    }
-                  }}
-                />
+                      }
+                    }}
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={abrirScanner}
+                    title="Escanear código de barras"
+                    style={{ 
+                      padding: '0.5rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      maxWidth: '60px'
+                    }}
+                  >
+                    <Camera size={20} />
+                  </button>
+          </div>
               </div>
           </div>
 
@@ -1592,6 +1692,27 @@ export default function VendasPage() {
           </div>
         </div>
       )}
+      
+      {/* Modal de confirmação para split automático de fiado */}
+      {showConfirmSplit && pendingSplit && (
+        <ConfirmationModal
+          isOpen={showConfirmSplit}
+          onClose={() => { setShowConfirmSplit(false); setPendingSplit(null) }}
+          onConfirm={handleConfirmSplit}
+          title="Confirmar divisão de pagamento"
+          message={`Cliente tem disponível R$ ${pendingSplit.available.toFixed(2)} para fiado. Deseja anotar R$ ${pendingSplit.available.toFixed(2)} no fiado e cobrar R$ ${pendingSplit.remaining.toFixed(2)} por outra forma de pagamento?`}
+          type="warning"
+          confirmText="Dividir e continuar"
+          cancelText="Cancelar"
+        />
+      )}
+
+      {/* Scanner de código de barras */}
+      <BarcodeScanner
+        isOpen={showCameraModal}
+        onClose={fecharScanner}
+        onScan={processarCodigoEscaneado}
+      />
     </div>
   )
 }
