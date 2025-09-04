@@ -277,48 +277,7 @@ export default function HistoricoPage() {
             </div>
           ) : (
             <>
-              {/* Layout Desktop - Tabela */}
-              <div className="historico-table-container">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Data/Hora</th>
-                      <th>Cliente</th>
-                      <th>Total</th>
-                      <th>Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {vendas.map((venda) => (
-                      <tr key={venda.id}>
-                        <td>#{venda.id}</td>
-                        <td>{formatarData(venda.data_venda)}</td>
-                        <td>{venda.cliente_nome || "Cliente Avulso"}</td>
-                        <td>R$ {(Number(venda.total) || 0).toFixed(2)}</td>
-                        <td>
-                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                            <button className="btn btn-sm btn-outline" onClick={() => verDetalhes(venda)}>
-                              <Eye size={16} />
-                              Ver Detalhes
-                            </button>
-                            <button 
-                              className="btn btn-sm btn-primary" 
-                              onClick={() => imprimirCupomSegundaVia(venda.id)}
-                              title="Imprimir 2ª via do cupom"
-                            >
-                              <Printer size={16} />
-                              2ª Via
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Layout Mobile - Cards */}
+              {/* Layout Desktop - Cards */}
               <div className="historico-cards-container">
                 {vendas.map((venda) => (
                   <div key={venda.id} className="historico-card">
@@ -341,41 +300,6 @@ export default function HistoricoPage() {
                       <div className="historico-card-total-desktop">R$ {(Number(venda.total) || 0).toFixed(2)}</div>
                       
                       <div className="historico-card-actions-desktop">
-                        <button className="btn btn-sm btn-outline" onClick={() => verDetalhes(venda)}>
-                          <Eye size={16} />
-                          Ver Detalhes
-                        </button>
-                        <button 
-                          className="btn btn-sm btn-primary" 
-                          onClick={() => imprimirCupomSegundaVia(venda.id)}
-                          title="Imprimir 2ª via do cupom"
-                        >
-                          <Printer size={16} />
-                          2ª Via
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Layout Mobile */}
-                    <div className="historico-card-content-mobile">
-                      <div className="historico-card-header-mobile">
-                        <div className="historico-card-id-mobile">#{venda.id}</div>
-                        <div className="historico-card-total-mobile">R$ {(Number(venda.total) || 0).toFixed(2)}</div>
-                      </div>
-
-                      <div className="historico-card-fields-mobile">
-                        <div className="historico-field-mobile">
-                          <span className="historico-field-label-mobile">Data/Hora:</span>
-                          <span className="historico-field-value-mobile">{formatarData(venda.data_venda)}</span>
-                        </div>
-
-                        <div className="historico-field-mobile">
-                          <span className="historico-field-label-mobile">Cliente:</span>
-                          <span className="historico-field-value-mobile">{venda.cliente_nome || "Cliente Avulso"}</span>
-                        </div>
-                      </div>
-
-                      <div className="historico-card-actions-mobile">
                         <button className="btn btn-sm btn-outline" onClick={() => verDetalhes(venda)}>
                           <Eye size={16} />
                           Ver Detalhes
@@ -547,7 +471,7 @@ export default function HistoricoPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {vendas.map((venda) => (
                 <div key={venda.id} className="historico-card">
-                  {/* Layout Mobile Aprimorado */}
+                  {/* Layout Mobile */}
                   <div className="historico-card-content-mobile">
                     <div className="historico-card-header-mobile">
                       <div className="historico-card-id-mobile">#{venda.id}</div>
