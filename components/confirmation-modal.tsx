@@ -1,7 +1,6 @@
 "use client"
 
-import { AlertTriangle, CheckCircle } from "lucide-react"
-import Modal from "./modal"
+import { AlertTriangle, CheckCircle, XCircle, ShoppingCart, X } from "lucide-react"
 
 interface ConfirmationModalProps {
   isOpen: boolean
@@ -24,47 +23,125 @@ export default function ConfirmationModal({
   confirmText = "Confirmar",
   cancelText = "Cancelar",
 }: ConfirmationModalProps) {
+  if (!isOpen) return null
+
   const handleConfirm = () => {
     onConfirm()
     onClose()
   }
 
-  const getIcon = () => {
+  const getTypeConfig = () => {
     switch (type) {
       case "success":
-        return <CheckCircle size={48} className="text-green-600" />
+        return {
+          icon: <CheckCircle size={56} />,
+          iconColor: "text-success-primary",
+          iconBg: "bg-success-light",
+          confirmClass: "btn-success",
+          headerBg: "bg-success-gradient"
+        }
       case "danger":
-        return <AlertTriangle size={48} className="text-red-600" />
+        return {
+          icon: <XCircle size={56} />,
+          iconColor: "text-danger-primary",
+          iconBg: "bg-danger-light",
+          confirmClass: "btn-danger",
+          headerBg: "bg-danger-gradient"
+        }
       default:
-        return <AlertTriangle size={48} className="text-yellow-600" />
+        return {
+          icon: <AlertTriangle size={56} />,
+          iconColor: "text-warning-primary",
+          iconBg: "bg-warning-light",
+          confirmClass: "btn-warning",
+          headerBg: "bg-warning-gradient"
+        }
     }
   }
 
-  const getButtonClass = () => {
-    switch (type) {
-      case "success":
-        return "btn-success"
-      case "danger":
-        return "btn-danger"
-      default:
-        return "btn-warning"
-    }
-  }
+  const config = getTypeConfig()
+
+  // Detecta se é o modal do carrinho
+  const isCartModal = message.includes("itens no carrinho") || message.includes("dados do carrinho")
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title}>
-      <div className="text-center">
-        <div className="flex justify-center mb-4">{getIcon()}</div>
-        <p className="text-lg mb-6">{message}</p>
-        <div className="modal-actions">
-          <button onClick={onClose} className="btn btn-outline">
-            {cancelText}
-          </button>
-          <button onClick={handleConfirm} className={`btn ${getButtonClass()}`}>
-            {confirmText}
+    <div className="confirmation-modal-overlay">
+      <div className="confirmation-modal">
+        {/* Cabeçalho */}
+        <div className={`confirmation-modal-header ${config.headerBg}`}>
+          <div className="header-content">
+            <div className={`header-icon ${config.iconBg}`}>
+              {isCartModal ? <ShoppingCart size={28} /> : config.icon}
+            </div>
+            <div className="header-text">
+              <h3 className="header-title">{title}</h3>
+              <span className="header-subtitle">
+                {type === "success" ? "Operação bem-sucedida" : 
+                 type === "danger" ? "Ação irreversível" : 
+                 "Confirmação necessária"}
+              </span>
+            </div>
+          </div>
+          <button 
+            className="header-close"
+            onClick={onClose}
+            title="Fechar"
+          >
+            <X size={20} />
           </button>
         </div>
+
+        {/* Conteúdo */}
+        <div className="confirmation-modal-content">
+          {isCartModal ? (
+            <div className="cart-warning-content">
+              <div className={`warning-icon-large ${config.iconBg}`}>
+                <ShoppingCart size={48} className={config.iconColor} />
+              </div>
+              <div className="warning-text">
+                <h4>Atenção: Itens no carrinho</h4>
+                <p>
+                  Você possui itens adicionados ao carrinho de vendas. 
+                  Ao navegar para outra seção, <strong>todos os dados serão perdidos</strong> 
+                  e você precisará adicionar os produtos novamente.
+                </p>
+                <div className="warning-recommendation">
+                  <strong>Recomendação:</strong> Finalize a venda atual antes de continuar.
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="standard-content">
+              <div className={`content-icon ${config.iconBg}`}>
+                <span className={config.iconColor}>
+                  {config.icon}
+                </span>
+              </div>
+              <p className="content-message">{message}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Rodapé com ações */}
+        <div className="confirmation-modal-footer">
+          <div className="footer-actions">
+            <button 
+              onClick={onClose} 
+              className="btn btn-outline btn-lg cancel-btn"
+            >
+              <X size={18} />
+              {cancelText}
+            </button>
+            <button 
+              onClick={handleConfirm} 
+              className={`btn ${config.confirmClass} btn-lg confirm-btn`}
+            >
+              <CheckCircle size={18} />
+              {confirmText}
+            </button>
+          </div>
+        </div>
       </div>
-    </Modal>
+    </div>
   )
 }
