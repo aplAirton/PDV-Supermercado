@@ -7,9 +7,11 @@ export async function GET(request: NextRequest) {
     const q = url.searchParams.get("q")?.trim() || ""
     const mode = url.searchParams.get("mode") || "search" // search | all | exact
     const limitParam = url.searchParams.get("limit")
-    const limit = limitParam ? Math.max(1, Math.min(50, Number.parseInt(limitParam, 10) || 10)) : 10
+    const limitValue = Number.parseInt(limitParam || "10", 10)
+    // limit = 0 significa sem limite, senão aplica limite entre 1 e 50
+    const limit = limitValue === 0 ? 0 : Math.max(1, Math.min(50, limitValue || 10))
 
-    console.log(`[PRODUTOS API] Mode: ${mode}, Query: "${q}", Limit: ${limit}`)
+    console.log(`[PRODUTOS API] Mode: ${mode}, Query: "${q}", Limit: ${limit === 0 ? 'sem limite' : limit}`)
 
     // Modo ALL - retorna todos os produtos (para gerenciamento)
     if (mode === "all") {
@@ -64,7 +66,7 @@ export async function GET(request: NextRequest) {
         LOWER(nome) LIKE LOWER(?)
       )
       ORDER BY relevancia ASC, nome ASC
-      LIMIT ${limit}
+      ${limit === 0 ? '' : `LIMIT ${limit}`}
     `
 
     const likePattern = `%${q}%`

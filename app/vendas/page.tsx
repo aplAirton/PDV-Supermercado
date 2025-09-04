@@ -93,6 +93,12 @@ export default function VendasPage() {
   // Estados para câmera de código de barras
   const [showCameraModal, setShowCameraModal] = useState(false)
 
+  // Estados para busca avançada
+  const [showBuscaAvancadaModal, setShowBuscaAvancadaModal] = useState(false)
+  const [produtosBuscaAvancada, setProdutosBuscaAvancada] = useState<Produto[]>([])
+  const [loadingBuscaAvancada, setLoadingBuscaAvancada] = useState(false)
+  const [queryBuscaAvancada, setQueryBuscaAvancada] = useState("")
+
   const totalBeforeDiscount = carrinho.reduce((sum, item) => sum + Number(item.subtotal), 0)
   const parsedDiscount = Math.max(0, parseCurrency(discountValue || "0")) || 0
   let discountAmount = 0
@@ -235,20 +241,20 @@ export default function VendasPage() {
   }, [showPagamentoModal])
 
   // Nova função de busca de produtos mais robusta
-  const buscarProdutos = async (query: string, mode: 'search' | 'exact' = 'search') => {
+  const buscarProdutos = async (query: string, mode: 'search' | 'exact' = 'search', limit: number = 3) => {
     if (!query || query.trim().length < 2) {
       setProdutos([])
       return
     }
 
     setLoadingProdutos(true)
-    console.log(`[VENDAS] Buscando produtos: "${query}" (modo: ${mode})`)
+    console.log(`[VENDAS] Buscando produtos: "${query}" (modo: ${mode}, limite: ${limit})`)
     
     try {
       const params = new URLSearchParams({ 
         q: query.trim(), 
         mode: mode,
-        limit: "15" 
+        limit: limit.toString() 
       })
       
       const response = await fetch(`/api/produtos?${params.toString()}`)
@@ -268,6 +274,74 @@ export default function VendasPage() {
       setLoadingProdutos(false)
     }
   }
+
+  // Função específica para busca avançada (sem limite)
+  const buscarProdutosAvancada = async (query: string) => {
+    if (!query || query.trim().length < 2) {
+      setProdutosBuscaAvancada([])
+      return
+    }
+
+    setLoadingBuscaAvancada(true)
+    console.log(`[VENDAS] Busca avançada: "${query}"`)
+    
+    try {
+      const params = new URLSearchParams({ 
+        q: query.trim(), 
+        mode: 'search',
+        limit: '0' // 0 = sem limite
+      })
+      
+      const response = await fetch(`/api/produtos?${params.toString()}`)
+      const data = await response.json()
+      
+      if (response.ok) {
+        setProdutosBuscaAvancada(Array.isArray(data) ? data : [])
+        console.log(`[VENDAS] Busca avançada encontrou ${Array.isArray(data) ? data.length : 0} produtos`)
+      } else {
+        console.error('[VENDAS] Erro na API busca avançada:', data)
+        setProdutosBuscaAvancada([])
+      }
+    } catch (error) {
+      console.error("[VENDAS] Erro na busca avançada:", error)
+      setProdutosBuscaAvancada([])
+    } finally {
+      setLoadingBuscaAvancada(false)
+    }
+  }
+
+  // Abre modal de busca avançada
+  const abrirBuscaAvancada = () => {
+    setQueryBuscaAvancada(codigoBusca)
+    setShowBuscaAvancadaModal(true)
+    if (codigoBusca.trim().length >= 2) {
+      buscarProdutosAvancada(codigoBusca)
+    }
+  }
+
+  // Debounce para busca avançada
+  const debounceAvancadaRef = useRef<number | null>(null)
+  useEffect(() => {
+    if (!showBuscaAvancadaModal) return
+
+    if (debounceAvancadaRef.current) {
+      clearTimeout(debounceAvancadaRef.current)
+    }
+
+    if (queryBuscaAvancada.trim().length >= 2) {
+      debounceAvancadaRef.current = window.setTimeout(() => {
+        buscarProdutosAvancada(queryBuscaAvancada)
+      }, 300)
+    } else {
+      setProdutosBuscaAvancada([])
+    }
+
+    return () => {
+      if (debounceAvancadaRef.current) {
+        clearTimeout(debounceAvancadaRef.current)
+      }
+    }
+  }, [queryBuscaAvancada, showBuscaAvancadaModal])
 
   // Debounce otimizado para busca automática
   const debounceRef = useRef<number | null>(null)
@@ -891,6 +965,22 @@ export default function VendasPage() {
               </div>
             )}
           </div>
+          
+          {/* Rodapé da busca com botão Busca Avançada */}
+          {codigoBusca.trim().length >= 2 && produtos.length > 0 && (
+            <div className="busca-footer">
+              <div className="busca-info">
+                Mostrando {produtos.length} resultado{produtos.length !== 1 ? 's' : ''}
+              </div>
+              <button 
+                className="btn btn-sm btn-outline busca-avancada-btn"
+                onClick={abrirBuscaAvancada}
+              >
+                <Search size={14} />
+                Busca Avançada
+              </button>
+            </div>
+          )}
           </div>
         </div>
       ) : (
@@ -1713,6 +1803,164 @@ export default function VendasPage() {
         onClose={fecharScanner}
         onScan={processarCodigoEscaneado}
       />
+
+      {/* Modal de Busca Avançada */}
+      {showBuscaAvancadaModal && (
+        <div className="modal-overlay">
+          <div className="modal busca-avancada-modal">
+            {/* Cabeçalho do Modal */}
+            <div className="busca-avancada-header">
+              <div className="busca-avancada-title">
+                <Search size={24} />
+                <h3>Busca Avançada de Produtos</h3>
+              </div>
+              <button 
+                className="btn btn-icon btn-ghost" 
+                onClick={() => setShowBuscaAvancadaModal(false)}
+                title="Fechar"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Campo de Busca */}
+            <div className="busca-avancada-search">
+              <div className="search-input-container">
+                <Search size={18} className="search-icon" />
+                <input
+                  type="text"
+                  className="search-input-avancada"
+                  placeholder="Digite o nome ou código do produto..."
+                  value={queryBuscaAvancada}
+                  onChange={(e) => setQueryBuscaAvancada(e.target.value)}
+                  autoFocus
+                />
+                {queryBuscaAvancada && (
+                  <button 
+                    className="btn btn-icon btn-ghost clear-search"
+                    onClick={() => {
+                      setQueryBuscaAvancada("")
+                      setProdutosBuscaAvancada([])
+                    }}
+                    title="Limpar busca"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Área de Resultados */}
+            <div className="busca-avancada-content">
+              {loadingBuscaAvancada ? (
+                <div className="busca-avancada-loading">
+                  <Loader2 className="loading-spinner" size={32} />
+                  <p>Buscando produtos...</p>
+                </div>
+              ) : queryBuscaAvancada.trim().length >= 2 ? (
+                produtosBuscaAvancada.length === 0 ? (
+                  <div className="busca-avancada-empty">
+                    <Search size={48} className="empty-icon" />
+                    <h4>Nenhum produto encontrado</h4>
+                    <p>Não encontramos produtos para "<strong>{queryBuscaAvancada}</strong>"</p>
+                    <small>Tente usar termos diferentes ou verifique a ortografia</small>
+                  </div>
+                ) : (
+                  <div className="busca-avancada-results-container">
+                    {/* Header dos Resultados */}
+                    <div className="results-header">
+                      <div className="results-count">
+                        <span className="count-badge">{produtosBuscaAvancada.length}</span>
+                        produto{produtosBuscaAvancada.length !== 1 ? 's' : ''} encontrado{produtosBuscaAvancada.length !== 1 ? 's' : ''}
+                      </div>
+                      <div className="results-query">
+                        Resultados para: <strong>"{queryBuscaAvancada}"</strong>
+                      </div>
+                    </div>
+
+                    {/* Lista de Produtos */}
+                    <div className="produtos-lista-container">
+                      <table className="table produtos-table-avancada">
+                        <thead>
+                          <tr>
+                            <th className="col-produto">Produto</th>
+                            <th className="col-preco">Preço</th>
+                            <th className="col-estoque">Estoque</th>
+                            <th className="col-acao">Ação</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {produtosBuscaAvancada.map((produto) => (
+                            <tr key={produto.id} className="produto-row">
+                              <td className="produto-info">
+                                <div className="produto-nome">{produto.nome}</div>
+                                <div className="produto-codigo">{produto.codigo_barras}</div>
+                              </td>
+                              <td className="produto-preco">
+                                <span className="preco-valor">R$ {Number(produto.preco).toFixed(2)}</span>
+                              </td>
+                              <td className="produto-estoque">
+                                <span className={`estoque-badge ${produto.estoque === 0 ? 'sem-estoque' : produto.estoque < 10 ? 'baixo-estoque' : 'com-estoque'}`}>
+                                  {produto.estoque}
+                                </span>
+                              </td>
+                              <td className="produto-acao">
+                                <button
+                                  className={`btn-add-produto ${buttonFeedback[produto.id] ? 'added' : ''}`}
+                                  onClick={() => adicionarAoCarrinho(produto)}
+                                  disabled={produto.estoque === 0}
+                                  title={produto.estoque === 0 ? 'Produto sem estoque' : 'Adicionar ao carrinho'}
+                                >
+                                  {buttonFeedback[produto.id] ? (
+                                    <>
+                                      <Check size={16} />
+                                      <span>Adicionado</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Plus size={16} />
+                                      <span>Adicionar</span>
+                                    </>
+                                  )}
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )
+              ) : (
+                <div className="busca-avancada-inicial">
+                  <Search size={48} className="search-icon-large" />
+                  <h4>Busca Avançada</h4>
+                  <p>Digite pelo menos 2 caracteres para buscar produtos em todo o catálogo</p>
+                  <small>Você pode buscar por nome ou código de barras</small>
+                </div>
+              )}
+            </div>
+
+            {/* Rodapé do Modal */}
+            <div className="busca-avancada-footer">
+              <div className="footer-info">
+                {queryBuscaAvancada.trim().length >= 2 && produtosBuscaAvancada.length > 0 && (
+                  <span>Busca completa sem limite de resultados</span>
+                )}
+              </div>
+              <div className="footer-actions">
+                <button 
+                  className="btn btn-outline btn-lg" 
+                  onClick={() => setShowBuscaAvancadaModal(false)}
+                >
+                  <X size={18} />
+                  Fechar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
