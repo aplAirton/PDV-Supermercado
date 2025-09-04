@@ -423,7 +423,6 @@ body.sidebar-open {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transition: all 0.2s ease;
   height: fit-content;
-  max-height: calc(100vh - 160px);
   display: flex;
   flex-direction: column;
 }
@@ -575,7 +574,7 @@ body.sidebar-open {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
-  height: calc(100vh - 140px);
+  max-height: calc(100vh - 140px);
   padding: 1rem;
   /* Fonte do sistema para área PDV */
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -1539,7 +1538,6 @@ body.sidebar-open {
     grid-template-columns: 1fr;
     gap: 1rem;
     height: auto;
-    min-height: calc(100vh - 140px);
     padding: 0.5rem;
   }
 
@@ -1562,7 +1560,6 @@ body.sidebar-open {
     padding: 1rem;
     border-radius: 0.75rem;
     height: fit-content;
-    max-height: calc(100vh - 120px);
   }
 
   .card-header {
