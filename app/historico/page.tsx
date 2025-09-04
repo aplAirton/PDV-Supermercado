@@ -493,7 +493,7 @@ export default function HistoricoPage() {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Calendar size={18} />
-              <span>Resumo das Vendas (Período)</span>
+              <span>Resumo (Período)</span>
             </div>
             {showMobileResumo ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
           </button>
@@ -534,9 +534,8 @@ export default function HistoricoPage() {
 
         {/* Card 3: Vendas Mobile */}
         <div className="historico-vendas-card-mobile">
-          <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Eye size={18} />
-            Lista de Vendas ({vendas.length})
+          <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem', marginLeft: '0.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            Últimas vendas ({vendas.length})
           </h2>
           
           {loadingVendas ? (
