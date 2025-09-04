@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Ban, Calendar, DollarSign, TrendingUp, TrendingDown, Filter, Eye, Search, Download, Printer, CreditCard, Smartphone, Layers, Settings, FileText, LucideFileQuestion, LucideCheckCircle, Loader2, Menu } from 'lucide-react'
+import { Ban, Calendar, DollarSign, TrendingUp, TrendingDown, Filter, Eye, Search, Download, Printer, CreditCard, Smartphone, Layers, Settings, FileText, LucideFileQuestion, LucideCheckCircle, Loader2, Menu, ChevronUp, ChevronDown } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import '../../styles/pagamentos-new.css'
 
@@ -84,6 +84,15 @@ export default function PagamentosPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Função para verificar se há filtros ativos
+  const temFiltrosAtivos = () => {
+    return filtros.tipo !== '' || 
+           filtros.categoria !== '' || 
+           filtros.busca !== '' ||
+           filtros.dataInicio !== new Date().toISOString().split('T')[0] ||
+           filtros.dataFim !== new Date().toISOString().split('T')[0]
   }
 
   const movimentosFiltrados = movimentos.filter(movimento => {
@@ -309,17 +318,98 @@ const renderFormasPagamento = (movimento: MovimentoCaixa) => {
       {/* Header */}
       <div className="page-header">
         <div className="header-actions">
-          <button 
-            className="btn btn-outline"
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <Filter size={16} />
-            Filtros
-          </button>
           <button className="btn btn-primary" onClick={() => setShowExtratosModal(true)}>
             <Download size={16} />
             Extratos
           </button>
+        </div>
+      </div>
+
+      {/* Card de Filtros */}
+      <div className="pagamentos-filter-section card mb-4" style={{ background: "var(--surface)" }}>
+        {/* Botão para mostrar/ocultar filtros */}
+        <button
+          type="button"
+          className={`btn-options-toggle mb-3 ${temFiltrosAtivos() ? 'filters-active' : ''}`}
+          onClick={() => setShowFilters(!showFilters)}
+        >
+          <div className="btn-options-content">
+            <Settings size={16} />
+            <span>Filtros de Busca</span>
+            {temFiltrosAtivos() && <span className="filter-indicator">•</span>}
+          </div>
+          {showFilters ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        </button>
+
+        {/* Opções de filtro */}
+        <div className={`pagamentos-filter-options ${showFilters ? 'expanded' : 'collapsed'}`}>
+          <div>
+            <div className="pagamentos-filters-grid">
+              <div className="form-group">
+                <label className="form-label">Data Início</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={filtros.dataInicio}
+                  onChange={(e) => setFiltros(prev => ({ ...prev, dataInicio: e.target.value }))}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Data Fim</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={filtros.dataFim}
+                  onChange={(e) => setFiltros(prev => ({ ...prev, dataFim: e.target.value }))}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Tipo</label>
+                <select
+                  className="form-select"
+                  value={filtros.tipo}
+                  onChange={(e) => setFiltros(prev => ({ ...prev, tipo: e.target.value }))}
+                >
+                  <option value="">Todos</option>
+                  <option value="entrada">Entradas</option>
+                  <option value="saida">Saídas</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Categoria</label>
+                <select
+                  className="form-select"
+                  value={filtros.categoria}
+                  onChange={(e) => setFiltros(prev => ({ ...prev, categoria: e.target.value }))}
+                >
+                  <option value="">Todas</option>
+                  <option value="venda_dinheiro">Dinheiro</option>
+                  <option value="venda_cartao">Cartão</option>
+                  <option value="venda_pix">PIX</option>
+                  <option value="venda_multiplas">Múltiplas Formas</option>
+                  <option value="pagamento_fiado">Pagamento Fiado</option>
+                  <option value="ajuste">Ajustes</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Buscar</label>
+                <div className="search-container">
+                  <Search size={16} className="search-icon" />
+                  <input
+                    type="text"
+                    placeholder="Buscar..."
+                    className="form-input search-input"
+                    value={filtros.busca}
+                    onChange={(e) => setFiltros(prev => ({ ...prev, busca: e.target.value }))}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -387,73 +477,6 @@ const renderFormasPagamento = (movimento: MovimentoCaixa) => {
           </div>
         </div>
       </div>
-      {/* Filtros */}
-      {showFilters && (
-        <div className="filters-panel">
-          <div className="filters-grid">
-            <div className="filter-group">
-              <label>Data Início</label>
-              <input
-                type="date"
-                value={filtros.dataInicio}
-                onChange={(e) => setFiltros(prev => ({ ...prev, dataInicio: e.target.value }))}
-                className="input"
-              />
-            </div>
-            <div className="filter-group">
-              <label>Data Fim</label>
-              <input
-                type="date"
-                value={filtros.dataFim}
-                onChange={(e) => setFiltros(prev => ({ ...prev, dataFim: e.target.value }))}
-                className="input"
-              />
-            </div>
-            <div className="filter-group">
-              <label>Tipo</label>
-              <select
-                value={filtros.tipo}
-                onChange={(e) => setFiltros(prev => ({ ...prev, tipo: e.target.value }))}
-                className="select"
-              >
-                <option value="">Todos</option>
-                <option value="entrada">Entradas</option>
-                <option value="saida">Saídas</option>
-              </select>
-            </div>
-            <div className="filter-group">
-              <label>Categoria</label>
-              <select
-                value={filtros.categoria}
-                onChange={(e) => setFiltros(prev => ({ ...prev, categoria: e.target.value }))}
-                className="select"
-              >
-                <option value="">Todas</option>
-                <option value="venda_dinheiro">Dinheiro</option>
-                <option value="venda_cartao">Cartão</option>
-                <option value="venda_pix">PIX</option>
-                <option value="venda_multiplas">Múltiplas Formas</option>
-                <option value="pagamento_fiado">Pagamento Fiado</option>
-                <option value="ajuste">Ajustes</option>
-              </select>
-            </div>
-            <div className="filter-group">
-              <label>Buscar</label>
-              <div className="search-container">
-                <Search size={16} />
-                <input
-                  type="text"
-                  placeholder="Buscar..."
-                  value={filtros.busca}
-                  onChange={(e) => setFiltros(prev => ({ ...prev, busca: e.target.value }))}
-                  className="input search"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Lista de Movimentos */}
       <div className="movements-section">
         <div className="movements-header">
@@ -478,37 +501,120 @@ const renderFormasPagamento = (movimento: MovimentoCaixa) => {
           <div className="movements-list">
             {movimentosFiltrados.map((movimento) => (
               <div key={movimento.id} className="movement-card">
-                <div className="movement-left">
-                  <div className={`movement-type ${movimento.tipo}`}>
-                    {getIconeCategoria(movimento.categoria)}
-                  </div>
-                  <div className="movement-info">
-                    <h3>{movimento.descricao}</h3>
-                    <div className="movement-meta">
-                      <span className="date">{formatarData(movimento.data_movimento)}</span>
-                      {movimento.referencia && <span className="ref">Ref: {movimento.referencia}</span>}
-                      {movimento.cliente_nome && <span className="client">Cliente: {movimento.cliente_nome}</span>}
-                      {movimento.forma_pagamento && <span className="payment">{renderFormasPagamento(movimento)}</span>}
-                      {movimento.valor_pago !== undefined && movimento.valor_pago !== null ? (
-                        <span className="valor-recebido">Recebido: {formatarValor(Number(movimento.valor_pago))}</span>
-                      ) : null}
-                      {movimento.troco !== undefined && movimento.troco !== null && Number(movimento.troco) > 0 ? (
-                        <span className="troco">Troco: {formatarValor(Number(movimento.troco))}</span>
-                      ) : null}
+                {/* Layout Desktop */}
+                <div className="movement-content-desktop">
+                  <div className="movement-left">
+                    <div className={`movement-icon ${movimento.tipo}`}>
+                      {getIconeCategoria(movimento.categoria)}
+                    </div>
+                    <div className="movement-details">
+                      <div className="movement-title">{movimento.descricao}</div>
+                      <div className="movement-metadata">
+                        <span className="movement-date">{formatarData(movimento.data_movimento)}</span>
+                        {movimento.referencia && (
+                          <span className="movement-ref">Ref: {movimento.referencia}</span>
+                        )}
+                        {movimento.cliente_nome && (
+                          <span className="movement-client">{movimento.cliente_nome}</span>
+                        )}
+                      </div>
+                      {movimento.forma_pagamento && (
+                        <div className="movement-payment-methods">
+                          {renderFormasPagamento(movimento)}
+                        </div>
+                      )}
+                      {(movimento.valor_pago !== undefined && movimento.valor_pago !== null) && (
+                        <div className="movement-additional-info">
+                          <span className="movement-received">
+                            Recebido: {formatarValor(Number(movimento.valor_pago))}
+                          </span>
+                          {(movimento.troco !== undefined && movimento.troco !== null && Number(movimento.troco) > 0) && (
+                            <span className="movement-change">
+                              Troco: {formatarValor(Number(movimento.troco))}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-                <div className="movement-right">
-                  <div className={`movement-value ${movimento.tipo}`}>
-                    {movimento.tipo === 'entrada' ? '+' : '-'} {formatarValor(Math.abs(movimento.valor))}
+                  <div className="movement-right">
+                    <div className={`movement-value ${movimento.tipo}`}>
+                      {movimento.tipo === 'entrada' ? '+' : '-'} {formatarValor(Math.abs(movimento.valor))}
+                    </div>
+                    <button
+                      onClick={() => imprimirRecibo(movimento.id)}
+                      className="movement-action-btn"
+                      title="Imprimir recibo"
+                    >
+                      <Printer size={16} />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => imprimirRecibo(movimento.id)}
-                    className="btn btn-sm"
-                    title="Imprimir recibo"
-                  >
-                    <Printer size={14} />
-                  </button>
+                </div>
+
+                {/* Layout Mobile */}
+                <div className="movement-content-mobile">
+                  <div className="movement-header-mobile">
+                    <div className="movement-title-mobile">
+                      <div className={`movement-icon-mobile ${movimento.tipo}`}>
+                        {getIconeCategoria(movimento.categoria)}
+                      </div>
+                      <div className="movement-info-mobile">
+                        <h4 className="movement-name">{movimento.descricao}</h4>
+                        <span className="movement-date-mobile">{formatarData(movimento.data_movimento)}</span>
+                      </div>
+                    </div>
+                    <div className="movement-value-mobile-container">
+                      <div className={`movement-value-mobile ${movimento.tipo}`}>
+                        {movimento.tipo === 'entrada' ? '+' : '-'} {formatarValor(Math.abs(movimento.valor))}
+                      </div>
+                      <button
+                        onClick={() => imprimirRecibo(movimento.id)}
+                        className="movement-action-btn-mobile"
+                        title="Imprimir recibo"
+                      >
+                        <Printer size={14} />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {(movimento.referencia || movimento.cliente_nome || movimento.forma_pagamento) && (
+                    <div className="movement-details-mobile">
+                      {movimento.referencia && (
+                        <div className="movement-detail-item">
+                          <span className="detail-label">Referência:</span>
+                          <span className="detail-value">{movimento.referencia}</span>
+                        </div>
+                      )}
+                      {movimento.cliente_nome && (
+                        <div className="movement-detail-item">
+                          <span className="detail-label">Cliente:</span>
+                          <span className="detail-value">{movimento.cliente_nome}</span>
+                        </div>
+                      )}
+                      {movimento.forma_pagamento && (
+                        <div className="movement-detail-item">
+                          <span className="detail-label">Pagamento:</span>
+                          <div className="detail-value-payment">
+                            {renderFormasPagamento(movimento)}
+                          </div>
+                        </div>
+                      )}
+                      {(movimento.valor_pago !== undefined && movimento.valor_pago !== null) && (
+                        <div className="movement-additional-mobile">
+                          <div className="movement-detail-item">
+                            <span className="detail-label">Recebido:</span>
+                            <span className="detail-value detail-money">{formatarValor(Number(movimento.valor_pago))}</span>
+                          </div>
+                          {(movimento.troco !== undefined && movimento.troco !== null && Number(movimento.troco) > 0) && (
+                            <div className="movement-detail-item">
+                              <span className="detail-label">Troco:</span>
+                              <span className="detail-value detail-money">{formatarValor(Number(movimento.troco))}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
