@@ -865,10 +865,6 @@ export default function CaixaPage() {
     <div className="caixa-container">
       {/* Header */}
       <div className="page-header">
-        <div className="header-info">
-          <h1>Gerenciamento de Caixa</h1>
-          <p>Controle de abertura, fechamento e movimentações</p>
-        </div>
         
         <div className="header-actions">
           {caixaAtual && (
@@ -984,7 +980,6 @@ export default function CaixaPage() {
             <thead>
               <tr>
                 <th>Funcionário</th>
-                <th>Status</th>
                 <th>Total Vendas</th>
                 <th>Abertura</th>
                 <th>Fechamento</th>
@@ -999,11 +994,6 @@ export default function CaixaPage() {
                       <User size={16} />
                       {caixa.funcionario_nome}
                     </div>
-                  </td>
-                  <td>
-                    <span className={`status-badge ${caixa.status}`}>
-                      Fechado
-                    </span>
                   </td>
                   <td className="currency">
                     {formatarValor(caixa.total_vendas)}

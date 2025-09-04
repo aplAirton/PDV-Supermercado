@@ -427,9 +427,6 @@ export default function FiadosPage() {
     <div className="container p-8">
 
       <div className="card">
-        <div className="card-header">
-          <h2 className="card-title">Devedores</h2>
-        </div>
         <div className="p-4">
           {clientesDevedores.length === 0 ? (
             <p className="text-center text-muted">Nenhum cliente com débito atual</p>

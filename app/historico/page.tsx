@@ -164,7 +164,6 @@ export default function HistoricoPage() {
     <div className="historico-main-container">
       {/* Desktop: Layout original */}
       <div className="card desktop-layout">
-        <h1 className="page-title">Histórico de Vendas</h1>
 
         {/* Filtros */}
         <div className="historico-filter-section card mb-4" style={{ background: "var(--surface)" }}>

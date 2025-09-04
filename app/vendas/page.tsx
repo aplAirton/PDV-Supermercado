@@ -6,7 +6,7 @@ import ConfirmationModal from '@/components/confirmation-modal'
 import VirtualKeyboard from '@/components/virtual-keyboard'
 import Loading from "@/components/loading"
 import SearchHint from "@/components/search-hint"
-import { Search, Plus, Minus, Trash2, ShoppingCart, X, Settings, ChevronDown, ChevronUp, Loader2, User, Receipt } from "lucide-react"
+import { Search, Plus, Minus, Trash2, ShoppingCart, X, Settings, ChevronDown, ChevronUp, Loader2, User, Receipt, Check } from "lucide-react"
 import '../../styles/components.css'
 
 interface Produto {
@@ -79,6 +79,12 @@ export default function VendasPage() {
   const paymentInputRef = useRef<HTMLInputElement | null>(null)
   const [showVirtualKeyboard, setShowVirtualKeyboard] = useState<boolean>(false)
 
+  // Estado para feedback visual dos botões de adicionar produto
+  const [buttonFeedback, setButtonFeedback] = useState<{[key: number]: boolean}>({})
+  
+  // Estado para controlar o modal do carrinho mobile
+  const [showCarrinhoModal, setShowCarrinhoModal] = useState(false)
+
   const totalBeforeDiscount = carrinho.reduce((sum, item) => sum + Number(item.subtotal), 0)
   const parsedDiscount = Math.max(0, parseCurrency(discountValue || "0")) || 0
   let discountAmount = 0
@@ -148,7 +154,30 @@ export default function VendasPage() {
   useEffect(() => {
     verificarStatusCaixa()
     carregarClientes()
+    
+    // Evento cleanup para notificar mudanças
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('vendas_data_updated'))
+      }
+    }
   }, [])
+
+  // Effect para sincronizar dados do carrinho com localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('vendas_carrinho', JSON.stringify(carrinho))
+      window.dispatchEvent(new Event('vendas_data_updated'))
+    }
+  }, [carrinho])
+
+  // Effect para sincronizar dados do operador com localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined' && dadosCaixa) {
+      localStorage.setItem('vendas_operador', JSON.stringify(dadosCaixa))
+      window.dispatchEvent(new Event('vendas_data_updated'))
+    }
+  }, [dadosCaixa])
 
   const verificarStatusCaixa = async () => {
     try {
@@ -373,6 +402,11 @@ export default function VendasPage() {
               : item,
           ),
         )
+        // Ativar feedback visual de sucesso
+        setButtonFeedback(prev => ({ ...prev, [produto.id]: true }))
+        setTimeout(() => {
+          setButtonFeedback(prev => ({ ...prev, [produto.id]: false }))
+        }, 500)
         } else {
         toast({ title: 'Estoque insuficiente', description: 'Estoque insuficiente!' , variant: 'destructive'})
       }
@@ -386,6 +420,11 @@ export default function VendasPage() {
             subtotal: produto.preco,
           },
         ])
+        // Ativar feedback visual de sucesso
+        setButtonFeedback(prev => ({ ...prev, [produto.id]: true }))
+        setTimeout(() => {
+          setButtonFeedback(prev => ({ ...prev, [produto.id]: false }))
+        }, 500)
       } else {
         toast({ title: 'Produto sem estoque', description: 'Produto sem estoque!' , variant: 'destructive'})
       }
@@ -694,9 +733,6 @@ export default function VendasPage() {
                     }
                   }}
                 />
-                <button className="btn btn-primary" onClick={() => buscarProduto(false)}>
-                  <Search size={20} />
-                </button>
               </div>
           </div>
 
@@ -711,12 +747,12 @@ export default function VendasPage() {
                   <SearchHint>Nenhum produto encontrado para "{codigoBusca}". Tente termos diferentes.</SearchHint>
                 </div>
               ) : (
-                <table className="table">
+                <table className="table produtos-table">
                   <thead>
                     <tr>
                       <th>Produto</th>
                       <th>Preço</th>
-                      <th>Estoque</th>
+                      <th className="estoque-column">Estoque</th>
                       <th>Ação</th>
                     </tr>
                   </thead>
@@ -730,14 +766,18 @@ export default function VendasPage() {
                           </div>
                         </td>
                         <td>R$ {Number(produto.preco).toFixed(2)}</td>
-                        <td>{produto.estoque}</td>
+                        <td className="estoque-column">
+                          <span className={`estoque-badge ${produto.estoque === 0 ? 'sem-estoque' : produto.estoque < 10 ? 'baixo-estoque' : 'com-estoque'}`}>
+                            {produto.estoque}
+                          </span>
+                        </td>
                         <td>
                           <button
-                            className="btn btn-sm btn-primary"
+                            className={`btn btn-sm ${buttonFeedback[produto.id] ? 'btn-success' : 'btn-primary'} produto-add-btn`}
                             onClick={() => adicionarAoCarrinho(produto)}
                             disabled={produto.estoque === 0}
                           >
-                            <Plus size={16} />
+                            {buttonFeedback[produto.id] ? <Check size={16} /> : <Plus size={16} />}
                           </button>
                         </td>
                       </tr>
@@ -833,56 +873,43 @@ export default function VendasPage() {
           <div className="row row-between">
             <h2 className="card-title title-row card-title-large">
               <ShoppingCart size={20} />
-              PDV - Carrinho
+              Itens
             </h2>
             <div className="header-info-right">
-              {dadosCaixa && (
-                <div className="funcionario-info-vendas">
-                  <User size={14} />
-                  <span>{dadosCaixa.funcionario_nome}</span>
-                  <small>({dadosCaixa.funcionario_cargo})</small>
-                </div>
-              )}
-              <div className="text-sm text-muted">
-                {carrinho.length} {carrinho.length === 1 ? "item" : "itens"}
-              </div>
-            </div>
-          </div>
-          
-          {/* Botão Identificar Cliente no topo do carrinho */}
-          <div className="section-top-border">
-            {!clienteSelecionado ? (
-              <button
-                type="button"
-                className="btn btn-outline full-width-small"
-                onClick={() => setShowClienteModal(true)}
-                disabled={carrinho.length === 0}
-              >
-                <Plus size={16} className="icon-margin-right" />
-                Identificar Cliente
-              </button>
-            ) : (
-              <div className="client-identified">
-                <div className="client-identified-content">
-                  <div className="client-identified-icon client-identified-icon-style">✓</div>
+              {/* Botão Identificar Cliente movido para a direita */}
+              {!clienteSelecionado ? (
+                <button
+                  type="button"
+                  className="btn btn-outline btn-sm"
+                  onClick={() => setShowClienteModal(true)}
+                  disabled={carrinho.length === 0}
+                >
+                  <Plus size={16} className="icon-margin-right" />
+                  Identificar Cliente
+                </button>
+              ) : (
+                <div className="client-identified">
+                  <div className="client-identified-content">
+                    <div className="client-identified-icon client-identified-icon-style">✓</div>
+                    
+                    <div className="client-identified-name">
+                      Cliente: {clienteSelecionado.nome}
+                    </div>
+                  </div>
                   
-                  <div className="client-identified-name">
-                    Cliente: {clienteSelecionado.nome}
+                  <div className="client-identified-actions">
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline"
+                      onClick={() => setClienteSelecionado(null)}
+                      title="Alterar cliente identificado"
+                    >
+                      Alterar
+                    </button>
                   </div>
                 </div>
-                
-                <div className="client-identified-actions">
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-outline"
-                    onClick={() => setClienteSelecionado(null)}
-                    title="Alterar cliente identificado"
-                  >
-                    Alterar
-                  </button>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
 
@@ -895,63 +922,79 @@ export default function VendasPage() {
               <p className="empty-cart-sub">Escaneie ou busque produtos para adicionar</p>
             </div>
           ) : (
-            <div className="section-padding-y">
-              {carrinho.map((item, index) => (
-                <div 
-                  key={item.produto.id} 
-                  className="pdv-item list-item-row"
-                >
-                  {/* Linha principal do produto */}
-                  <div className="row-start-between mb-2">
-                    <div className="flex-grow-min">
-                      <div className="font-semibold list-item-title">
-                        {item.produto.nome}
-                      </div>
-                      <div className="list-item-sub muted-small monospace">
-                        {item.produto.codigo_barras}
-                      </div>
-                    </div>
-
-                    <button 
-                      className="btn btn-xs btn-danger btn-remove-item" 
-                      onClick={() => removerDoCarrinho(item.produto.id)}
-                      title="Remover item"
+            <>
+              {/* Lista de itens para desktop */}
+              <div className="cart-list-desktop">
+                <div className="section-padding-y">
+                  {carrinho.map((item, index) => (
+                    <div 
+                      key={item.produto.id} 
+                      className="pdv-item list-item-row"
                     >
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
-
-                  {/* Linha de quantidade e valores */}
-                  <div className="row row-start-between">
-                    <div className="row row-gap-lg">
-                      <div className="muted-small">R$ {Number(item.produto.preco).toFixed(2)} un</div>
-                      
-                      {/* Controles de quantidade */}
-                      <div className="qty-control">
-                        <button 
-                          className="btn-qty" 
-                          onClick={() => alterarQuantidade(item.produto.id, item.quantidade - 1)}
-                        >
-                          <Minus size={12} />
-                        </button>
-                        <div className="qty-value">
-                          {item.quantidade}
+                      {/* Linha principal do produto */}
+                      <div className="row-start-between mb-2">
+                        <div className="flex-grow-min">
+                          <div className="font-semibold list-item-title">
+                            {item.produto.nome}
+                          </div>
+                          <div className="list-item-sub muted-small monospace">
+                            {item.produto.codigo_barras}
+                          </div>
                         </div>
+
                         <button 
-                          className="btn-qty" 
-                          onClick={() => alterarQuantidade(item.produto.id, item.quantidade + 1)}
+                          className="btn btn-xs btn-danger btn-remove-item" 
+                          onClick={() => removerDoCarrinho(item.produto.id)}
+                          title="Remover item"
                         >
-                          <Plus size={12} />
+                          <Trash2 size={12} />
                         </button>
                       </div>
-                    </div>
 
-                    {/* Subtotal do item */}
-                    <div className="font-bold item-subtotal">R$ {Number(item.subtotal).toFixed(2)}</div>
-                  </div>
+                      {/* Linha de quantidade e valores */}
+                      <div className="row row-start-between">
+                        <div className="row row-gap-lg">
+                          <div className="muted-small">R$ {Number(item.produto.preco).toFixed(2)} un</div>
+                          
+                          {/* Controles de quantidade */}
+                          <div className="qty-control">
+                            <button 
+                              className="btn-qty" 
+                              onClick={() => alterarQuantidade(item.produto.id, item.quantidade - 1)}
+                            >
+                              <Minus size={12} />
+                            </button>
+                            <div className="qty-value">
+                              {item.quantidade}
+                            </div>
+                            <button 
+                              className="btn-qty" 
+                              onClick={() => alterarQuantidade(item.produto.id, item.quantidade + 1)}
+                            >
+                              <Plus size={12} />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Subtotal do item */}
+                        <div className="font-bold item-subtotal">R$ {Number(item.subtotal).toFixed(2)}</div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+
+              {/* Card resumo para mobile */}
+              <div className="cart-mobile-summary" onClick={() => setShowCarrinhoModal(true)}>
+                <div className="cart-summary-line">
+                  <span>{carrinho.length} {carrinho.length === 1 ? 'item' : 'itens'}</span>
+                  <span>R$ {totalBeforeDiscount.toFixed(2)}</span>
+                </div>
+                <div className="cart-summary-hint">
+                  Toque para ver detalhes
+                </div>
+              </div>
+            </>
           )}
         </div>
 
@@ -1482,6 +1525,73 @@ export default function VendasPage() {
       )}
 
   {/* cupom fiscal agora é acessível via o botão na área de venda concluída; bloco removido para evitar redundância */}
+
+      {/* Modal do Carrinho Mobile */}
+      {showCarrinhoModal && (
+        <div className="modal-overlay" onClick={() => setShowCarrinhoModal(false)}>
+          <div className="modal-content cart-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Itens do Carrinho</h3>
+              <button className="modal-close" onClick={() => setShowCarrinhoModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="modal-body">
+              {carrinho.map((item, index) => (
+                <div key={item.produto.id} className="cart-modal-item">
+                  <div className="cart-modal-item-header">
+                    <h4>{item.produto.nome}</h4>
+                    <button 
+                      className="cart-modal-remove" 
+                      onClick={() => removerDoCarrinho(item.produto.id)}
+                      title="Remover item"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                  <div className="cart-modal-item-code">
+                    Código: {item.produto.codigo_barras}
+                  </div>
+                  <div className="cart-modal-item-controls">
+                    <div className="cart-modal-price">
+                      R$ {Number(item.produto.preco).toFixed(2)} / un
+                    </div>
+                    <div className="cart-modal-qty-control">
+                      <button 
+                        className="cart-modal-qty-btn" 
+                        onClick={() => alterarQuantidade(item.produto.id, item.quantidade - 1)}
+                      >
+                        <Minus size={14} />
+                      </button>
+                      <span className="cart-modal-qty">{item.quantidade}</span>
+                      <button 
+                        className="cart-modal-qty-btn" 
+                        onClick={() => alterarQuantidade(item.produto.id, item.quantidade + 1)}
+                      >
+                        <Plus size={14} />
+                      </button>
+                    </div>
+                    <div className="cart-modal-subtotal">
+                      R$ {Number(item.subtotal).toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="modal-footer">
+              <div className="cart-modal-total">
+                Total: R$ {totalBeforeDiscount.toFixed(2)}
+              </div>
+              <button 
+                className="btn btn-primary"
+                onClick={() => setShowCarrinhoModal(false)}
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
