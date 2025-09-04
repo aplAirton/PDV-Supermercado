@@ -123,7 +123,7 @@ export default function Sidebar({ currentPage, onPageChange, isOpen: isOpenProp,
       {/* Sidebar */}
       <aside className={`sidebar ${isOpen ? "open" : ""}`}>
         <div className="sidebar-header">
-          <h1 className="sidebar-title">PDV Sistema</h1>
+          <h1 className="sidebar-title">PDV Airton</h1>
         </div>
 
         <nav className="sidebar-nav">
@@ -218,8 +218,8 @@ export default function Sidebar({ currentPage, onPageChange, isOpen: isOpenProp,
         {/* Rodapé do Sidebar */}
         <div className="sidebar-footer">
           <div className="footer-info">
-            <p className="footer-version">PDV Sistema v1.0</p>
-            <p className="footer-company">© 2025 Airton Silva</p>
+            <p className="footer-version">PDV Airton v1.0</p>
+            <p className="footer-company">© 2025 Airton Lopes</p>
           </div>
         </div>
       </aside>
