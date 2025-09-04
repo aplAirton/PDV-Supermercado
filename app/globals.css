@@ -575,7 +575,6 @@ body.sidebar-open {
   grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
   max-height: calc(100vh - 140px);
-  padding: 1rem;
   /* Fonte do sistema para área PDV */
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   line-height: 1.4;
