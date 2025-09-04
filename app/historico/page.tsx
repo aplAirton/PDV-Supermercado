@@ -322,36 +322,73 @@ export default function HistoricoPage() {
               <div className="historico-cards-container">
                 {vendas.map((venda) => (
                   <div key={venda.id} className="historico-card">
-                    <div className="historico-card-header">
-                      <div className="historico-card-id">#{venda.id}</div>
-                      <div className="historico-card-total">R$ {(Number(venda.total) || 0).toFixed(2)}</div>
+                    {/* Layout Desktop */}
+                    <div className="historico-card-content-desktop">
+                      <div className="historico-card-id-desktop">#{venda.id}</div>
+                      
+                      <div className="historico-card-info-desktop">
+                        <div className="historico-info-item-desktop">
+                          <div className="historico-info-label-desktop">Data/Hora</div>
+                          <div className="historico-info-value-desktop">{formatarData(venda.data_venda)}</div>
+                        </div>
+                        
+                        <div className="historico-info-item-desktop">
+                          <div className="historico-info-label-desktop">Cliente</div>
+                          <div className="historico-info-value-desktop">{venda.cliente_nome || "Cliente Avulso"}</div>
+                        </div>
+                      </div>
+                      
+                      <div className="historico-card-total-desktop">R$ {(Number(venda.total) || 0).toFixed(2)}</div>
+                      
+                      <div className="historico-card-actions-desktop">
+                        <button className="btn btn-sm btn-outline" onClick={() => verDetalhes(venda)}>
+                          <Eye size={16} />
+                          Ver Detalhes
+                        </button>
+                        <button 
+                          className="btn btn-sm btn-primary" 
+                          onClick={() => imprimirCupomSegundaVia(venda.id)}
+                          title="Imprimir 2ª via do cupom"
+                        >
+                          <Printer size={16} />
+                          2ª Via
+                        </button>
+                      </div>
                     </div>
 
-                    <div className="historico-card-content">
-                      <div className="historico-card-field">
-                        <span className="historico-field-label">Data/Hora:</span>
-                        <span className="historico-field-value">{formatarData(venda.data_venda)}</span>
+                    {/* Layout Mobile */}
+                    <div className="historico-card-content-mobile">
+                      <div className="historico-card-header-mobile">
+                        <div className="historico-card-id-mobile">#{venda.id}</div>
+                        <div className="historico-card-total-mobile">R$ {(Number(venda.total) || 0).toFixed(2)}</div>
                       </div>
 
-                      <div className="historico-card-field">
-                        <span className="historico-field-label">Cliente:</span>
-                        <span className="historico-field-value">{venda.cliente_nome || "Cliente Avulso"}</span>
-                      </div>
-                    </div>
+                      <div className="historico-card-fields-mobile">
+                        <div className="historico-field-mobile">
+                          <span className="historico-field-label-mobile">Data/Hora:</span>
+                          <span className="historico-field-value-mobile">{formatarData(venda.data_venda)}</span>
+                        </div>
 
-                    <div className="historico-card-actions">
-                      <button className="btn btn-sm btn-outline" onClick={() => verDetalhes(venda)}>
-                        <Eye size={16} />
-                        Ver Detalhes
-                      </button>
-                      <button 
-                        className="btn btn-sm btn-primary" 
-                        onClick={() => imprimirCupomSegundaVia(venda.id)}
-                        title="Imprimir 2ª via do cupom"
-                      >
-                        <Printer size={16} />
-                        2ª Via
-                      </button>
+                        <div className="historico-field-mobile">
+                          <span className="historico-field-label-mobile">Cliente:</span>
+                          <span className="historico-field-value-mobile">{venda.cliente_nome || "Cliente Avulso"}</span>
+                        </div>
+                      </div>
+
+                      <div className="historico-card-actions-mobile">
+                        <button className="btn btn-sm btn-outline" onClick={() => verDetalhes(venda)}>
+                          <Eye size={16} />
+                          Ver Detalhes
+                        </button>
+                        <button 
+                          className="btn btn-sm btn-primary" 
+                          onClick={() => imprimirCupomSegundaVia(venda.id)}
+                          title="Imprimir 2ª via do cupom"
+                        >
+                          <Printer size={16} />
+                          2ª Via
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -511,37 +548,39 @@ export default function HistoricoPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {vendas.map((venda) => (
                 <div key={venda.id} className="historico-card">
-                  <div className="historico-card-header">
-                    <div className="historico-card-id">#{venda.id}</div>
-                    <div className="historico-card-total">R$ {(Number(venda.total) || 0).toFixed(2)}</div>
-                  </div>
-
-                  <div className="historico-card-content">
-                    <div className="historico-card-field">
-                      <span className="historico-field-label">Data/Hora:</span>
-                      <span className="historico-field-value">{formatarData(venda.data_venda)}</span>
+                  {/* Layout Mobile Aprimorado */}
+                  <div className="historico-card-content-mobile">
+                    <div className="historico-card-header-mobile">
+                      <div className="historico-card-id-mobile">#{venda.id}</div>
+                      <div className="historico-card-total-mobile">R$ {(Number(venda.total) || 0).toFixed(2)}</div>
                     </div>
 
-                    <div className="historico-card-field">
-                      <span className="historico-field-label">Cliente:</span>
-                      <span className="historico-field-value">{venda.cliente_nome || "Cliente Avulso"}</span>
-                    </div>
-                  </div>
+                    <div className="historico-card-fields-mobile">
+                      <div className="historico-field-mobile">
+                        <span className="historico-field-label-mobile">Data/Hora</span>
+                        <span className="historico-field-value-mobile">{formatarData(venda.data_venda)}</span>
+                      </div>
 
-                  <div className="historico-card-actions">
-                    <button className="btn btn-sm btn-outline" onClick={() => verDetalhes(venda)} style={{ flex: 1 }}>
-                      <Eye size={14} />
-                      Ver Detalhes
-                    </button>
-                    <button 
-                      className="btn btn-sm btn-primary" 
-                      onClick={() => imprimirCupomSegundaVia(venda.id)}
-                      title="Imprimir 2ª via do cupom"
-                      style={{ flex: 1 }}
-                    >
-                      <Printer size={14} />
-                      2ª Via
-                    </button>
+                      <div className="historico-field-mobile">
+                        <span className="historico-field-label-mobile">Cliente</span>
+                        <span className="historico-field-value-mobile">{venda.cliente_nome || "Cliente Avulso"}</span>
+                      </div>
+                    </div>
+
+                    <div className="historico-card-actions-mobile">
+                      <button className="btn btn-sm btn-outline" onClick={() => verDetalhes(venda)}>
+                        <Eye size={14} />
+                        Ver Detalhes
+                      </button>
+                      <button 
+                        className="btn btn-sm btn-primary" 
+                        onClick={() => imprimirCupomSegundaVia(venda.id)}
+                        title="Imprimir 2ª via do cupom"
+                      >
+                        <Printer size={14} />
+                        2ª Via
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
