@@ -201,9 +201,9 @@ export default function HomePage() {
             <h1 className="content-title">{currentConfig.title}</h1>
           </div>
           
-          {/* Informações do operador no canto direito */}
+          {/* Informações do operador no canto direito - apenas na tela de carrinho */}
           <div className="header-right">
-            {dadosOperador && (
+            {currentPage === "vendas" && dadosOperador && (
               <div className="funcionario-info-header">
                 <User size={16} />
                 <span>{dadosOperador.funcionario_nome}</span>

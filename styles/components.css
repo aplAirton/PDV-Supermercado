@@ -91,7 +91,6 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
   position: sticky;
   top: 0;
   z-index: 10;
@@ -1700,7 +1699,6 @@
   }
 
   .content-header {
-    padding: 1rem;
     flex-wrap: wrap;
   }
 
@@ -1735,9 +1733,6 @@
     margin-left: 14rem;
   }
 
-  .content-header {
-    padding: 1rem 1.5rem;
-  }
 
   .content-body {
     padding: 1.5rem;
