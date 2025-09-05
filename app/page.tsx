@@ -195,10 +195,10 @@ export default function HomePage() {
             >
               <Menu size={20} />
             </button>
+            <h1 className="content-title">{currentConfig.title}</h1>
             <div className="header-icon">
               <IconComponent size={24} />
             </div>
-            <h1 className="content-title">{currentConfig.title}</h1>
           </div>
           
           {/* Informações do operador no canto direito - apenas na tela de carrinho */}
