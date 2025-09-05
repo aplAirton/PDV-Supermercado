@@ -107,11 +107,21 @@ export default function ClientesPage() {
       })
     }
     setShowModal(true)
+    
+    // Impedir scroll do body quando modal está aberto
+    if (typeof document !== 'undefined') {
+      document.body.classList.add('modal-open');
+    }
   }
 
   const fecharModal = () => {
     setShowModal(false)
     setEditingCliente(null)
+    
+    // Restaurar scroll do body quando modal é fechado
+    if (typeof document !== 'undefined') {
+      document.body.classList.remove('modal-open');
+    }
   }
 
   const salvarCliente = async (e: React.FormEvent) => {
@@ -196,7 +206,7 @@ export default function ClientesPage() {
   }
 
   return (
-    <div>
+    <div className="clientes-page">
       <div className="card">
         <div className="card-header">
           <div className="flex justify-between items-center">
@@ -228,70 +238,175 @@ export default function ClientesPage() {
           {loadingClientes ? (
             <Loading message="Carregando clientes..." />
           ) : (
-            <table className="table">
-            <thead>
-              <tr>
-                <th>Nome</th>
-                <th>CPF</th>
-                <th>Telefone</th>
-                <th>Limite Crédito</th>
-                <th>Débito Atual</th>
-                <th>Status</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {clientesFiltrados.map((cliente) => (
-                <tr key={cliente.id}>
-                  <td>
-                    <div>
-                      <div className="font-bold">{cliente.nome}</div>
-                      <div className="text-sm text-muted">{cliente.endereco}</div>
+            <>
+              {/* Tabela para Desktop */}
+              <div className="desktop-view">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Nome</th>
+                      <th>CPF</th>
+                      <th>Telefone</th>
+                      <th>Limite Crédito</th>
+                      <th>Débito Atual</th>
+                      <th>Status</th>
+                      <th>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {clientesFiltrados.map((cliente) => (
+                      <tr key={cliente.id}>
+                        <td>
+                          <div>
+                            <div className="font-bold">{cliente.nome}</div>
+                            <div className="text-sm text-muted">{cliente.endereco}</div>
+                          </div>
+                        </td>
+                        <td>{formatarCPF(cliente.cpf)}</td>
+                        <td>{formatarTelefone(cliente.telefone)}</td>
+                        <td>R$ {Number(cliente.limite_credito).toFixed(2)}</td>
+                        <td>
+                          <span
+                            style={{
+                              color: cliente.debito_atual > 0 ? "var(--warning-color)" : "var(--success-color)",
+                            }}
+                          >
+                            R$ {Number(cliente.debito_atual).toFixed(2)}
+                          </span>
+                        </td>
+                        <td>
+                          <span
+                            style={{
+                              color: cliente.ativo ? "var(--success-color)" : "var(--danger-color)",
+                            }}
+                          >
+                            {cliente.ativo ? "Ativo" : "Inativo"}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="flex gap-2">
+                            <button className="btn btn-sm btn-outline" onClick={() => abrirModal(cliente)}>
+                              <Edit size={16} />
+                            </button>
+                            <button className="btn btn-sm btn-danger" onClick={() => excluirCliente(cliente.id)}>
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Cards para Mobile */}
+              <div className="mobile-view clients-cards">
+                {clientesFiltrados.map((cliente) => (
+                  <div key={cliente.id} className="client-card">
+                    {/* Cabeçalho do Card */}
+                    <div className="card-header">
+                      <div className="client-info">
+                        <h3 className="client-name">{cliente.nome}</h3>
+                        <p className="client-cpf">
+                          <User size={12} />
+                          {formatarCPF(cliente.cpf)}
+                        </p>
+                      </div>
                     </div>
-                  </td>
-                  <td>{formatarCPF(cliente.cpf)}</td>
-                  <td>{formatarTelefone(cliente.telefone)}</td>
-                  <td>R$ {Number(cliente.limite_credito).toFixed(2)}</td>
-                  <td>
-                    <span
-                      style={{
-                        color: cliente.debito_atual > 0 ? "var(--warning-color)" : "var(--success-color)",
-                      }}
-                    >
-                      R$ {Number(cliente.debito_atual).toFixed(2)}
-                    </span>
-                  </td>
-                  <td>
-                    <span
-                      style={{
-                        color: cliente.ativo ? "var(--success-color)" : "var(--danger-color)",
-                      }}
-                    >
-                      {cliente.ativo ? "Ativo" : "Inativo"}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="flex gap-2">
-                      <button className="btn btn-sm btn-outline" onClick={() => abrirModal(cliente)}>
-                        <Edit size={16} />
+
+                    {/* Tag de Status Centralizada */}
+                    <div className="card-status">
+                      <span className={`status-badge ${cliente.ativo ? "active" : "inactive"}`}>
+                        {cliente.ativo ? "Ativo" : "Inativo"}
+                      </span>
+                    </div>
+
+                    {/* Corpo do Card - Grid 2x2 */}
+                    <div className="card-body">
+                      <div className="card-grid">
+                        <div className="card-item">
+                          <span className="item-label">
+                            <Search size={14} />
+                            Telefone
+                          </span>
+                          <span className="item-value">
+                            {formatarTelefone(cliente.telefone)}
+                          </span>
+                        </div>
+
+                        <div className="card-item">
+                          <span className="item-label">
+                            <Plus size={14} />
+                            Limite
+                          </span>
+                          <span className="item-value credit">
+                            R$ {Number(cliente.limite_credito).toFixed(2)}
+                          </span>
+                        </div>
+
+                        <div className="card-item">
+                          <span className="item-label">
+                            <Trash2 size={14} />
+                            Débito
+                          </span>
+                          <span className={`item-value ${cliente.debito_atual > 0 ? "debt" : "no-debt"}`}>
+                            R$ {Number(cliente.debito_atual).toFixed(2)}
+                          </span>
+                        </div>
+
+                        <div className="card-item">
+                          <span className="item-label">
+                            <Edit size={14} />
+                            Disponível
+                          </span>
+                          <span className={`item-value ${cliente.limite_credito - cliente.debito_atual >= 0 ? "available" : "overdue"}`}>
+                            R$ {(cliente.limite_credito - cliente.debito_atual).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Endereço */}
+                      {cliente.endereco && (
+                        <div className="card-address">
+                          <small className="address-info">
+                            <Search size={12} />
+                            {cliente.endereco}
+                          </small>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Rodapé com Botões de Ação */}
+                    <div className="card-footer-actions">
+                      <button
+                        className="btn btn-outline btn-sm"
+                        onClick={() => abrirModal(cliente)}
+                        title="Editar cliente"
+                      >
+                        <Edit size={14} />
+                        Editar
                       </button>
-                      <button className="btn btn-sm btn-danger" onClick={() => excluirCliente(cliente.id)}>
-                        <Trash2 size={16} />
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={() => excluirCliente(cliente.id)}
+                        title="Excluir cliente"
+                      >
+                        <Trash2 size={14} />
+                        Excluir
                       </button>
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-            </table>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>
 
       {/* Modal */}
       {showModal && (
-        <div className="modal-overlay">
-          <div className="modal">
+        <div className="modal-overlay" onClick={fecharModal}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-xl font-bold mb-4">{editingCliente ? "Editar Cliente" : "Novo Cliente"}</h3>
 
             <form onSubmit={salvarCliente}>
