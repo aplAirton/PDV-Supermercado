@@ -165,12 +165,22 @@ export default function ProdutosPage() {
     }
     setShowModal(true);
     setActiveTab("basico");
+    
+    // Impedir scroll do body quando modal está aberto
+    if (typeof document !== 'undefined') {
+      document.body.classList.add('modal-open');
+    }
   };
 
   const fecharModal = () => {
     setShowModal(false);
     setEditingProduto(null);
     setShowAdvancedFields(false);
+    
+    // Restaurar scroll do body quando modal é fechado
+    if (typeof document !== 'undefined') {
+      document.body.classList.remove('modal-open');
+    }
   };
 
   const salvarProduto = async (e: React.FormEvent) => {
@@ -487,37 +497,25 @@ export default function ProdutosPage() {
             <div className="mobile-view products-cards">
               {produtosFiltrados.map((produto) => (
                 <div key={produto.id} className="product-card">
+                  {/* Cabeçalho do Card */}
                   <div className="card-header">
                     <div className="product-info">
                       <h3 className="product-name">{produto.nome}</h3>
-                      <div className="product-meta">
-                        <span className="product-code">
-                          <Barcode size={12} />
-                          {produto.codigo_barras}
-                        </span>
-                        <span className="category-badge">
-                          {produto.categoria}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="card-actions">
-                      <button
-                        className="btn btn-sm btn-outline"
-                        onClick={() => abrirModal(produto)}
-                        title="Editar"
-                      >
-                        <Edit size={14} />
-                      </button>
-                      <button
-                        className="btn btn-sm btn-danger"
-                        onClick={() => excluirProduto(produto.id)}
-                        title="Excluir"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      <p className="product-code">
+                        <Barcode size={12} />
+                        {produto.codigo_barras}
+                      </p>
                     </div>
                   </div>
 
+                  {/* Tag de Categoria Centralizada */}
+                  <div className="card-category">
+                    <span className="category-badge">
+                      {produto.categoria}
+                    </span>
+                  </div>
+
+                  {/* Corpo do Card - Grid 2x2 */}
                   <div className="card-body">
                     <div className="card-grid">
                       <div className="card-item">
@@ -526,6 +524,7 @@ export default function ProdutosPage() {
                           Preço
                         </span>
                         <span className="item-value price">
+                          <DollarSign size={12} className="value-icon" />
                           R$ {Number(produto.preco).toFixed(2)}
                           {produto.preco_kilo && (
                             <small>
@@ -541,6 +540,7 @@ export default function ProdutosPage() {
                           Unidade
                         </span>
                         <span className="item-value">
+                          <Scale size={12} className="value-icon" />
                           {produto.unidade_medida === "kilo"
                             ? "Kg"
                             : produto.unidade_medida === "grama"
@@ -565,6 +565,7 @@ export default function ProdutosPage() {
                               : "good-stock"
                           }`}
                         >
+                          <Package size={12} className="value-icon" />
                           {produto.estoque}
                           {produto.estoque <= produto.estoque_minimo && (
                             <AlertTriangle size={12} className="warning-icon" />
@@ -582,6 +583,7 @@ export default function ProdutosPage() {
                             produto.ativo ? "active" : "inactive"
                           }`}
                         >
+                          <CheckCircle size={12} className="value-icon" />
                           {produto.ativo ? "Ativo" : "Inativo"}
                         </span>
                       </div>
@@ -605,6 +607,26 @@ export default function ProdutosPage() {
                       </div>
                     )}
                   </div>
+
+                  {/* Rodapé com Botões de Ação */}
+                  <div className="card-footer-actions">
+                    <button
+                      className="btn btn-outline btn-sm"
+                      onClick={() => abrirModal(produto)}
+                      title="Editar produto"
+                    >
+                      <Edit size={14} />
+                      Editar
+                    </button>
+                    <button
+                      className="btn btn-danger btn-sm"
+                      onClick={() => excluirProduto(produto.id)}
+                      title="Excluir produto"
+                    >
+                      <Trash2 size={14} />
+                      Excluir
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -614,8 +636,8 @@ export default function ProdutosPage() {
 
       {/* Modal de Produto */}
       {showModal && (
-        <div className="product-modal-overlay">
-          <div className="product-modal">
+        <div className="product-modal-overlay" onClick={fecharModal}>
+          <div className="product-modal" onClick={(e) => e.stopPropagation()}>
             {/* Header do Modal */}
             <div className="modal-header-1">
               <div className="modal-header-content">

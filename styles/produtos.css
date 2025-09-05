@@ -312,6 +312,15 @@
   padding: 20px;
   backdrop-filter: blur(8px);
   animation: fadeIn 0.3s ease-out;
+  overflow-y: auto;
+}
+
+/* Corrigir bug: impedir scroll do body quando modal está aberto */
+body.modal-open {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
 }
 
 .product-modal {
@@ -761,30 +770,32 @@
 }
 
 /* ===========================================
-   CARDS DE PRODUTOS (MOBILE)
+   CARDS DE PRODUTOS (MOBILE) - INSPIRADO NO DESIGN DOS CARDS DE CAIXA
    =========================================== */
 
 .products-cards {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 12px;
+  gap: 16px;
   padding: 16px 0;
 }
 
 .product-card {
   background: white;
-  border-radius: 16px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   transition: all 0.2s ease;
   position: relative;
 }
 
 .product-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   transform: translateY(-2px);
-  border-color: #d1d5db;
+  border-color: #cbd5e1;
 }
 
 .product-card.inactive {
@@ -792,33 +803,32 @@
   border-color: #ef4444;
 }
 
+/* Cabeçalho do card - similar aos cards de caixa */
 .card-header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 16px 16px 12px;
-  border-bottom: 1px solid #f3f4f6;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e2e8f0;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 12px 12px 0 0;
+  padding: 16px;
 }
 
 .product-info {
   flex: 1;
-  min-width: 0;
-  margin-right: 12px;
+  text-align: center;
 }
 
 .product-card .product-name {
-  margin: 0 0 8px 0;
-  font-size: 16px;
+  margin: 0 0 4px 0;
+  font-size: 18px;
   font-weight: 700;
   color: #1f2937;
   line-height: 1.3;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
+  text-align: center;
 }
 
 .product-meta {
@@ -830,98 +840,117 @@
 .product-card .product-code {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
-  font-size: 11px;
+  font-size: 12px;
   color: #6b7280;
   font-family: "Monaco", "Menlo", monospace;
-  background: #f1f5f9;
-  padding: 2px 6px;
-  border-radius: 4px;
-  width: fit-content;
+  margin: 0;
+  font-weight: 500;
 }
 
 .product-card .category-badge {
   display: inline-block;
-  padding: 2px 8px;
-  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-  color: #1e40af;
-  border-radius: 12px;
-  font-size: 10px;
-  font-weight: 600;
-  width: fit-content;
-  border: 1px solid #93c5fd;
-}
-
-.card-actions {
-  display: flex;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.card-actions button {
-  padding: 6px 8px;
-  border-radius: 8px;
+  padding: 4px 12px;
+  background: #f3f4f6;
+  color: #374151;
   border: 1px solid #d1d5db;
-  background: white;
-  color: #6b7280;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  width: fit-content;
+  margin: 0 auto;
 }
 
-.card-actions button:hover {
-  background: #f9fafb;
-  border-color: #9ca3af;
+/* Tag de Categoria Centralizada */
+.card-category {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+/* Ações do card - removidas do header */
+.card-actions {
+  display: none;
 }
 
 .card-body {
-  padding: 16px;
+  padding: 0;
+  margin-bottom: 16px;
 }
 
+/* Detalhes do card em grid - similar aos cards de caixa */
 .card-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 0;
 }
 
 .card-item {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 8px;
+  padding: 12px;
   background: #f8fafc;
   border-radius: 8px;
-  border: 1px solid #f1f5f9;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.card-item:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .item-label {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 4px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: normal;
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 10px;
-  font-weight: 600;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .item-value {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  color: #1f2937;
+  color: #374151;
   word-break: break-word;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .item-value.price {
   color: #059669;
-  font-size: 14px;
+}
+
+.item-value.good-stock {
+  color: #059669;
+}
+
+.item-value.low-stock {
+  color: #dc2626;
+}
+
+.item-value.status.active {
+  color: #059669;
+}
+
+.item-value.status.inactive {
+  color: #dc2626;
+  font-size: 15px;
 }
 
 .item-value.price small {
   display: block;
-  font-size: 10px;
+  font-size: 11px;
   color: #6b7280;
   font-weight: 500;
   margin-top: 2px;
@@ -938,6 +967,17 @@
   gap: 4px;
 }
 
+.value-icon {
+  opacity: 0.7;
+}
+
+.warning-icon {
+  color: #dc2626;
+  margin-left: 4px;
+  align-items: center;
+  gap: 4px;
+}
+
 .item-value.status.active {
   color: #059669;
 }
@@ -946,20 +986,53 @@
   color: #dc2626;
 }
 
+/* Footer do card para informações extras */
 .card-footer {
-  padding: 8px 16px 16px;
-  border-top: 1px solid #f3f4f6;
-  background: #fafbfc;
+  padding: 12px 0 0;
+  border-top: 1px solid #e2e8f0;
+  margin-top: 16px;
 }
 
 .card-footer .weight-info {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
-  font-size: 11px;
+  font-size: 12px;
   color: #6b7280;
   font-weight: 500;
+  background: #f8fafc;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+/* Rodapé com Botões de Ação */
+.card-footer-actions {
+  display: flex;
+  gap: 8px;
   justify-content: center;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.card-footer-actions .btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.card-footer-actions .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* ===========================================
@@ -1149,7 +1222,12 @@
   }
 
   .card-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .card-item {
+    padding: 8px;
   }
 
   .card-actions {
