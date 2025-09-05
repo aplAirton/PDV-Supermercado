@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { User, Plus, Edit, Trash2, Eye, Filter, Search, UserCheck, UserX, Loader2, Menu } from 'lucide-react'
+import { User, Plus, Edit, Trash2, Eye, Filter, Search, UserCheck, UserX, Loader2, Menu, X, DollarSign, MapPin, Save, AlertCircle, Shield, OctagonAlert } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import '../../styles/funcionarios.css'
 
@@ -42,11 +42,27 @@ export default function FuncionariosPage() {
     totalFolha: 0,
     mediasSalariais: { geral: 0, porCargo: {} }
   })
-  const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [showDetalhesModal, setShowDetalhesModal] = useState(false)
   const [funcionarioSelecionado, setFuncionarioSelecionado] = useState<Funcionario | null>(null)
   const [editMode, setEditMode] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [modalLoading, setModalLoading] = useState(false)
+  const [activeTab, setActiveTab] = useState<"basico" | "dados" | "acesso">("basico")
+  const [showValidationCard, setShowValidationCard] = useState(false)
+  const [validationErrors, setValidationErrors] = useState<string[]>([])
+  
+  const [messageCard, setMessageCard] = useState<{
+    show: boolean
+    type: 'success' | 'error' | 'warning'
+    title: string
+    message: string
+  }>({
+    show: false,
+    type: 'success',
+    title: '',
+    message: ''
+  })
   
   const [filtros, setFiltros] = useState({
     status: '', // 'ativo' | 'inativo' | ''
@@ -70,6 +86,20 @@ export default function FuncionariosPage() {
     ativo: true
   })
 
+  // Função para mostrar cards de mensagem temporários
+  const showMessageCard = (type: 'success' | 'error' | 'warning', title: string, message: string) => {
+    setMessageCard({ show: true, type, title, message })
+    // Auto-hide após 2 segundos
+    setTimeout(() => {
+      setMessageCard(prev => ({ ...prev, show: false }))
+    }, 2000)
+  }
+
+  // Função para esconder card de mensagem manualmente
+  const hideMessageCard = () => {
+    setMessageCard(prev => ({ ...prev, show: false }))
+  }
+
   const cargosDisponiveis = [
     'Gerente',
     'Operador de Caixa',
@@ -78,6 +108,37 @@ export default function FuncionariosPage() {
     'Supervisor',
     'Auxiliar Administrativo'
   ]
+
+  // Máscara para CPF (apenas visual)
+  const formatarCPFInput = (value: string) => {
+    // Remove tudo que não é dígito
+    const digits = value.replace(/\D/g, "");
+    
+    // Limita a 11 dígitos
+    const limitedDigits = digits.slice(0, 11);
+    
+    // Aplica a máscara visual
+    if (limitedDigits.length <= 3) {
+      return limitedDigits;
+    } else if (limitedDigits.length <= 6) {
+      return `${limitedDigits.slice(0, 3)}.${limitedDigits.slice(3)}`;
+    } else if (limitedDigits.length <= 9) {
+      return `${limitedDigits.slice(0, 3)}.${limitedDigits.slice(3, 6)}.${limitedDigits.slice(6)}`;
+    } else {
+      return `${limitedDigits.slice(0, 3)}.${limitedDigits.slice(3, 6)}.${limitedDigits.slice(6, 9)}-${limitedDigits.slice(9)}`;
+    }
+  };
+
+  // Handler para CPF com máscara visual
+  const handleCPFChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedValue = formatarCPFInput(e.target.value);
+    setForm({ ...form, cpf: formattedValue });
+    // Limpar erros de validação quando usuário começa a editar
+    if (showValidationCard) {
+      setShowValidationCard(false);
+      setValidationErrors([]);
+    }
+  };
 
   useEffect(() => {
     carregarDados()
@@ -175,9 +236,99 @@ export default function FuncionariosPage() {
     })
   }
 
+  const validarFormulario = (): string[] => {
+    const errors: string[] = []
+    
+    if (!form.nome.trim()) {
+      errors.push('Nome é obrigatório')
+    }
+    
+    // Validação do CPF (apenas para novos funcionários)
+    if (!editMode) {
+      const cpfDigits = form.cpf.replace(/\D/g, "")
+      if (!cpfDigits) {
+        errors.push("CPF é obrigatório")
+      } else if (cpfDigits.length !== 11) {
+        errors.push("CPF deve ter 11 dígitos")
+      } else if (!isValidCPF(cpfDigits)) {
+        errors.push("CPF inválido")
+      }
+    }
+    
+    if (!form.cargo.trim()) {
+      errors.push('Cargo é obrigatório')
+    }
+    
+    // Telefone não é mais obrigatório
+    
+    // Email não é mais obrigatório, mas se preenchido deve ser válido
+    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      errors.push('Email deve ter um formato válido')
+    }
+    
+    if (!form.salario.trim()) {
+      errors.push('Salário é obrigatório')
+    } else if (isNaN(parseFloat(form.salario)) || parseFloat(form.salario) <= 0) {
+      errors.push('Salário deve ser um valor válido maior que zero')
+    }
+    
+    if (!form.login.trim()) {
+      errors.push('Login é obrigatório')
+    }
+    
+    if (!editMode && !form.senha.trim()) {
+      errors.push('Senha é obrigatória para novos funcionários')
+    }
+    
+    return errors
+  }
+
+  // Validação simples do CPF (considera apenas dígitos e dígitos verificadores)
+  const isValidCPF = (rawCpf: string) => {
+    if (!rawCpf) return false
+    const cpf = rawCpf.replace(/\D/g, "")
+    if (cpf.length !== 11) return false
+
+    // CPFs aceitos de forma excepcional
+    const cpfsExcepcionais = [
+      "11111111111", "22222222222", "33333333333", "44444444444",
+      "55555555555", "66666666666", "77777777777", "88888888888",
+      "99999999999", "12345678910"
+    ]
+
+    // Se for um CPF excepcional, aceitar
+    if (cpfsExcepcionais.includes(cpf)) return true
+
+    // rejeita CPFs com todos os dígitos iguais (exceto os excepcionais já tratados)
+    if (/^(\d)\1{10}$/.test(cpf)) return false
+
+    const calc = (t: number) => {
+      let s = 0
+      for (let i = 0; i < t - 1; i++) s += Number(cpf.charAt(i)) * (t - i)
+      const r = 11 - (s % 11)
+      return r > 9 ? 0 : r
+    }
+
+    return calc(10) === Number(cpf.charAt(9)) && calc(11) === Number(cpf.charAt(10))
+  }
+
   const salvarFuncionario = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+    setModalLoading(true)
+
+    // Executar validação completa
+    const errors = validarFormulario()
+    if (errors.length > 0) {
+      setValidationErrors(errors)
+      setShowValidationCard(true)
+      setModalLoading(false)
+      return
+    }
+
+    // Limpar erros anteriores
+    setValidationErrors([])
+    setShowValidationCard(false)
+
     try {
       const url = editMode && funcionarioSelecionado 
         ? `/api/funcionarios/${funcionarioSelecionado.id}` 
@@ -195,23 +346,25 @@ export default function FuncionariosPage() {
       })
 
       if (response.ok) {
-        toast({
-          title: editMode ? "Funcionário atualizado" : "Funcionário cadastrado",
-          description: `${form.nome} foi ${editMode ? 'atualizado' : 'cadastrado'} com sucesso`,
-        })
-        setShowModal(false)
-        limparForm()
         carregarDados()
+        fecharModal()
+        limparForm()
+        setModalLoading(false)
+        showMessageCard('success', editMode ? 'Funcionário atualizado' : 'Funcionário cadastrado', editMode ? 'As informações do funcionário foram atualizadas com sucesso!' : 'Novo funcionário cadastrado com sucesso!')
       } else {
-        const error = await response.json()
-        throw new Error(error.error || 'Erro ao salvar funcionário')
+        const errBody = await response.json().catch(() => null)
+        let message = errBody && errBody.error ? String(errBody.error) : `Erro ao ${editMode ? 'atualizar' : 'cadastrar'} funcionário`
+        
+        // Mostrar erro dentro do modal
+        setValidationErrors([message])
+        setShowValidationCard(true)
+        setModalLoading(false)
+        return
       }
-    } catch (error: any) {
-      toast({
-        title: "Erro ao salvar funcionário",
-        description: error.message,
-        variant: "destructive"
-      })
+    } catch (error) {
+      console.error("Erro ao salvar funcionário:", error)
+      setModalLoading(false)
+      showMessageCard('error', 'Erro de conexão', `Não foi possível ${editMode ? 'atualizar' : 'cadastrar'} o funcionário. Verifique sua conexão e tente novamente.`)
     }
   }
 
@@ -227,20 +380,16 @@ export default function FuncionariosPage() {
       })
 
       if (response.ok) {
-        toast({
-          title: `Funcionário ${!funcionario.ativo ? 'ativado' : 'desativado'}`,
-          description: `${funcionario.nome} foi ${!funcionario.ativo ? 'ativado' : 'desativado'} com sucesso`,
-        })
         carregarDados()
+        showMessageCard('success', `Funcionário ${!funcionario.ativo ? 'ativado' : 'desativado'}`, `${funcionario.nome} foi ${!funcionario.ativo ? 'ativado' : 'desativado'} com sucesso`)
       } else {
-        throw new Error('Erro ao alterar status')
+        const errBody = await response.json().catch(() => null)
+        let message = errBody && errBody.error ? String(errBody.error) : 'Erro ao alterar status'
+        showMessageCard('error', 'Erro ao alterar status', message)
       }
-    } catch (error: any) {
-      toast({
-        title: "Erro ao alterar status",
-        description: error.message,
-        variant: "destructive"
-      })
+    } catch (error) {
+      console.error("Erro ao alterar status:", error)
+      showMessageCard('error', 'Erro de conexão', 'Não foi possível alterar o status do funcionário. Verifique sua conexão e tente novamente.')
     }
   }
 
@@ -261,13 +410,43 @@ export default function FuncionariosPage() {
     })
     setFuncionarioSelecionado(funcionario)
     setEditMode(true)
+    setActiveTab('basico')
+    setShowValidationCard(false)
+    setValidationErrors([])
     setShowModal(true)
+
+    // Impedir scroll do body quando modal está aberto
+    if (typeof document !== 'undefined') {
+      document.body.classList.add('modal-open')
+    }
   }
 
   const abrirModalNovo = () => {
     limparForm()
     setEditMode(false)
+    setActiveTab('basico')
+    setShowValidationCard(false)
+    setValidationErrors([])
     setShowModal(true)
+
+    // Impedir scroll do body quando modal está aberto
+    if (typeof document !== 'undefined') {
+      document.body.classList.add('modal-open')
+    }
+  }
+
+  const fecharModal = () => {
+    setShowModal(false)
+    setFuncionarioSelecionado(null)
+    setEditMode(false)
+    setActiveTab('basico')
+    setShowValidationCard(false)
+    setValidationErrors([])
+
+    // Restaurar scroll do body quando modal é fechado
+    if (typeof document !== 'undefined') {
+      document.body.classList.remove('modal-open')
+    }
   }
 
   const limparForm = () => {
@@ -286,6 +465,9 @@ export default function FuncionariosPage() {
       ativo: true
     })
     setFuncionarioSelecionado(null)
+    setActiveTab('basico')
+    setShowValidationCard(false)
+    setValidationErrors([])
   }
 
   const formatarValor = (valor: number) => {
@@ -325,6 +507,22 @@ export default function FuncionariosPage() {
 
   return (
     <div className="funcionarios-container">
+      {/* Message Card */}
+      {messageCard.show && (
+        <div className={`message-card message-${messageCard.type}`}>
+          <div className="message-body">
+            <p className="message-text">{messageCard.message}</p>
+            <button
+              className="message-close"
+              onClick={hideMessageCard}
+              title="Fechar"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="page-header">
         <div className="header-actions">
@@ -339,7 +537,6 @@ export default function FuncionariosPage() {
             className="btn btn-primary"
             onClick={abrirModalNovo}
           >
-            <Plus size={16} />
             Novo Funcionário
           </button>
         </div>
@@ -523,141 +720,327 @@ export default function FuncionariosPage() {
 
       {/* Modal Cadastro/Edição */}
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-content large" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{editMode ? 'Editar Funcionário' : 'Novo Funcionário'}</h3>
-              <button 
-                className="modal-close"
-                onClick={() => setShowModal(false)}
-              >
-                ×
-              </button>
-            </div>
-            <form onSubmit={salvarFuncionario}>
-              <div className="form-grid">
-                <div className="form-group">
-                  <label>Nome Completo *</label>
-                  <input
-                    type="text"
-                    value={form.nome}
-                    onChange={(e) => setForm({...form, nome: e.target.value})}
-                    className="form-control"
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>CPF *</label>
-                  <input
-                    type="text"
-                    value={form.cpf}
-                    onChange={(e) => setForm({...form, cpf: e.target.value})}
-                    placeholder="000.000.000-00"
-                    className="form-control"
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>RG</label>
-                  <input
-                    type="text"
-                    value={form.rg}
-                    onChange={(e) => setForm({...form, rg: e.target.value})}
-                    placeholder="00.000.000-0"
-                    className="form-control"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Telefone</label>
-                  <input
-                    type="text"
-                    value={form.telefone}
-                    onChange={(e) => setForm({...form, telefone: e.target.value})}
-                    placeholder="(00) 00000-0000"
-                    className="form-control"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Email</label>
-                  <input
-                    type="email"
-                    value={form.email}
-                    onChange={(e) => setForm({...form, email: e.target.value})}
-                    className="form-control"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Cargo *</label>
-                  <select
-                    value={form.cargo}
-                    onChange={(e) => setForm({...form, cargo: e.target.value})}
-                    className="form-control"
-                    required
-                  >
-                    <option value="">Selecione um cargo</option>
-                    {cargosDisponiveis.map(cargo => (
-                      <option key={cargo} value={cargo}>{cargo}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Salário *</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={form.salario}
-                    onChange={(e) => setForm({...form, salario: e.target.value})}
-                    className="form-control"
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Data de Admissão *</label>
-                  <input
-                    type="date"
-                    value={form.data_admissao}
-                    onChange={(e) => setForm({...form, data_admissao: e.target.value})}
-                    className="form-control"
-                    required
-                  />
-                </div>
-                <div className="form-group full-width">
-                  <label>Endereço</label>
-                  <input
-                    type="text"
-                    value={form.endereco}
-                    onChange={(e) => setForm({...form, endereco: e.target.value})}
-                    className="form-control"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Login</label>
-                  <input
-                    type="text"
-                    value={form.login}
-                    onChange={(e) => setForm({...form, login: e.target.value})}
-                    className="form-control"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>{editMode ? 'Nova Senha (deixe em branco para manter)' : 'Senha'}</label>
-                  <input
-                    type="password"
-                    value={form.senha}
-                    onChange={(e) => setForm({...form, senha: e.target.value})}
-                    className="form-control"
-                    required={!editMode}
-                  />
+        <div className="modal-overlay" onClick={() => fecharModal()}>
+          <div className="modal-content-f large" onClick={e => e.stopPropagation()}>
+            <div className="modal-header-1">
+              <div className="modal-header-content">
+                <div className="modal-title-info-1">
+                  <h2>
+                    {editMode ? "Editar Funcionário" : "Novo Funcionário"}
+                  </h2>
+                  <p>
+                    {editMode ? "Atualize as informações do funcionário" : "Adicione um novo funcionário ao sistema"}
+                  </p>
                 </div>
               </div>
-              <div className="form-actions">
-                <button type="button" className="btn btn-outline" onClick={() => setShowModal(false)}>
-                  Cancelar
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  <User size={16} />
-                  {editMode ? 'Atualizar' : 'Cadastrar'}
-                </button>
+              <button
+                className="modal-close-btn"
+                onClick={() => fecharModal()}
+                title="Fechar"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Card de Validação */}
+            {showValidationCard && validationErrors.length > 0 && (
+              <div className="validation-card-1">
+                <div className="validation-body">
+                <ul className="validation-list">
+                  {validationErrors.map((error, index) => (
+                  <li key={index} className="validation-item">
+                    <OctagonAlert size={24} className="validation-bullet" />
+                    {error}
+                  </li>
+                  ))}
+                </ul>
+                </div>
+              </div>
+            )}
+
+            {/* Navegação das Abas */}
+            <div className="modal-tabs">
+              <button 
+                className={`tab-button ${activeTab === 'basico' ? 'active' : ''}`}
+                onClick={() => setActiveTab('basico')}
+              >
+                <User size={16} />
+                Dados Pessoais
+              </button>
+              <button 
+                className={`tab-button ${activeTab === 'dados' ? 'active' : ''}`}
+                onClick={() => setActiveTab('dados')}
+              >
+                <MapPin size={16} />
+                Dados Profissionais
+              </button>
+              <button 
+                className={`tab-button ${activeTab === 'acesso' ? 'active' : ''}`}
+                onClick={() => setActiveTab('acesso')}
+              >
+                <Shield size={16} />
+                Acesso
+              </button>
+            </div>
+
+            <form onSubmit={salvarFuncionario}>
+              {/* Aba Básico */}
+              {activeTab === 'basico' && (
+                <div className="tab-content">
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <label>Nome Completo *</label>
+                      <input
+                        type="text"
+                        value={form.nome}
+                        onChange={(e) => {
+                          setForm({...form, nome: e.target.value})
+                          // Limpar erros de validação quando usuário começa a editar
+                          if (showValidationCard) {
+                            setShowValidationCard(false)
+                            setValidationErrors([])
+                          }
+                        }}
+                        className="form-control"
+                        placeholder="Digite o nome completo"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>CPF *</label>
+                      <input
+                        type="text"
+                        value={form.cpf}
+                        onChange={handleCPFChange}
+                        placeholder="000.000.000-00"
+                        className="form-control"
+                        readOnly={editMode}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>RG</label>
+                      <input
+                        type="text"
+                        value={form.rg}
+                        onChange={(e) => {
+                          setForm({...form, rg: e.target.value})
+                          // Limpar erros de validação quando usuário começa a editar
+                          if (showValidationCard) {
+                            setShowValidationCard(false)
+                            setValidationErrors([])
+                          }
+                        }}
+                        placeholder="00.000.000-0"
+                        className="form-control"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Telefone</label>
+                      <input
+                        type="text"
+                        value={form.telefone}
+                        onChange={(e) => {
+                          setForm({...form, telefone: e.target.value})
+                          // Limpar erros de validação quando usuário começa a editar
+                          if (showValidationCard) {
+                            setShowValidationCard(false)
+                            setValidationErrors([])
+                          }
+                        }}
+                        placeholder="(00) 00000-0000"
+                        className="form-control"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Email</label>
+                      <input
+                        type="email"
+                        value={form.email}
+                        onChange={(e) => {
+                          setForm({...form, email: e.target.value})
+                          // Limpar erros de validação quando usuário começa a editar
+                          if (showValidationCard) {
+                            setShowValidationCard(false)
+                            setValidationErrors([])
+                          }
+                        }}
+                        className="form-control"
+                        placeholder="email@exemplo.com"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Aba Dados Profissionais */}
+              {activeTab === 'dados' && (
+                <div className="tab-content">
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <label>Cargo *</label>
+                      <select
+                        value={form.cargo}
+                        onChange={(e) => {
+                          setForm({...form, cargo: e.target.value})
+                          // Limpar erros de validação quando usuário começa a editar
+                          if (showValidationCard) {
+                            setShowValidationCard(false)
+                            setValidationErrors([])
+                          }
+                        }}
+                        className="form-control"
+                      >
+                        <option value="">Selecione um cargo</option>
+                        {cargosDisponiveis.map(cargo => (
+                          <option key={cargo} value={cargo}>{cargo}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Salário *</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={form.salario}
+                        onChange={(e) => {
+                          setForm({...form, salario: e.target.value})
+                          // Limpar erros de validação quando usuário começa a editar
+                          if (showValidationCard) {
+                            setShowValidationCard(false)
+                            setValidationErrors([])
+                          }
+                        }}
+                        className="form-control"
+                        placeholder="0,00"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Data de Admissão *</label>
+                      <input
+                        type="date"
+                        value={form.data_admissao}
+                        onChange={(e) => {
+                          setForm({...form, data_admissao: e.target.value})
+                          // Limpar erros de validação quando usuário começa a editar
+                          if (showValidationCard) {
+                            setShowValidationCard(false)
+                            setValidationErrors([])
+                          }
+                        }}
+                        className="form-control"
+                      />
+                    </div>
+                    <div className="form-group full-width">
+                      <label>Endereço</label>
+                      <input
+                        type="text"
+                        value={form.endereco}
+                        onChange={(e) => {
+                          setForm({...form, endereco: e.target.value})
+                          // Limpar erros de validação quando usuário começa a editar
+                          if (showValidationCard) {
+                            setShowValidationCard(false)
+                            setValidationErrors([])
+                          }
+                        }}
+                        className="form-control"
+                        placeholder="Rua, número, bairro, cidade"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Aba Acesso */}
+              {activeTab === 'acesso' && (
+                <div className="tab-content">
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <label>Login *</label>
+                      <input
+                        type="text"
+                        value={form.login}
+                        onChange={(e) => {
+                          setForm({...form, login: e.target.value})
+                          // Limpar erros de validação quando usuário começa a editar
+                          if (showValidationCard) {
+                            setShowValidationCard(false)
+                            setValidationErrors([])
+                          }
+                        }}
+                        className="form-control"
+                        placeholder="Digite o login do usuário"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>{editMode ? 'Nova Senha (deixe em branco para manter)' : 'Senha *'}</label>
+                      <input
+                        type="password"
+                        value={form.senha}
+                        onChange={(e) => {
+                          setForm({...form, senha: e.target.value})
+                          // Limpar erros de validação quando usuário começa a editar
+                          if (showValidationCard) {
+                            setShowValidationCard(false)
+                            setValidationErrors([])
+                          }
+                        }}
+                        className="form-control"
+                        placeholder="Digite a senha"
+                      />
+                    </div>
+                    {editMode && (
+                      <div className="form-group">
+                        <label>Status</label>
+                        <select
+                          value={form.ativo ? 'true' : 'false'}
+                          onChange={(e) => {
+                            setForm({...form, ativo: e.target.value === 'true'})
+                            // Limpar erros de validação quando usuário começa a editar
+                            if (showValidationCard) {
+                              setShowValidationCard(false)
+                              setValidationErrors([])
+                            }
+                          }}
+                          className="form-control"
+                        >
+                          <option value="true">Ativo</option>
+                          <option value="false">Inativo</option>
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Footer do Modal */}
+              <div className="modal-footer-1">
+                <div className="footer-actions">
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-lg"
+                    onClick={() => setShowModal(false)}
+                    disabled={modalLoading}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary btn-lg"
+                    disabled={modalLoading}
+                  >
+                    {modalLoading ? (
+                      <>
+                        <Loader2 className="animate-spin" size={18} />
+                        Salvando...
+                      </>
+                    ) : (
+                      <>
+                        <User size={18} />
+                        {editMode ? 'Atualizar' : 'Cadastrar'}
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
@@ -667,8 +1050,8 @@ export default function FuncionariosPage() {
       {/* Modal Detalhes */}
       {showDetalhesModal && funcionarioSelecionado && (
         <div className="modal-overlay" onClick={() => setShowDetalhesModal(false)}>
-          <div className="modal-content large" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
+          <div className="modal-content-f large" onClick={e => e.stopPropagation()}>
+            <div className="modal-header-2">
               <h3>Detalhes - {funcionarioSelecionado.nome}</h3>
               <button 
                 className="modal-close"

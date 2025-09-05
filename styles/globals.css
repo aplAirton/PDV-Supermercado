@@ -15,7 +15,6 @@
 
 .main-content {
   flex: 1;
-  padding: 2rem;
   min-width: 0;
 }
 @import 'tailwindcss';
@@ -198,7 +197,6 @@
   background: var(--card);
   border-radius: var(--radius);
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  border: 1px solid var(--border);
   animation: modalFadeIn 0.2s ease-out;
 }
 
