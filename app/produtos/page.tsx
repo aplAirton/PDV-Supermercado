@@ -455,7 +455,6 @@ export default function ProdutosPage() {
                     <div className="form-grid">
                       <div className="form-group">
                         <label className="form-label">
-                          <Barcode size={14} />
                           Código de Barras *
                         </label>
                         <div className="input-with-icon">
@@ -476,7 +475,6 @@ export default function ProdutosPage() {
 
                       <div className="form-group">
                         <label className="form-label">
-                          <Tag size={14} />
                           Nome do Produto *
                         </label>
                         <input
@@ -491,7 +489,6 @@ export default function ProdutosPage() {
 
                       <div className="form-group">
                         <label className="form-label">
-                          <Package size={14} />
                           Categoria *
                         </label>
                         <select
@@ -514,7 +511,6 @@ export default function ProdutosPage() {
 
                       <div className="form-group">
                         <label className="form-label">
-                          <Scale size={14} />
                           Unidade de Medida *
                         </label>
                         <select
@@ -534,7 +530,6 @@ export default function ProdutosPage() {
                       {(formData.unidade_medida === 'kilo' || formData.unidade_medida === 'grama') && (
                         <div className="form-group">
                           <label className="form-label">
-                            <Scale size={14} />
                             Peso Líquido
                           </label>
                           <input
@@ -550,7 +545,6 @@ export default function ProdutosPage() {
 
                       <div className="form-group">
                         <label className="form-label">
-                          <DollarSign size={14} />
                           Preço de Venda *
                         </label>
                         <div className="input-with-icon">
@@ -570,7 +564,6 @@ export default function ProdutosPage() {
                       {(formData.unidade_medida === 'kilo' || formData.unidade_medida === 'grama') && (
                         <div className="form-group">
                           <label className="form-label">
-                            <DollarSign size={14} />
                             Preço por Kilo
                           </label>
                           <div className="input-with-icon">
@@ -597,7 +590,6 @@ export default function ProdutosPage() {
                     <div className="form-grid">
                       <div className="form-group">
                         <label className="form-label">
-                          <Package size={14} />
                           Quantidade em Estoque *
                         </label>
                         <input
@@ -613,7 +605,6 @@ export default function ProdutosPage() {
 
                       <div className="form-group">
                         <label className="form-label">
-                          <AlertTriangle size={14} />
                           Estoque Mínimo *
                         </label>
                         <input
@@ -629,7 +620,6 @@ export default function ProdutosPage() {
 
                       <div className="form-group">
                         <label className="form-label">
-                          <MapPin size={14} />
                           Localização
                         </label>
                         <input
@@ -665,7 +655,6 @@ export default function ProdutosPage() {
                     <div className="form-grid">
                       <div className="form-group">
                         <label className="form-label">
-                          <Calculator size={14} />
                           Custo de Compra
                         </label>
                         <div className="input-with-icon">
@@ -683,7 +672,6 @@ export default function ProdutosPage() {
 
                       <div className="form-group">
                         <label className="form-label">
-                          <Calculator size={14} />
                           Margem de Lucro (%)
                         </label>
                         <div className="input-with-actions">
@@ -708,7 +696,6 @@ export default function ProdutosPage() {
 
                       <div className="form-group">
                         <label className="form-label">
-                          <Calculator size={14} />
                           Sugestão de Preço
                         </label>
                         <div className="price-suggestion">
@@ -718,7 +705,6 @@ export default function ProdutosPage() {
                             onClick={calcularPrecoSugestao}
                             disabled={!formData.custo_compra || !formData.margem_lucro}
                           >
-                            <Calculator size={14} />
                             Calcular Preço Sugerido
                           </button>
                           <small>Baseado no custo e margem informados</small>
@@ -764,7 +750,6 @@ export default function ProdutosPage() {
                     <div className="form-grid">
                       <div className="form-group">
                         <label className="form-label">
-                          <Package size={14} />
                           Fornecedor
                         </label>
                         <input
@@ -778,7 +763,6 @@ export default function ProdutosPage() {
 
                       <div className="form-group">
                         <label className="form-label">
-                          <Tag size={14} />
                           Lote
                         </label>
                         <input
@@ -792,7 +776,6 @@ export default function ProdutosPage() {
 
                       <div className="form-group">
                         <label className="form-label">
-                          <Calendar size={14} />
                           Data de Validade
                         </label>
                         <input
@@ -805,7 +788,6 @@ export default function ProdutosPage() {
 
                       <div className="form-group full-width">
                         <label className="form-label">
-                          <FileText size={14} />
                           Observações
                         </label>
                         <textarea
@@ -833,7 +815,6 @@ export default function ProdutosPage() {
                     onClick={fecharModal}
                     disabled={loading}
                   >
-                    <X size={18} />
                     Cancelar
                   </button>
                   <button
