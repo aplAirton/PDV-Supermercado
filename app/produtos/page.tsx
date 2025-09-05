@@ -242,15 +242,6 @@ export default function ProdutosPage() {
     <div className="produtos-page">
       {/* Header da Página */}
       <div className="page-header">
-        <div className="header-content">
-          <div className="header-icon">
-            <Package size={32} />
-          </div>
-          <div className="header-text">
-            <h1>Gerenciamento de Produtos</h1>
-            <p>Gerencie seu catálogo de produtos com informações completas</p>
-          </div>
-        </div>
         <button className="btn btn-primary btn-lg" onClick={() => abrirModal()}>
           <Plus size={20} />
           Novo Produto
@@ -411,7 +402,6 @@ export default function ProdutosPage() {
                 </div>
                 <div className="modal-title-info">
                   <h2>{editingProduto ? "Editar Produto" : "Novo Produto"}</h2>
-                  <p>{editingProduto ? "Atualize as informações do produto" : "Adicione um novo produto ao catálogo"}</p>
                 </div>
               </div>
               <button
@@ -461,10 +451,6 @@ export default function ProdutosPage() {
                 {/* Aba Básico */}
                 {activeTab === 'basico' && (
                   <div className="form-section">
-                    <div className="section-header">
-                      <Package size={18} />
-                      <h3>Informações Básicas</h3>
-                    </div>
 
                     <div className="form-grid">
                       <div className="form-group">
@@ -607,10 +593,6 @@ export default function ProdutosPage() {
                 {/* Aba Estoque */}
                 {activeTab === 'estoque' && (
                   <div className="form-section">
-                    <div className="section-header">
-                      <Hash size={18} />
-                      <h3>Controle de Estoque</h3>
-                    </div>
 
                     <div className="form-grid">
                       <div className="form-group">
@@ -679,10 +661,6 @@ export default function ProdutosPage() {
                 {/* Aba Financeiro */}
                 {activeTab === 'financeiro' && (
                   <div className="form-section">
-                    <div className="section-header">
-                      <DollarSign size={18} />
-                      <h3>Informações Financeiras</h3>
-                    </div>
 
                     <div className="form-grid">
                       <div className="form-group">
@@ -782,10 +760,6 @@ export default function ProdutosPage() {
                 {/* Aba Outros */}
                 {activeTab === 'outros' && (
                   <div className="form-section">
-                    <div className="section-header">
-                      <Settings size={18} />
-                      <h3>Informações Adicionais</h3>
-                    </div>
 
                     <div className="form-grid">
                       <div className="form-group">

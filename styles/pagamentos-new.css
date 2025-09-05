@@ -798,10 +798,11 @@
 }
 
 .modal-header h2 {
-  font-size: 20px;
+  color: white !important;
+  font-size: 28px;
   font-weight: 600;
   color: #1f2937;
-  margin: 0;
+  margin-bottom: 1rem;
 }
 
 .modal-close {
