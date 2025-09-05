@@ -452,8 +452,8 @@ body.modal-open {
 }
 
 /* Corpo do Modal */
-.modal-body {
-  padding: 24px;
+.modal-body-1 {
+  padding: 1rem;
   overflow-y: auto;
   flex: 1;
   min-height: 300px;
@@ -480,19 +480,19 @@ body.modal-open {
   color: #1f2937;
 }
 
-.form-grid {
+.form-grid-1 {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 16px;
 }
 
-.form-group {
+.form-group-1 {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.form-group.full-width {
+.form-group-1.full-width {
   grid-column: 1 / -1;
 }
 
@@ -1146,19 +1146,19 @@ body.modal-open {
     overflow-y: auto;
   }
 
-  .form-grid {
+  .form-grid-1 {
     grid-template-columns: 1fr;
     gap: 12px;
   }
 
-  .form-group label {
+  .form-group-1 label {
     font-size: 13px;
     margin-bottom: 6px;
   }
 
-  .form-group input,
-  .form-group select,
-  .form-group textarea {
+  .form-group-1 input,
+  .form-group-1 select,
+  .form-group-1 textarea {
     font-size: 16px;
     padding: 12px;
   }
@@ -1349,11 +1349,11 @@ body.modal-open {
     margin: 10px;
   }
 
-  .modal-body {
-    padding: 16px;
+  .modal-body-1 {
+    padding: 1rem;
   }
 
-  .form-grid {
+  .form-grid-1 {
     grid-template-columns: 1fr;
     gap: 12px;
   }

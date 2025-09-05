@@ -695,12 +695,12 @@ export default function ProdutosPage() {
 
             {/* Conteúdo do Modal */}
             <form onSubmit={salvarProduto} className="product-form">
-              <div className="modal-body">
+              <div className="modal-body-1">
                 {/* Aba Básico */}
                 {activeTab === "basico" && (
                   <div className="form-section">
-                    <div className="form-grid">
-                      <div className="form-group">
+                    <div className="form-grid-1">
+                      <div className="form-group-1">
                         <label className="form-label">Código de Barras *</label>
                         <div className="input-with-icon">
                           <Barcode size={16} className="input-icon" />
@@ -727,7 +727,7 @@ export default function ProdutosPage() {
                         </div>
                       </div>
 
-                      <div className="form-group">
+                      <div className="form-group-1">
                         <label className="form-label">Nome do Produto *</label>
                         <input
                           type="text"
@@ -741,7 +741,7 @@ export default function ProdutosPage() {
                         />
                       </div>
 
-                      <div className="form-group">
+                      <div className="form-group-1">
                         <label className="form-label">Categoria *</label>
                         <select
                           className="form-select"
@@ -766,7 +766,7 @@ export default function ProdutosPage() {
                         </select>
                       </div>
 
-                      <div className="form-group">
+                      <div className="form-group-1">
                         <label className="form-label">
                           Unidade de Medida *
                         </label>
@@ -791,7 +791,7 @@ export default function ProdutosPage() {
 
                       {(formData.unidade_medida === "kilo" ||
                         formData.unidade_medida === "grama") && (
-                        <div className="form-group">
+                        <div className="form-group-1">
                           <label className="form-label">Peso Líquido</label>
                           <input
                             type="number"
@@ -811,7 +811,7 @@ export default function ProdutosPage() {
                         </div>
                       )}
 
-                      <div className="form-group">
+                      <div className="form-group-1">
                         <label className="form-label">Preço de Venda *</label>
                         <div className="input-with-icon">
                           <span className="currency-symbol">R$</span>
@@ -834,7 +834,7 @@ export default function ProdutosPage() {
 
                       {(formData.unidade_medida === "kilo" ||
                         formData.unidade_medida === "grama") && (
-                        <div className="form-group">
+                        <div className="form-group-1">
                           <label className="form-label">Preço por Kilo</label>
                           <div className="input-with-icon">
                             <span className="currency-symbol">R$</span>
@@ -861,8 +861,8 @@ export default function ProdutosPage() {
                 {/* Aba Estoque */}
                 {activeTab === "estoque" && (
                   <div className="form-section">
-                    <div className="form-grid">
-                      <div className="form-group">
+                    <div className="form-grid-1">
+                      <div className="form-group-1">
                         <label className="form-label">
                           Quantidade em Estoque *
                         </label>
@@ -882,7 +882,7 @@ export default function ProdutosPage() {
                         />
                       </div>
 
-                      <div className="form-group">
+                      <div className="form-group-1">
                         <label className="form-label">Estoque Mínimo *</label>
                         <input
                           type="number"
@@ -900,7 +900,7 @@ export default function ProdutosPage() {
                         />
                       </div>
 
-                      <div className="form-group">
+                      <div className="form-group-1">
                         <label className="form-label">Localização</label>
                         <input
                           type="text"
@@ -948,8 +948,8 @@ export default function ProdutosPage() {
                 {/* Aba Financeiro */}
                 {activeTab === "financeiro" && (
                   <div className="form-section">
-                    <div className="form-grid">
-                      <div className="form-group">
+                    <div className="form-grid-1">
+                      <div className="form-group-1">
                         <label className="form-label">Custo de Compra</label>
                         <div className="input-with-icon">
                           <span className="currency-symbol">R$</span>
@@ -969,7 +969,7 @@ export default function ProdutosPage() {
                         </div>
                       </div>
 
-                      <div className="form-group">
+                      <div className="form-group-1">
                         <label className="form-label">
                           Margem de Lucro (%)
                         </label>
@@ -998,7 +998,7 @@ export default function ProdutosPage() {
                         </div>
                       </div>
 
-                      <div className="form-group">
+                      <div className="form-group-1">
                         <label className="form-label">Sugestão de Preço</label>
                         <div className="price-suggestion">
                           <button
@@ -1058,8 +1058,8 @@ export default function ProdutosPage() {
                 {/* Aba Outros */}
                 {activeTab === "outros" && (
                   <div className="form-section">
-                    <div className="form-grid">
-                      <div className="form-group">
+                    <div className="form-grid-1">
+                      <div className="form-group-1">
                         <label className="form-label">Fornecedor</label>
                         <input
                           type="text"
@@ -1075,7 +1075,7 @@ export default function ProdutosPage() {
                         />
                       </div>
 
-                      <div className="form-group">
+                      <div className="form-group-1">
                         <label className="form-label">Lote</label>
                         <input
                           type="text"
@@ -1088,7 +1088,7 @@ export default function ProdutosPage() {
                         />
                       </div>
 
-                      <div className="form-group">
+                      <div className="form-group-1">
                         <label className="form-label">Data de Validade</label>
                         <input
                           type="date"
@@ -1103,7 +1103,7 @@ export default function ProdutosPage() {
                         />
                       </div>
 
-                      <div className="form-group full-width">
+                      <div className="form-group-1 full-width">
                         <label className="form-label">Observações</label>
                         <textarea
                           className="form-textarea"
