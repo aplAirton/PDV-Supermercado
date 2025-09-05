@@ -5,6 +5,7 @@ import "./globals.css"
 import "../styles/components.css"
 import "../styles/caixa.css"
 import "../styles/funcionarios.css"
+import "../styles/produtos.css"
 
 export const metadata: Metadata = {
   title: "PDV Airton",
