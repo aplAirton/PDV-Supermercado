@@ -205,7 +205,6 @@ export default function HomePage() {
           <div className="header-right">
             {currentPage === "vendas" && dadosOperador && (
               <div className="funcionario-info-header">
-                <User size={16} />
                 <span>{dadosOperador.funcionario_nome}</span>
               </div>
             )}
