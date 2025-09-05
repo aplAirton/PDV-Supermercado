@@ -3,10 +3,11 @@ import { executeQuery } from '@/lib/database'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
   try {
-    const funcionarioId = params.id
+    const resolvedParams = await props.params
+    const funcionarioId = resolvedParams.id
     
     const query = `
       SELECT 
@@ -38,10 +39,11 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
   try {
-    const funcionarioId = params.id
+    const resolvedParams = await props.params
+    const funcionarioId = resolvedParams.id
     const data = await request.json()
     const { 
       nome, cpf, rg, telefone, email, endereco,
@@ -114,10 +116,11 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
   try {
-    const funcionarioId = params.id
+    const resolvedParams = await props.params
+    const funcionarioId = resolvedParams.id
     
     // Verificar se funcionário existe
     const funcionarioExiste = await executeQuery(

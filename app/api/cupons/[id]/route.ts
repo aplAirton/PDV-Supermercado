@@ -1,9 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { executeQuery } from "@/lib/database"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = Number(params.id)
+    const { id: idParam } = await params
+    const id = Number(idParam)
     if (Number.isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
     const rows: any = await executeQuery('SELECT * FROM cupons WHERE id = ?', [id])

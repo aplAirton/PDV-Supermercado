@@ -6,7 +6,8 @@ import { useState, useEffect } from "react"
 import Loading from "@/components/loading"
 import { toast } from '@/hooks/use-toast'
 import ConfirmationModal from '@/components/confirmation-modal'
-import { Plus, Edit, Trash2, Search, User, Loader2 } from "lucide-react"
+import LoadingModal from '@/components/loading-modal'
+import { Plus, Edit, Trash2, Search, User, Loader2, X, DollarSign, MapPin, Save, OctagonAlert } from "lucide-react"
 
 interface Cliente {
   id: number
@@ -35,6 +36,139 @@ export default function ClientesPage() {
     limite_credito: "",
   })
 
+  const [activeTab, setActiveTab] = useState<
+    "basico" | "credito" | "endereco"
+  >("basico");
+
+  const [showValidationCard, setShowValidationCard] = useState(false)
+  const [validationErrors, setValidationErrors] = useState<string[]>([])
+  
+  const [messageCard, setMessageCard] = useState<{
+    show: boolean
+    type: 'success' | 'error' | 'warning'
+    title: string
+    message: string
+  }>({
+    show: false,
+    type: 'success',
+    title: '',
+    message: ''
+  })
+
+  const [showLoadingModal, setShowLoadingModal] = useState(false)
+
+  // Máscara para CPF (apenas visual)
+  const formatarCPFInput = (value: string) => {
+    // Remove tudo que não é dígito
+    const digits = value.replace(/\D/g, "");
+    
+    // Limita a 11 dígitos
+    const limitedDigits = digits.slice(0, 11);
+    
+    // Aplica a máscara visual
+    if (limitedDigits.length <= 3) {
+      return limitedDigits;
+    } else if (limitedDigits.length <= 6) {
+      return `${limitedDigits.slice(0, 3)}.${limitedDigits.slice(3)}`;
+    } else if (limitedDigits.length <= 9) {
+      return `${limitedDigits.slice(0, 3)}.${limitedDigits.slice(3, 6)}.${limitedDigits.slice(6)}`;
+    } else {
+      return `${limitedDigits.slice(0, 3)}.${limitedDigits.slice(3, 6)}.${limitedDigits.slice(6, 9)}-${limitedDigits.slice(9)}`;
+    }
+  };
+
+  // Máscara para Telefone (apenas visual)
+  const formatarTelefoneInput = (value: string) => {
+    // Remove tudo que não é dígito
+    const digits = value.replace(/\D/g, "");
+    
+    // Limita a 11 dígitos
+    const limitedDigits = digits.slice(0, 11);
+    
+    // Aplica a máscara visual
+    if (limitedDigits.length <= 2) {
+      return limitedDigits;
+    } else if (limitedDigits.length <= 6) {
+      return `(${limitedDigits.slice(0, 2)}) ${limitedDigits.slice(2)}`;
+    } else if (limitedDigits.length <= 10) {
+      return `(${limitedDigits.slice(0, 2)}) ${limitedDigits.slice(2, 6)}-${limitedDigits.slice(6)}`;
+    } else {
+      return `(${limitedDigits.slice(0, 2)}) ${limitedDigits.slice(2, 7)}-${limitedDigits.slice(7)}`;
+    }
+  };
+
+  // Handler para CPF com máscara visual
+  const handleCPFChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedValue = formatarCPFInput(e.target.value);
+    setFormData({ ...formData, cpf: formattedValue });
+    // Limpar erros de validação quando usuário começa a editar
+    if (showValidationCard) {
+      setShowValidationCard(false);
+      setValidationErrors([]);
+    }
+  };
+
+  // Handler para Telefone com máscara visual
+  const handleTelefoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedValue = formatarTelefoneInput(e.target.value);
+    setFormData({ ...formData, telefone: formattedValue });
+    // Limpar erros de validação quando usuário começa a editar
+    if (showValidationCard) {
+      setShowValidationCard(false);
+      setValidationErrors([]);
+    }
+  };
+
+  // Função para mostrar cards de mensagem temporários
+  const showMessageCard = (type: 'success' | 'error' | 'warning', title: string, message: string) => {
+    setMessageCard({ show: true, type, title, message })
+    // Auto-hide após 2 segundos
+    setTimeout(() => {
+      setMessageCard(prev => ({ ...prev, show: false }))
+    }, 3000)
+  }
+
+  // Função para esconder card de mensagem manualmente
+  const hideMessageCard = () => {
+    setMessageCard(prev => ({ ...prev, show: false }))
+  }
+
+  // Função de validação completa
+  const validarFormulario = (): string[] => {
+    const errors: string[] = []
+
+    // Validação do nome
+    if (!formData.nome.trim()) {
+      errors.push("Nome é obrigatório")
+    } else if (formData.nome.trim().length < 2) {
+      errors.push("Nome deve ter pelo menos 2 caracteres")
+    }
+
+    // Validação do CPF (apenas para novos clientes)
+    if (!editingCliente) {
+      const cpfDigits = formData.cpf.replace(/\D/g, "")
+      if (!cpfDigits) {
+        errors.push("CPF é obrigatório")
+      } else if (cpfDigits.length !== 11) {
+        errors.push("CPF deve ter 11 dígitos")
+      } else if (!isValidCPF(cpfDigits)) {
+        errors.push("CPF inválido")
+      }
+    }
+
+    // Validação do limite de crédito (opcional, mas se preenchido deve ser válido)
+    if (formData.limite_credito.trim()) {
+      const limite = Number.parseFloat(formData.limite_credito)
+      if (isNaN(limite)) {
+        errors.push("Limite de crédito deve ser um número válido")
+      } else if (limite < 0) {
+        errors.push("Limite de crédito não pode ser negativo")
+      }
+    }
+
+    return errors
+  }
+
   useEffect(() => {
     carregarClientes()
   }, [])
@@ -48,6 +182,7 @@ export default function ClientesPage() {
     } catch (error) {
       console.error("Erro ao carregar clientes:", error)
       setClientes([])
+      showMessageCard('error', 'Erro ao carregar', 'Não foi possível carregar a lista de clientes. Verifique sua conexão.')
     } finally {
       setLoadingClientes(false)
     }
@@ -73,7 +208,18 @@ export default function ClientesPage() {
     if (!rawCpf) return false
     const cpf = rawCpf.replace(/\D/g, "")
     if (cpf.length !== 11) return false
-    // rejeita CPFs com todos os dígitos iguais
+
+    // CPFs aceitos de forma excepcional
+    const cpfsExcepcionais = [
+      "11111111111", "22222222222", "33333333333", "44444444444",
+      "55555555555", "66666666666", "77777777777", "88888888888",
+      "99999999999", "12345678910"
+    ]
+
+    // Se for um CPF excepcional, aceitar
+    if (cpfsExcepcionais.includes(cpf)) return true
+
+    // rejeita CPFs com todos os dígitos iguais (exceto os excepcionais já tratados)
     if (/^(\d)\1{10}$/.test(cpf)) return false
 
     const calc = (t: number) => {
@@ -126,26 +272,31 @@ export default function ClientesPage() {
 
   const salvarCliente = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Executar validação completa
+    const errors = validarFormulario()
+    if (errors.length > 0) {
+      setValidationErrors(errors)
+      setShowValidationCard(true)
+      return
+    }
+
+    // Limpar erros anteriores
+    setValidationErrors([])
+    setShowValidationCard(false)
+
     setLoading(true)
 
     try {
-      // Validação do CPF ao criar novo cliente
-      if (!editingCliente) {
-        if (!isValidCPF(formData.cpf)) {
-          toast({ title: 'CPF inválido', description: 'CPF inválido. Verifique e tente novamente.', variant: 'destructive' })
-          setLoading(false)
-          return
-        }
-      }
-
       const url = editingCliente ? `/api/clientes/${editingCliente.id}` : "/api/clientes"
       const method = editingCliente ? "PUT" : "POST"
 
       // Em edição, garantimos que o CPF enviado seja o CPF original (não permitimos alteração do CPF)
       const payload = {
         ...formData,
-        limite_credito: Number.parseFloat(formData.limite_credito),
-        cpf: editingCliente ? editingCliente.cpf : formData.cpf,
+        limite_credito: Number.parseFloat(formData.limite_credito || "0"),
+        cpf: editingCliente ? editingCliente.cpf : formData.cpf.replace(/\D/g, ""),
+        telefone: formData.telefone.replace(/\D/g, ""),
       }
 
       const response = await fetch(url, {
@@ -157,18 +308,26 @@ export default function ClientesPage() {
       if (response.ok) {
         await carregarClientes()
         fecharModal()
-        toast({ title: editingCliente ? 'Cliente atualizado' : 'Cliente cadastrado', description: editingCliente ? 'Cliente atualizado!' : 'Cliente cadastrado!', variant: 'success' })
+        showMessageCard('success', editingCliente ? 'Cliente atualizado' : 'Cliente cadastrado', editingCliente ? 'As informações do cliente foram atualizadas com sucesso!' : 'Novo cliente cadastrado com sucesso!')
       } else {
         // tentar extrair mensagem do servidor (por exemplo: 'CPF é obrigatório') e mostrar ao usuário
         const errBody = await response.json().catch(() => null)
-        const message = errBody && errBody.error ? String(errBody.error) : 'Erro ao salvar cliente'
-        toast({ title: 'Erro', description: message, variant: 'destructive' })
+        let message = errBody && errBody.error ? String(errBody.error) : `Erro ao ${editingCliente ? 'atualizar' : 'cadastrar'} cliente`
+        
+        // Verificar se é erro de CPF duplicado
+        if (message.includes('Duplicate entry') && message.includes('clientes_cpf_key')) {
+          message = 'CPF já cadastrado no sistema'
+        }
+        
+        // Mostrar erro dentro do modal
+        setValidationErrors([message])
+        setShowValidationCard(true)
         setLoading(false)
         return
       }
     } catch (error) {
-  console.error("Erro ao salvar cliente:", error)
-  toast({ title: 'Erro', description: 'Erro ao salvar cliente!', variant: 'destructive' })
+      console.error("Erro ao salvar cliente:", error)
+      showMessageCard('error', 'Erro de conexão', `Não foi possível ${editingCliente ? 'atualizar' : 'cadastrar'} o cliente. Verifique sua conexão e tente novamente.`)
     } finally {
       setLoading(false)
     }
@@ -185,6 +344,20 @@ export default function ClientesPage() {
 
   const handleConfirmExcluir = async () => {
     if (confirmExcluirId === null) return
+    
+    // Verificar se o cliente tem débito
+    const cliente = clientes.find(c => c.id === confirmExcluirId)
+    if (cliente && Number(cliente.debito_atual) > 0) {
+      const debitoFormatado = Number(cliente.debito_atual).toFixed(2)
+      showMessageCard('warning', 'Exclusão não permitida', `Não é possível excluir o cliente ${cliente.nome} pois ele possui um débito de R$ ${debitoFormatado}.`)
+      setShowConfirmExcluir(false)
+      setConfirmExcluirId(null)
+      return
+    }
+    
+    // Mostrar modal de loading
+    setShowLoadingModal(true)
+    
     try {
       const response = await fetch(`/api/clientes/${confirmExcluirId}`, {
         method: "DELETE",
@@ -192,14 +365,15 @@ export default function ClientesPage() {
 
       if (response.ok) {
         await carregarClientes()
-  toast({ title: 'Cliente excluído', description: 'Cliente excluído!', variant: 'success' })
+        showMessageCard('success', 'Cliente excluído', 'Cliente excluído com sucesso!')
       } else {
         throw new Error("Erro ao excluir cliente")
       }
     } catch (error) {
       console.error("Erro ao excluir cliente:", error)
-      toast({ title: 'Erro', description: 'Erro ao excluir cliente!', variant: 'destructive' })
+      showMessageCard('error', 'Erro ao excluir', 'Não foi possível excluir o cliente. Tente novamente.')
     } finally {
+      setShowLoadingModal(false)
       setShowConfirmExcluir(false)
       setConfirmExcluirId(null)
     }
@@ -216,6 +390,22 @@ export default function ClientesPage() {
             </button>
           </div>
         </div>
+
+        {/* Card de Mensagem Temporário */}
+        {messageCard.show && (
+          <div className={`message-card message-${messageCard.type}`}>
+            <div className="message-body">
+              <p className="message-text">{messageCard.message}</p>
+              <button
+                className="message-close"
+                onClick={hideMessageCard}
+                title="Fechar"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Filtro */}
         <div className="form-group">
@@ -268,7 +458,7 @@ export default function ClientesPage() {
                         <td>
                           <span
                             style={{
-                              color: cliente.debito_atual > 0 ? "var(--warning-color)" : "var(--success-color)",
+                              color: Number(cliente.debito_atual) > 0 ? "var(--warning-color)" : "var(--success-color)",
                             }}
                           >
                             R$ {Number(cliente.debito_atual).toFixed(2)}
@@ -349,7 +539,7 @@ export default function ClientesPage() {
                             <Trash2 size={14} />
                             Débito
                           </span>
-                          <span className={`item-value ${cliente.debito_atual > 0 ? "debt" : "no-debt"}`}>
+                          <span className={`item-value ${Number(cliente.debito_atual) > 0 ? "debt" : "no-debt"}`}>
                             R$ {Number(cliente.debito_atual).toFixed(2)}
                           </span>
                         </div>
@@ -359,8 +549,8 @@ export default function ClientesPage() {
                             <Edit size={14} />
                             Disponível
                           </span>
-                          <span className={`item-value ${cliente.limite_credito - cliente.debito_atual >= 0 ? "available" : "overdue"}`}>
-                            R$ {(cliente.limite_credito - cliente.debito_atual).toFixed(2)}
+                          <span className={`item-value ${Number(cliente.limite_credito) - Number(cliente.debito_atual) >= 0 ? "available" : "overdue"}`}>
+                            R$ {(Number(cliente.limite_credito) - Number(cliente.debito_atual)).toFixed(2)}
                           </span>
                         </div>
                       </div>
@@ -405,89 +595,222 @@ export default function ClientesPage() {
 
       {/* Modal */}
       {showModal && (
-        <div className="modal-overlay" onClick={fecharModal}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-xl font-bold mb-4">{editingCliente ? "Editar Cliente" : "Novo Cliente"}</h3>
-
-            <form onSubmit={salvarCliente}>
-              <div className="form-group">
-                <label className="form-label">Nome Completo</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={formData.nome}
-                  onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="form-group">
-                  <label className="form-label">CPF</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={formData.cpf}
-                    onChange={(e) => setFormData({ ...formData, cpf: e.target.value })}
-                    placeholder="000.000.000-00"
-                    required
-                    readOnly={!!editingCliente}
-                  />
-                  {editingCliente && (
-                    <div className="text-sm text-muted mt-1">CPF não pode ser alterado ao editar um cliente.</div>
-                  )}
+        <div className="product-modal-overlay" onClick={fecharModal}>
+          <div className="product-modal" onClick={(e) => e.stopPropagation()}>
+            {/* Header do Modal */}
+            <div className="modal-header-1">
+              <div className="modal-header-content">
+                <div className="modal-icon">
+                  {editingCliente ? <Edit size={24} /> : <Plus size={24} />}
                 </div>
-
-                <div className="form-group">
-                  <label className="form-label">Telefone</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={formData.telefone}
-                    onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
-                    placeholder="(00) 00000-0000"
-                  />
+                <div className="modal-title-info-1">
+                  <h2>
+                    {editingCliente ? "Editar Cliente" : "Novo Cliente"}
+                  </h2>
+                  <p>
+                    {editingCliente ? "Atualize as informações do cliente" : "Adicione um novo cliente ao sistema"}
+                  </p>
                 </div>
               </div>
+              <button
+                className="modal-close-btn"
+                onClick={fecharModal}
+                title="Fechar"
+              >
+                <X size={20} />
+              </button>
+            </div>
 
-              <div className="form-group">
-                <label className="form-label">Endereço</label>
-                <textarea
-                  className="form-input"
-                  rows={3}
-                  value={formData.endereco}
-                  onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
-                  placeholder="Rua, número, bairro, cidade..."
-                />
+            {/* Navegação por Abas */}
+            <div className="modal-tabs">
+              <button
+                className={`tab-btn ${activeTab === "basico" ? "active" : ""}`}
+                onClick={() => setActiveTab("basico")}
+              >
+                <User size={16} />
+                Básico
+              </button>
+              <button
+                className={`tab-btn ${activeTab === "credito" ? "active" : ""}`}
+                onClick={() => setActiveTab("credito")}
+              >
+                <DollarSign size={16} />
+                Crédito
+              </button>
+              <button
+                className={`tab-btn ${activeTab === "endereco" ? "active" : ""}`}
+                onClick={() => setActiveTab("endereco")}
+              >
+                <MapPin size={16} />
+                Endereço
+              </button>
+            </div>
+
+            {/* Conteúdo do Modal */}
+            <form onSubmit={salvarCliente} className="product-form">
+              {/* Card de Validação */}
+              {showValidationCard && validationErrors.length > 0 && (
+              <div className="validation-card-1">
+                <div className="validation-body">
+                <ul className="validation-list">
+                  {validationErrors.map((error, index) => (
+                  <li key={index} className="validation-item">
+                    <OctagonAlert size={24} className="validation-bullet" />
+                    {error}
+                  </li>
+                  ))}
+                </ul>
+                </div>
+              </div>
+              )}
+
+              <div className="modal-body-1">
+                {/* Aba Básico */}
+                {activeTab === "basico" && (
+                  <div className="form-section">
+                    <div className="form-grid-1">
+                      <div className="form-group-1">
+                        <label className="form-label">Nome Completo *</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={formData.nome}
+                          onChange={(e) => {
+                            setFormData({ ...formData, nome: e.target.value });
+                            // Limpar erros de validação quando usuário começa a editar
+                            if (showValidationCard) {
+                              setShowValidationCard(false);
+                              setValidationErrors([]);
+                            }
+                          }}
+                          placeholder="Nome completo do cliente"
+                          required
+                        />
+                      </div>
+
+                      <div className="form-group-1">
+                        <label className="form-label">CPF *</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={formData.cpf}
+                          onChange={handleCPFChange}
+                          placeholder="000.000.000-00"
+                          required
+                          readOnly={!!editingCliente}
+                        />
+                        {editingCliente && (
+                          <div className="text-sm text-muted mt-1">CPF não pode ser alterado ao editar um cliente.</div>
+                        )}
+                      </div>
+
+                      <div className="form-group-1">
+                        <label className="form-label">Telefone</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={formData.telefone}
+                          onChange={handleTelefoneChange}
+                          placeholder="(00) 00000-0000"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Aba Crédito */}
+                {activeTab === "credito" && (
+                  <div className="form-section">
+                    <div className="form-grid-1">
+                      <div className="form-group-1">
+                        <label className="form-label">Limite de Crédito *</label>
+                        <div className="input-with-icon">
+                          <span className="currency-symbol">R$</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            className="form-input currency-input"
+                            value={formData.limite_credito}
+                            onChange={(e) => {
+                              setFormData({ ...formData, limite_credito: e.target.value });
+                              // Limpar erros de validação quando usuário começa a editar
+                              if (showValidationCard) {
+                                setShowValidationCard(false);
+                                setValidationErrors([]);
+                              }
+                            }}
+                            placeholder="0,00"
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Resumo do Crédito */}
+                    {formData.limite_credito && (
+                      <div className="financial-summary">
+                        <h4>Resumo do Crédito</h4>
+                        <div className="summary-grid">
+                          <div className="summary-item">
+                            <span className="summary-label">Limite:</span>
+                            <span className="summary-value success">
+                              R$ {Number(formData.limite_credito).toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Aba Endereço */}
+                {activeTab === "endereco" && (
+                  <div className="form-section">
+                    <div className="form-grid-1">
+                      <div className="form-group-1 full-width">
+                        <label className="form-label">Endereço Completo</label>
+                        <textarea
+                          className="form-textarea"
+                          value={formData.endereco}
+                          onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
+                          placeholder="Rua, número, bairro, cidade, CEP..."
+                          rows={4}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Limite de Crédito</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  className="form-input"
-                  value={formData.limite_credito}
-                  onChange={(e) => setFormData({ ...formData, limite_credito: e.target.value })}
-                  placeholder="0.00"
-                  required
-                />
-              </div>
-
-              <div className="flex gap-2 justify-end mt-4">
-                <button type="button" className="btn btn-outline" onClick={fecharModal}>
-                  Cancelar
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="animate-spin" size={16} />
-                      Salvando...
-                    </>
-                  ) : (
-                    "Salvar"
-                  )}
-                </button>
+              {/* Footer do Modal */}
+              <div className="modal-footer-1">
+                <div className="footer-actions">
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-lg"
+                    onClick={fecharModal}
+                    disabled={loading}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className={`btn btn-primary btn-lg ${loading ? 'btn-loading' : ''}`}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="animate-spin" size={18} />
+                        Salvando...
+                      </>
+                    ) : (
+                      <>
+                        <Save size={18} />
+                        {editingCliente ? "Atualizar" : "Salvar"}
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
@@ -505,6 +828,15 @@ export default function ClientesPage() {
           type="danger"
           confirmText="Excluir"
           cancelText="Cancelar"
+        />
+      )}
+
+      {/* Modal de Loading */}
+      {showLoadingModal && (
+        <LoadingModal
+          isOpen={showLoadingModal}
+          title="Excluindo cliente..."
+          message="Aguarde enquanto o cliente é removido do sistema."
         />
       )}
     </div>

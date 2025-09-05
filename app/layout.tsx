@@ -2,6 +2,7 @@ import type React from "react"
 import { Toaster } from '@/components/ui/toaster'
 import type { Metadata } from "next"
 import "./globals.css"
+import "../styles/globals.css"
 import "../styles/components.css"
 import "../styles/caixa.css"
 import "../styles/funcionarios.css"

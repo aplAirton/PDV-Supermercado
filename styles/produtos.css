@@ -304,7 +304,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -313,6 +313,7 @@
   backdrop-filter: blur(8px);
   animation: fadeIn 0.3s ease-out;
   overflow-y: auto;
+  transition: all 0.3s ease-out;
 }
 
 /* Corrigir bug: impedir scroll do body quando modal está aberto */
