@@ -176,13 +176,19 @@
   color: #1f2937;
   font-weight: 600;
 }
-
 .caixa-aberto-actions {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
   padding-top: 16px;
   border-top: 1px solid #e5e7eb;
+}
+
+@media (max-width: 768px) {
+  .caixa-aberto-actions {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+  }
 }
 
 .btn-caixa-action {

@@ -923,11 +923,6 @@ export default function CaixaPage() {
               <div className="caixa-aberto-header">
                 <div className="caixa-aberto-title">
                   <h2>Caixa #{caixa.id} • {caixa.funcionario_nome}</h2>
-                  <div className="status">Caixa em Operação</div>
-                </div>
-                <div className="caixa-aberto-info">
-                  Aberto em {formatarData(caixa.data_abertura)}<br />
-                  Valor inicial: {formatarValor(valorInicial)}
                 </div>
               </div>
 
@@ -944,37 +939,37 @@ export default function CaixaPage() {
               <div className="caixa-aberto-actions">
                 <button
                   onClick={() => verResumo(caixa)}
-                  className="btn-caixa-action info"
+                  className="btn btn-caixa-action info"
                 >
                   <FileText size={16} />
-                  Ver Resumo
+                  Resumo
                 </button>
                 <button
                   onClick={() => imprimirResumoCaixa(caixa.id)}
-                  className="btn-caixa-action secondary"
+                  className="btn btn-caixa-action secondary"
                 >
                   <Printer size={16} />
-                  Imprimir Resumo
+                  Imprimir
                 </button>
                 <button
                   onClick={() => {
                     setCaixaSelecionado(caixa)
                     setShowTipoMovimentoModal(true)
                   }}
-                  className="btn-caixa-action primary"
+                  className="btn btn-caixa-action primary"
                 >
                   <ArrowRightLeft size={16} />
-                  Suprimento/Sangria
+                  Movimentação
                 </button>
                 <button
                   onClick={() => {
                     setCaixaSelecionado(caixa)
                     iniciarFechamentoCaixa()
                   }}
-                  className="btn-caixa-action danger"
+                  className="btn btn-caixa-action danger"
                 >
                   <Lock size={16} />
-                  Fechar Caixa
+                  Fechar
                 </button>
               </div>
             </div>
