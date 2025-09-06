@@ -1313,8 +1313,7 @@ export default function VendasPage() {
                 }}
               >
                 <div className="btn-content">
-                  <Receipt size={20} />
-                  Imprimir Cupom Fiscal
+                  Imprimir Cupom
                 </div>
               </button>
             </div>
