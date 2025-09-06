@@ -574,18 +574,25 @@
   max-width: 800px;
 }
 
-.modal-header {
+.modal-header-caixa {
+  gap: 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 24px 24px 0 24px;
 }
 
-.modal-header h3 {
+.modal-header-caixa h3 {
   font-size: 20px;
   font-weight: 700;
   color: #1f2937;
   margin: 0;
+}
+
+.modal-header-caixa-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
 .modal-close {
@@ -1148,4 +1155,339 @@
   .caixas-cards {
     display: none;
   }
+}
+
+/* === MODAL RESUMO === */
+.modal-resumo-content {
+  max-width: 600px;
+  width: 90%;
+}
+
+.modal-resumo-header-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  color: white;
+}
+
+.modal-resumo-header-icon.aberto {
+  background-color: #10b981;
+}
+
+.modal-resumo-header-icon.fechado {
+  background-color: #6b7280;
+}
+
+.modal-resumo-header-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.modal-resumo-header-subtitle {
+  margin: 2px 0 0 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.modal-resumo-body {
+  padding: 1rem;
+}
+
+.modal-resumo-cards-grid {
+  display: grid;
+  gap: 20px;
+  margin-bottom: 25px;
+}
+
+.modal-resumo-cards-grid.fechado {
+  grid-template-columns: 2fr 1fr;
+}
+
+.modal-resumo-cards-grid.aberto {
+  grid-template-columns: 1fr;
+}
+
+.modal-resumo-total-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 15px;
+  padding: 25px;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.modal-resumo-total-content {
+  position: relative;
+  z-index: 2;
+}
+
+.modal-resumo-total-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.modal-resumo-total-title {
+  margin: 0 0 5px 0;
+  font-size: 16px;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.modal-resumo-total-value {
+  font-size: 32px;
+  font-weight: bold;
+  margin: 0;
+}
+
+.modal-resumo-total-breakdown {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  font-size: 13px;
+}
+
+.modal-resumo-total-item-label {
+  opacity: 0.8;
+  margin-bottom: 2px;
+}
+
+.modal-resumo-total-item-value {
+  font-weight: 600;
+}
+
+.modal-resumo-total-decoration {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 70px;
+  height: 70px;
+  background-color: rgba(255,255,255,0.1);
+  border-radius: 50%;
+}
+
+.modal-resumo-reconciliacao-card {
+  border-radius: 15px;
+  padding: 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.modal-resumo-reconciliacao-card.perfeito {
+  background-color: #f0fdf4;
+  border: 3px solid #22c55e;
+}
+
+.modal-resumo-reconciliacao-card.sobra {
+  background-color: #eff6ff;
+  border: 3px solid #3b82f6;
+}
+
+.modal-resumo-reconciliacao-card.falta {
+  background-color: #fef2f2;
+  border: 3px solid #ef4444;
+}
+
+.modal-resumo-reconciliacao-icon {
+  margin-bottom: 12px;
+}
+
+.modal-resumo-reconciliacao-icon.perfeito {
+  color: #22c55e;
+}
+
+.modal-resumo-reconciliacao-icon.sobra {
+  color: #3b82f6;
+}
+
+.modal-resumo-reconciliacao-icon.falta {
+  color: #ef4444;
+}
+
+.modal-resumo-reconciliacao-title {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.modal-resumo-reconciliacao-title.perfeito {
+  color: #22c55e;
+}
+
+.modal-resumo-reconciliacao-title.sobra {
+  color: #3b82f6;
+}
+
+.modal-resumo-reconciliacao-title.falta {
+  color: #ef4444;
+}
+
+.modal-resumo-reconciliacao-value {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.modal-resumo-reconciliacao-value.perfeito {
+  color: #22c55e;
+}
+
+.modal-resumo-reconciliacao-value.sobra {
+  color: #3b82f6;
+}
+
+.modal-resumo-reconciliacao-value.falta {
+  color: #ef4444;
+}
+
+.modal-resumo-reconciliacao-details {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 8px;
+}
+
+.modal-resumo-pagamentos-container {
+  background-color: #f8fafc;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+}
+
+.modal-resumo-pagamentos-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.modal-resumo-pagamentos-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #374151;
+}
+
+.modal-resumo-pagamentos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.5rem !important;
+}
+
+.modal-footer-caixa {
+  display: flex;
+  justify-content: flex-end;
+  padding: 1rem;
+  border-top: 1px solid #f3f4f6;
+  gap: 0.5rem;
+}
+
+.modal-resumo-pagamento-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background-color: white;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.modal-resumo-pagamento-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-resumo-pagamento-icon {
+  width: 35px;
+  height: 35px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-resumo-pagamento-icon.dinheiro {
+  background-color: #dcfce7;
+}
+
+.modal-resumo-pagamento-icon.debito {
+  background-color: #dbeafe;
+}
+
+.modal-resumo-pagamento-icon.credito {
+  background-color: #fef2f2;
+}
+
+.modal-resumo-pagamento-icon.pix {
+  background-color: #f3f4f6;
+}
+
+.modal-resumo-pagamento-icon.fiado {
+  background-color: #fed7aa;
+}
+
+.modal-resumo-pagamento-icon.total {
+  background-color: rgba(255,255,255,0.2);
+}
+
+.modal-resumo-pagamento-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.modal-resumo-pagamento-name.total {
+  font-size: 16px;
+  font-weight: 700;
+  color: white;
+}
+
+.modal-resumo-pagamento-value {
+  font-size: 16px;
+  color: #059669;
+  font-weight: bold;
+}
+
+.modal-resumo-pagamento-value.debito {
+  color: #2563eb;
+}
+
+.modal-resumo-pagamento-value.credito {
+  color: #dc2626;
+}
+
+.modal-resumo-pagamento-value.pix {
+  color: #7c3aed;
+}
+
+.modal-resumo-pagamento-value.fiado {
+  color: #ea580c;
+}
+
+.modal-resumo-pagamento-value.total {
+  font-size: 20px;
+  color: white;
+}
+
+.modal-resumo-pagamento-card.total {
+  background-color: #10b981;
+  border: 2px solid #059669;
+  color: white;
+  grid-column: span 2;
+}
+
+/* === MODAL SCROLL PREVENTION === */
+body.modal-open {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
 }

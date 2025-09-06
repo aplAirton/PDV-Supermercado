@@ -122,6 +122,20 @@ export default function CaixaPage() {
     carregarDados()
   }, [])
 
+  // Impedir rolagem do fundo quando modal estiver ativo
+  useEffect(() => {
+    if (showResumoModal) {
+      document.body.classList.add('modal-open')
+    } else {
+      document.body.classList.remove('modal-open')
+    }
+
+    // Cleanup ao desmontar componente
+    return () => {
+      document.body.classList.remove('modal-open')
+    }
+  }, [showResumoModal])
+
   const verificarStatusCaixa = async () => {
     try {
       const response = await fetch('/api/caixa/status')
@@ -1652,26 +1666,17 @@ export default function CaixaPage() {
       {/* Modal Resumo */}
       {showResumoModal && resumoFechamento && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: '600px', width: '90%' }}>
-            <div className="modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  width: '50px', 
-                  height: '50px', 
-                  backgroundColor: resumoFechamento.status === 'aberto' ? '#10b981' : '#6b7280',
-                  borderRadius: '50%',
-                  color: 'white'
-                }}>
+          <div className="modal-content modal-resumo-content">
+            <div className="modal-header-caixa">
+              <div className='modal-header-caixa-info'>
+                <div className={`modal-resumo-header-icon ${resumoFechamento.status === 'aberto' ? 'aberto' : 'fechado'}`}>
                   <Calculator size={24} />
                 </div>
                 <div>
-                  <h3 style={{ margin: '0', fontSize: '20px', fontWeight: 'bold' }}>
+                  <h3 className="modal-resumo-header-title">
                     Caixa #{resumoFechamento.id}
                   </h3>
-                  <p style={{ margin: '2px 0 0 0', color: '#6b7280', fontSize: '14px' }}>
+                  <p className="modal-resumo-header-subtitle">
                     {resumoFechamento.operador_abertura} • {new Date(resumoFechamento.data_abertura).toLocaleDateString('pt-BR')}
                     {resumoFechamento.data_fechamento && (
                       <> - {new Date(resumoFechamento.data_fechamento).toLocaleDateString('pt-BR')}</>
@@ -1690,25 +1695,18 @@ export default function CaixaPage() {
               </button>
             </div>
 
-            <div style={{ padding: '25px' }}>
+            <div className="modal-resumo-body">
               {/* Cards de Status e Total */}
-              <div style={{ display: 'grid', gridTemplateColumns: resumoFechamento.status === 'fechado' ? '2fr 1fr' : '1fr', gap: '20px', marginBottom: '25px' }}>
+              <div className={`modal-resumo-cards-grid ${resumoFechamento.status === 'fechado' ? 'fechado' : 'aberto'}`}>
                 {/* Card Total do Caixa */}
-                <div style={{ 
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  borderRadius: '15px',
-                  padding: '25px',
-                  color: 'white',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}>
-                  <div style={{ position: 'relative', zIndex: 2 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+                <div className="modal-resumo-total-card">
+                  <div className="modal-resumo-total-content">
+                    <div className="modal-resumo-total-header">
                       <div>
-                        <h4 style={{ margin: '0 0 5px 0', fontSize: '16px', fontWeight: '600', opacity: '0.9' }}>
+                        <h4 className="modal-resumo-total-title">
                           Total do Caixa
                         </h4>
-                        <div style={{ fontSize: '32px', fontWeight: 'bold', margin: '0' }}>
+                        <div className="modal-resumo-total-value">
                           {formatarValor(
                             resumoFechamento.valores.inicial + 
                             resumoFechamento.valores.vendas + 
@@ -1719,78 +1717,56 @@ export default function CaixaPage() {
                       </div>
                       <Wallet size={40} style={{ opacity: 0.8 }} />
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', fontSize: '13px' }}>
+                    <div className="modal-resumo-total-breakdown">
                       <div>
-                        <div style={{ opacity: '0.8', marginBottom: '2px' }}>Inicial</div>
-                        <div style={{ fontWeight: '600' }}>{formatarValor(resumoFechamento.valores.inicial)}</div>
+                        <div className="modal-resumo-total-item-label">Inicial</div>
+                        <div className="modal-resumo-total-item-value">{formatarValor(resumoFechamento.valores.inicial)}</div>
                       </div>
                       <div>
-                        <div style={{ opacity: '0.8', marginBottom: '2px' }}>Vendas</div>
-                        <div style={{ fontWeight: '600' }}>+{formatarValor(resumoFechamento.valores.vendas)}</div>
+                        <div className="modal-resumo-total-item-label">Vendas</div>
+                        <div className="modal-resumo-total-item-value">+{formatarValor(resumoFechamento.valores.vendas)}</div>
                       </div>
                       <div>
-                        <div style={{ opacity: '0.8', marginBottom: '2px' }}>Suprimentos</div>
-                        <div style={{ fontWeight: '600' }}>+{formatarValor(resumoFechamento.valores.suprimentos)}</div>
+                        <div className="modal-resumo-total-item-label">Suprimentos</div>
+                        <div className="modal-resumo-total-item-value">+{formatarValor(resumoFechamento.valores.suprimentos)}</div>
                       </div>
                       <div>
-                        <div style={{ opacity: '0.8', marginBottom: '2px' }}>Sangrias</div>
-                        <div style={{ fontWeight: '600' }}>-{formatarValor(resumoFechamento.valores.sangrias)}</div>
+                        <div className="modal-resumo-total-item-label">Sangrias</div>
+                        <div className="modal-resumo-total-item-value">-{formatarValor(resumoFechamento.valores.sangrias)}</div>
                       </div>
                     </div>
                   </div>
-                  <div style={{ 
-                    position: 'absolute', 
-                    top: '-20px', 
-                    right: '-20px', 
-                    width: '80px', 
-                    height: '80px', 
-                    backgroundColor: 'rgba(255,255,255,0.1)', 
-                    borderRadius: '50%' 
-                  }} />
+                  <div className="modal-resumo-total-decoration" />
                 </div>
 
                 {/* Card Reconciliação (só para caixas fechados) */}
                 {resumoFechamento.status === 'fechado' && (
-                  <div style={{ 
-                    backgroundColor: resumoFechamento.valores.diferenca === 0 ? '#f0fdf4' : 
-                                    resumoFechamento.valores.diferenca > 0 ? '#eff6ff' : '#fef2f2',
-                    border: `3px solid ${resumoFechamento.valores.diferenca === 0 ? '#22c55e' : 
-                                        resumoFechamento.valores.diferenca > 0 ? '#3b82f6' : '#ef4444'}`,
-                    borderRadius: '15px',
-                    padding: '20px',
-                    textAlign: 'center',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center'
-                  }}>
-                    <div style={{ 
-                      color: resumoFechamento.valores.diferenca === 0 ? '#22c55e' : 
-                             resumoFechamento.valores.diferenca > 0 ? '#3b82f6' : '#ef4444',
-                      marginBottom: '12px'
-                    }}>
+                  <div className={`modal-resumo-reconciliacao-card ${
+                    resumoFechamento.valores.diferenca === 0 ? 'perfeito' :
+                    resumoFechamento.valores.diferenca > 0 ? 'sobra' : 'falta'
+                  }`}>
+                    <div className={`modal-resumo-reconciliacao-icon ${
+                      resumoFechamento.valores.diferenca === 0 ? 'perfeito' :
+                      resumoFechamento.valores.diferenca > 0 ? 'sobra' : 'falta'
+                    }`}>
                       {resumoFechamento.valores.diferenca === 0 && <CheckCircle size={32} style={{ margin: '0 auto' }} />}
                       {resumoFechamento.valores.diferenca > 0 && <TrendingUp size={32} style={{ margin: '0 auto' }} />}
                       {resumoFechamento.valores.diferenca < 0 && <AlertCircle size={32} style={{ margin: '0 auto' }} />}
                     </div>
-                    <h4 style={{ 
-                      margin: '0 0 8px 0', 
-                      fontSize: '14px', 
-                      fontWeight: 'bold',
-                      color: resumoFechamento.valores.diferenca === 0 ? '#22c55e' : 
-                             resumoFechamento.valores.diferenca > 0 ? '#3b82f6' : '#ef4444'
-                    }}>
+                    <h4 className={`modal-resumo-reconciliacao-title ${
+                      resumoFechamento.valores.diferenca === 0 ? 'perfeito' :
+                      resumoFechamento.valores.diferenca > 0 ? 'sobra' : 'falta'
+                    }`}>
                       {resumoFechamento.valores.diferenca === 0 ? 'PERFEITO' :
                        resumoFechamento.valores.diferenca > 0 ? 'SOBRA' : 'FALTA'}
                     </h4>
-                    <div style={{ 
-                      fontSize: '24px', 
-                      fontWeight: 'bold',
-                      color: resumoFechamento.valores.diferenca === 0 ? '#22c55e' : 
-                             resumoFechamento.valores.diferenca > 0 ? '#3b82f6' : '#ef4444'
-                    }}>
+                    <div className={`modal-resumo-reconciliacao-value ${
+                      resumoFechamento.valores.diferenca === 0 ? 'perfeito' :
+                      resumoFechamento.valores.diferenca > 0 ? 'sobra' : 'falta'
+                    }`}>
                       {formatarValor(Math.abs(resumoFechamento.valores.diferenca))}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>
+                    <div className="modal-resumo-reconciliacao-details">
                       Esperado: {formatarValor(resumoFechamento.valores.esperado)}<br/>
                       Contado: {formatarValor(resumoFechamento.valores.contado)}
                     </div>
@@ -1799,207 +1775,79 @@ export default function CaixaPage() {
               </div>
 
               {/* Formas de Pagamento */}
-              <div style={{ 
-                backgroundColor: '#f8fafc', 
-                borderRadius: '12px', 
-                padding: '20px',
-                border: '1px solid #e2e8f0'
-              }}>
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '10px', 
-                  marginBottom: '20px',
-                  paddingBottom: '10px',
-                  borderBottom: '2px solid #e2e8f0'
-                }}>
-                  <CreditCard size={20} style={{ color: '#10b981' }} />
-                  <h4 style={{ margin: '0', fontSize: '18px', fontWeight: 'bold', color: '#374151' }}>
+              <div className="modal-resumo-pagamentos-container">
+                <div className="modal-resumo-pagamentos-header">
+                  <h4 className="modal-resumo-pagamentos-title">
                     Formas de Pagamento
                   </h4>
                 </div>
                 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
-                  <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center', 
-                    padding: '15px', 
-                    backgroundColor: 'white', 
-                    borderRadius: '10px',
-                    border: '1px solid #e2e8f0',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ 
-                        width: '35px', 
-                        height: '35px', 
-                        backgroundColor: '#dcfce7', 
-                        borderRadius: '8px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}>
+                <div className="modal-resumo-pagamentos-grid">
+                  <div className="modal-resumo-pagamento-card">
+                    <div className="modal-resumo-pagamento-info">
+                      <div className="modal-resumo-pagamento-icon dinheiro">
                         <Banknote size={18} style={{ color: '#059669' }} />
                       </div>
-                      <span style={{ fontSize: '14px', fontWeight: '600', color: '#374151' }}>Dinheiro</span>
+                      <span className="modal-resumo-pagamento-name">Dinheiro</span>
                     </div>
-                    <strong style={{ fontSize: '16px', color: '#059669' }}>
+                    <strong className="modal-resumo-pagamento-value">
                       {formatarValor(resumoFechamento.vendas?.valor_dinheiro || 0)}
                     </strong>
                   </div>
 
-                  <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center', 
-                    padding: '15px', 
-                    backgroundColor: 'white', 
-                    borderRadius: '10px',
-                    border: '1px solid #e2e8f0',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ 
-                        width: '35px', 
-                        height: '35px', 
-                        backgroundColor: '#dbeafe', 
-                        borderRadius: '8px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}>
+                  <div className="modal-resumo-pagamento-card">
+                    <div className="modal-resumo-pagamento-info">
+                      <div className="modal-resumo-pagamento-icon debito">
                         <CreditCard size={18} style={{ color: '#2563eb' }} />
                       </div>
-                      <span style={{ fontSize: '14px', fontWeight: '600', color: '#374151' }}>Débito</span>
+                      <span className="modal-resumo-pagamento-name">Débito</span>
                     </div>
-                    <strong style={{ fontSize: '16px', color: '#2563eb' }}>
+                    <strong className="modal-resumo-pagamento-value debito">
                       {formatarValor(resumoFechamento.vendas?.valor_cartao_debito || 0)}
                     </strong>
                   </div>
 
-                  <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center', 
-                    padding: '15px', 
-                    backgroundColor: 'white', 
-                    borderRadius: '10px',
-                    border: '1px solid #e2e8f0',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ 
-                        width: '35px', 
-                        height: '35px', 
-                        backgroundColor: '#fef2f2', 
-                        borderRadius: '8px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}>
+                  <div className="modal-resumo-pagamento-card">
+                    <div className="modal-resumo-pagamento-info">
+                      <div className="modal-resumo-pagamento-icon credito">
                         <CreditCard size={18} style={{ color: '#dc2626' }} />
                       </div>
-                      <span style={{ fontSize: '14px', fontWeight: '600', color: '#374151' }}>Crédito</span>
+                      <span className="modal-resumo-pagamento-name">Crédito</span>
                     </div>
-                    <strong style={{ fontSize: '16px', color: '#dc2626' }}>
+                    <strong className="modal-resumo-pagamento-value credito">
                       {formatarValor(resumoFechamento.vendas?.valor_cartao_credito || 0)}
                     </strong>
                   </div>
 
-                  <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center', 
-                    padding: '15px', 
-                    backgroundColor: 'white', 
-                    borderRadius: '10px',
-                    border: '1px solid #e2e8f0',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ 
-                        width: '35px', 
-                        height: '35px', 
-                        backgroundColor: '#f3f4f6', 
-                        borderRadius: '8px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}>
+                  <div className="modal-resumo-pagamento-card">
+                    <div className="modal-resumo-pagamento-info">
+                      <div className="modal-resumo-pagamento-icon pix">
                         <Smartphone size={18} style={{ color: '#7c3aed' }} />
                       </div>
-                      <span style={{ fontSize: '14px', fontWeight: '600', color: '#374151' }}>PIX</span>
+                      <span className="modal-resumo-pagamento-name">PIX</span>
                     </div>
-                    <strong style={{ fontSize: '16px', color: '#7c3aed' }}>
+                    <strong className="modal-resumo-pagamento-value pix">
                       {formatarValor(resumoFechamento.vendas?.valor_pix || 0)}
                     </strong>
                   </div>
 
-                  <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center', 
-                    padding: '15px', 
-                    backgroundColor: 'white', 
-                    borderRadius: '10px',
-                    border: '1px solid #e2e8f0',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ 
-                        width: '35px', 
-                        height: '35px', 
-                        backgroundColor: '#fed7aa', 
-                        borderRadius: '8px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}>
+                  <div className="modal-resumo-pagamento-card">
+                    <div className="modal-resumo-pagamento-info">
+                      <div className="modal-resumo-pagamento-icon fiado">
                         <Handshake size={18} style={{ color: '#ea580c' }} />
                       </div>
-                      <span style={{ fontSize: '14px', fontWeight: '600', color: '#374151' }}>Fiado</span>
+                      <span className="modal-resumo-pagamento-name">Fiado</span>
                     </div>
-                    <strong style={{ fontSize: '16px', color: '#ea580c' }}>
+                    <strong className="modal-resumo-pagamento-value fiado">
                       {formatarValor(resumoFechamento.vendas?.valor_fiado || 0)}
                     </strong>
                   </div>
 
-                  <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center', 
-                    padding: '15px', 
-                    backgroundColor: '#10b981', 
-                    borderRadius: '10px',
-                    border: '2px solid #059669',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                    color: 'white',
-                    gridColumn: 'span 2'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ 
-                        width: '35px', 
-                        height: '35px', 
-                        backgroundColor: 'rgba(255,255,255,0.2)', 
-                        borderRadius: '8px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}>
-                        <ShoppingCart size={18} style={{ color: 'white' }} />
-                      </div>
-                      <span style={{ fontSize: '16px', fontWeight: '700' }}>TOTAL VENDAS</span>
-                    </div>
-                    <strong style={{ fontSize: '20px', fontWeight: 'bold' }}>
-                      {formatarValor(resumoFechamento.valores?.vendas || 0)}
-                    </strong>
-                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="modal-footer">
+            <div className="modal-footer-caixa">
               <button 
                 onClick={() => imprimirResumoCaixa(resumoFechamento.id)}
                 className="btn btn-primary"
