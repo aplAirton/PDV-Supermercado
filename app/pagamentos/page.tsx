@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Ban, Calendar, DollarSign, TrendingUp, TrendingDown, Filter, Eye, Search, Download, Printer, CreditCard, Smartphone, Layers, Settings, FileText, LucideFileQuestion, LucideCheckCircle, Loader2, Menu, ChevronUp, ChevronDown } from 'lucide-react'
+import { Ban, Calendar, ArrowDownUp, DollarSign, Banknote, TrendingUp, TrendingDown, Filter, Eye, Search, Download, Printer, CreditCard, Smartphone, Layers, Settings, FileText, LucideFileQuestion, LucideCheckCircle, Loader2, Menu, ChevronUp, ChevronDown } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import '../../styles/pagamentos-new.css'
 
@@ -625,8 +625,8 @@ const renderFormasPagamento = (movimento: MovimentoCaixa) => {
       {/* Modal de Extratos */}
       {showExtratosModal && (
         <div className="modal-overlay" onClick={() => setShowExtratosModal(false)}>
-          <div className="modal-content extratos-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
+          <div className="modal-content-pag extratos-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-pag">
               <h2>Selecione o tipo de extrato</h2>
               <button 
                 className="modal-close"
@@ -639,7 +639,7 @@ const renderFormasPagamento = (movimento: MovimentoCaixa) => {
             <div className="extratos-grid">
               <div className="extrato-card" onClick={gerarExtratoMovimentos}>
                 <div className="extrato-icon">
-                  <FileText size={32} />
+                  <ArrowDownUp size={32} color='blue' />
                 </div>
                 <h3>Extrato de Movimentos</h3>
                 <p>Gera um extrato completo com resumo financeiro e detalhamento das formas de pagamento</p>
@@ -648,7 +648,7 @@ const renderFormasPagamento = (movimento: MovimentoCaixa) => {
               
               <div className="extrato-card" onClick={gerarHistoricoMovimentacoes}>
                 <div className="extrato-icon">
-                  <FileText size={32} />
+                  <Banknote size={32} color='green' />
                 </div>
                 <h3>Histórico de Pagamentos</h3>
                 <p>Listagem detalhada de todas as movimentações financeiras do período</p>

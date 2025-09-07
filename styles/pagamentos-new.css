@@ -775,7 +775,7 @@
   z-index: 1000;
 }
 
-.modal-content {
+.modal-content-pag {
   background: white;
   border-radius: 12px;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
@@ -789,7 +789,7 @@
   padding: 0;
 }
 
-.modal-header {
+.modal-header-pag {
   padding: 24px;
   border-bottom: 1px solid #e5e7eb;
   display: flex;
