@@ -767,7 +767,30 @@ export default function VendasPage() {
         cliente_id: clienteSelecionado?.id || null,
         total: totalRounded, // Total já com desconto
         total_original: totalOriginal, // Total antes do desconto
-        pagamentos: pagamentos.map((p) => ({ tipo_pagamento: p.tipo, valor: parseCurrency(p.valor) })),
+        pagamentos: (() => {
+          // Separar pagamentos em dinheiro dos outros
+          const pagamentosDinheiro = pagamentos.filter(p => p.tipo === 'dinheiro')
+          const pagamentosOutros = pagamentos.filter(p => p.tipo !== 'dinheiro')
+          
+          // Processar pagamentos em dinheiro, subtraindo o troco do último pagamento
+          const pagamentosDinheiroAjustados = pagamentosDinheiro.map((p, index, array) => {
+            const valorBruto = parseCurrency(p.valor)
+            if (index === array.length - 1 && troco > 0) {
+              // Subtrair o troco do último pagamento em dinheiro
+              const valorAjustado = Math.max(0, valorBruto - troco)
+              return { tipo_pagamento: p.tipo, valor: valorAjustado }
+            }
+            return { tipo_pagamento: p.tipo, valor: valorBruto }
+          })
+          
+          // Processar outros pagamentos normalmente
+          const pagamentosOutrosAjustados = pagamentosOutros.map(p => ({
+            tipo_pagamento: p.tipo, 
+            valor: parseCurrency(p.valor)
+          }))
+          
+          return [...pagamentosDinheiroAjustados, ...pagamentosOutrosAjustados]
+        })(),
         troco,
         desconto_tipo: discountType !== 'none' ? discountType : null,
         desconto_valor: descontoValorCalculado, // Valor real do desconto

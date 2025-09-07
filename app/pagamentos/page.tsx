@@ -643,7 +643,6 @@ const renderFormasPagamento = (movimento: MovimentoCaixa) => {
                 </div>
                 <h3>Extrato de Movimentos</h3>
                 <p>Gera um extrato completo com resumo financeiro e detalhamento das formas de pagamento</p>
-                <div className="extrato-badge">Disponível</div>
               </div>
               
               <div className="extrato-card" onClick={gerarHistoricoMovimentacoes}>
@@ -652,7 +651,6 @@ const renderFormasPagamento = (movimento: MovimentoCaixa) => {
                 </div>
                 <h3>Histórico de Pagamentos</h3>
                 <p>Listagem detalhada de todas as movimentações financeiras do período</p>
-                <div className="extrato-badge">Disponível</div>
               </div>
             </div>
           </div>
