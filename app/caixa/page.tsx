@@ -1272,7 +1272,7 @@ export default function CaixaPage() {
       {showValidacaoSenhaFechamento && caixaSelecionado && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '450px', width: '90%' }}>
-            <div className="modal-header">
+            <div className="modal-header-caixa">
               <h3>Fechar Caixa - Validação</h3>
               <button
                 onClick={cancelarFechamentoCaixa}
@@ -1369,7 +1369,7 @@ export default function CaixaPage() {
       {showContagemDinheiro && caixaSelecionado && funcionarioFechamento && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '500px', width: '90%' }}>
-            <div className="modal-header">
+            <div className="modal-header-caixa">
               <h3>Fechar Caixa - Contagem</h3>
               <button
                 onClick={cancelarFechamentoCaixa}
@@ -1477,7 +1477,7 @@ export default function CaixaPage() {
       {showResumoFechamento && resumoFechamento && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '700px', width: '95%' }}>
-            <div className="modal-header">
+            <div className="modal-header-caixa">
               <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                 <div style={{ 
                   display: 'flex', 
@@ -1512,7 +1512,7 @@ export default function CaixaPage() {
               </button>
             </div>
 
-            <div style={{ padding: '25px' }}>
+            <div style={{ padding: '1rem 1rem 0 1rem' }}>
               {/* Card de Status da Reconciliação */}
               <div style={{ 
                 background: resumoFechamento.status_reconciliacao === 'perfeito' ? 
@@ -1619,7 +1619,7 @@ export default function CaixaPage() {
               </div>
             </div>
 
-            <div className="modal-footer">
+            <div className="modal-footer-caixa">
               <button 
                 onClick={confirmarFechamentoCaixa}
                 disabled={processandoFechamento}
