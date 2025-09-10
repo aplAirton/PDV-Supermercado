@@ -35,6 +35,29 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     
     const caixa = caixas[0]
     
+    // Buscar valores de suprimentos e sangrias da tabela caixa_movimentacoes_financeiras
+    const movimentacoesQuery = `
+      SELECT
+        tipo,
+        SUM(valor) as total
+      FROM caixa_movimentacoes_financeiras
+      WHERE caixa_id = ?
+      GROUP BY tipo
+    `
+    const movimentacoes = await executeQuery(movimentacoesQuery, [caixaId]) as any[]
+    
+    // Calcular totais de suprimentos e sangrias
+    let totalSuprimentosMov = 0
+    let totalSangriasMov = 0
+    
+    movimentacoes.forEach((mov: any) => {
+      if (mov.tipo === 'suprimento' || mov.tipo === 'aporte') {
+        totalSuprimentosMov += parseFloat(mov.total || 0)
+      } else if (mov.tipo === 'sangria') {
+        totalSangriasMov += parseFloat(mov.total || 0)
+      }
+    })
+    
     // Usar valores diretos da tabela caixas (atualizados por triggers)
     const valorInicial = parseFloat(caixa.valor_inicial || 0)
     const totalVendas = parseFloat(caixa.total_vendas || 0)
@@ -43,8 +66,26 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const totalCartaoCredito = parseFloat(caixa.total_cartao_credito || 0)
     const totalPix = parseFloat(caixa.total_pix || 0)
     const totalFiado = parseFloat(caixa.total_fiado || 0)
-    const totalSuprimentos = parseFloat(caixa.total_suprimentos || 0)
-    const totalSangrias = parseFloat(caixa.total_sangrias || 0)
+    
+    // Usar valores calculados das movimentações
+    const totalSuprimentos = totalSuprimentosMov
+    const totalSangrias = totalSangriasMov
+
+    // DEBUG: Verificar se os campos existem na tabela
+    console.log(`[caixa-resumo][${caixaId}] DEBUG - Campos da tabela caixas:`, {
+      camposDisponiveis: Object.keys(caixa),
+      total_suprimentos: {
+        valor: caixa.total_suprimentos,
+        tipo: typeof caixa.total_suprimentos,
+        convertido: totalSuprimentos
+      },
+      total_sangrias: {
+        valor: caixa.total_sangrias,
+        tipo: typeof caixa.total_sangrias,
+        convertido: totalSangrias
+      },
+      todosCampos: caixa
+    })
 
     // Log para debug
     console.log(`[caixa-resumo][${caixaId}] Valores do caixa:`, {

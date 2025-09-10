@@ -923,6 +923,36 @@ export default function CaixaPage() {
             const totalSangrias = Number(caixa.total_sangrias) || 0
             const totalCaixa = valorInicial + totalVendas + totalSuprimentos - totalSangrias
             
+            // DEBUG: Verificar cálculo do total do caixa
+            console.log('🔍 DEBUG - Cálculo Total do Caixa:', {
+              caixaId: caixa.id,
+              valorInicial: {
+                original: caixa.valor_inicial,
+                convertido: valorInicial,
+                tipo: typeof caixa.valor_inicial
+              },
+              totalVendas: {
+                original: caixa.total_vendas,
+                convertido: totalVendas,
+                tipo: typeof caixa.total_vendas
+              },
+              totalSuprimentos: {
+                original: caixa.total_suprimentos,
+                convertido: totalSuprimentos,
+                tipo: typeof caixa.total_suprimentos,
+                existe: caixa.hasOwnProperty('total_suprimentos')
+              },
+              totalSangrias: {
+                original: caixa.total_sangrias,
+                convertido: totalSangrias,
+                tipo: typeof caixa.total_sangrias,
+                existe: caixa.hasOwnProperty('total_sangrias')
+              },
+              calculo: `${valorInicial} + ${totalVendas} + ${totalSuprimentos} - ${totalSangrias} = ${totalCaixa}`,
+              totalCaixa,
+              camposDisponiveis: Object.keys(caixa)
+            })
+            
             return (
             <div key={caixa.id}>
               <div className="caixa-aberto-header">
