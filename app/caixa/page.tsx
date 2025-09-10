@@ -1107,7 +1107,7 @@ export default function CaixaPage() {
       {showNovoModal && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <div className="modal-header">
+            <div className="modal-header-caixa">
               <h3>Abrir Novo Caixa</h3>
               <button
                 onClick={cancelarAberturaCaixa}
@@ -1337,7 +1337,7 @@ export default function CaixaPage() {
               </div>
             </div>
 
-            <div className="modal-footer">
+            <div className="modal-footer-caixa">
               <button 
                 onClick={validarSenhaFechamento}
                 className="btn btn-primary"
@@ -1442,7 +1442,7 @@ export default function CaixaPage() {
               </div>
             </div>
 
-            <div className="modal-footer">
+            <div className="modal-footer-caixa">
               <button 
                 onClick={processarContagem}
                 className="btn btn-primary"
@@ -1937,8 +1937,8 @@ export default function CaixaPage() {
               </div>
             </div>
 
-            <div className="modal-footer">
-              <button 
+            <div className="modal-footer-caixa">
+              <button
                 onClick={realizarSangria}
                 disabled={processandoSangria || !sangriaForm.valor || parseFloat(sangriaForm.valor) <= 0}
                 className="btn"
@@ -2032,7 +2032,7 @@ export default function CaixaPage() {
               </div>
             </div>
 
-            <div className="modal-footer">
+            <div className="modal-footer-caixa">
               <button 
                 onClick={validarSenhaMovimentacao}
                 className="btn btn-primary"
@@ -2137,7 +2137,7 @@ export default function CaixaPage() {
               </div>
             </div>
 
-            <div className="modal-footer">
+            <div className="modal-footer-caixa">
               <button 
                 onClick={cancelarMovimentacao}
                 className="btn btn-outline"
@@ -2232,7 +2232,7 @@ export default function CaixaPage() {
               </div>
             </div>
 
-            <div className="modal-footer">
+            <div className="modal-footer-caixa">
               <button 
                 onClick={realizarMovimentacao}
                 disabled={processandoMovimento || !movimentoForm.valor || parseFloat(movimentoForm.valor) <= 0}
@@ -2278,7 +2278,7 @@ export default function CaixaPage() {
       {showComprovanteAbertura && dadosAbertura && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '500px', width: '90%' }}>
-            <div className="modal-header">
+            <div className="modal-header-caixa">
               <h3>Caixa Aberto com Sucesso!</h3>
               <button
                 onClick={() => {
@@ -2361,7 +2361,7 @@ export default function CaixaPage() {
               </div>
             </div>
 
-            <div className="modal-footer">
+            <div className="modal-footer-caixa">
               <button 
                 onClick={imprimirComprovanteAbertura}
                 className="btn btn-primary"
