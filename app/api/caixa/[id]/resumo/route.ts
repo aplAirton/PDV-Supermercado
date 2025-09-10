@@ -38,16 +38,27 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     // Usar valores diretos da tabela caixas (atualizados por triggers)
     const valorInicial = parseFloat(caixa.valor_inicial || 0)
     const totalVendas = parseFloat(caixa.total_vendas || 0)
-    const totalDinheiro = parseFloat(caixa.total_dinheiro || 0) 
+    const totalDinheiro = parseFloat(caixa.total_dinheiro || 0)
     const totalCartaoDebito = parseFloat(caixa.total_cartao_debito || 0)
     const totalCartaoCredito = parseFloat(caixa.total_cartao_credito || 0)
     const totalPix = parseFloat(caixa.total_pix || 0)
     const totalFiado = parseFloat(caixa.total_fiado || 0)
     const totalSuprimentos = parseFloat(caixa.total_suprimentos || 0)
     const totalSangrias = parseFloat(caixa.total_sangrias || 0)
-    
+
+    // Log para debug
+    console.log(`[caixa-resumo][${caixaId}] Valores do caixa:`, {
+      valorInicial,
+      totalDinheiro,
+      totalSuprimentos,
+      totalSangrias,
+      totalVendas
+    })
+
     // Valor esperado no caixa (dinheiro físico total)
     const valorEsperado = valorInicial + totalDinheiro + totalSuprimentos - totalSangrias
+
+    console.log(`[caixa-resumo][${caixaId}] Valor esperado calculado:`, valorEsperado)
     
     const valorContado = parseFloat(caixa.valor_contado_dinheiro || 0)
     const diferenca = valorContado - valorEsperado

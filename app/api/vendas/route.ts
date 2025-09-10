@@ -83,6 +83,15 @@ export async function POST(request: NextRequest) {
     console.log(`[vendas][${requestId}] Incoming request body:`, JSON.stringify(body))
     const { cliente_id, itens, total, total_original, pagamentos, troco, desconto_tipo, desconto_valor, desconto_percentual } = body
 
+    console.log(`[vendas][${requestId}] Valores recebidos:`, {
+      total,
+      troco,
+      trocoType: typeof troco,
+      trocoParsed: parseFloat(String(troco || 0)),
+      pagamentos,
+      somaPagamentosInterface: pagamentos.reduce((s: number, p: any) => s + Number(p.valor), 0)
+    })
+
     // Validações básicas
     if (!Array.isArray(pagamentos) || pagamentos.length === 0) {
       return NextResponse.json({ error: 'Pelo menos uma forma de pagamento é necessária' }, { status: 400 })
@@ -155,16 +164,46 @@ export async function POST(request: NextRequest) {
     const valorFiado = pagamentosNorm.filter((p: any) => p.tipo === 'fiado').reduce((s: number, p: any) => s + Number(p.valor), 0)
 
     // O valor em dinheiro para a venda é o digitado MENOS o troco (se houver)
-    const valorDinheiro = Math.max(0, valorDinheiroDigitado - Number(troco || 0))
+    const trocoNumber = parseFloat(String(troco || 0)) || 0
+    const valorDinheiroBruto = valorDinheiroDigitado - trocoNumber
+    
+    // CORREÇÃO SIMPLIFICADA: Sempre calcular corretamente o valor em dinheiro efetivo
+    // Se troco >= dinheiro digitado, não há valor em dinheiro para a venda (valorDinheiro = 0)
+    // Se troco < dinheiro digitado, valorDinheiro = dinheiro digitado - troco
+    const valorDinheiroCorrigido = trocoNumber >= valorDinheiroDigitado 
+      ? 0 
+      : valorDinheiroDigitado - trocoNumber
+
+    console.log(`[vendas][${requestId}] CORREÇÃO SIMPLIFICADA:`, {
+      valorDinheiroDigitado,
+      trocoNumber,
+      valorDinheiroBruto,
+      valorDinheiroCorrigido,
+      condicao: trocoNumber >= valorDinheiroDigitado ? 'TROCO MAIOR/IGUAL - VALOR ZERO' : 'VALOR EFETIVO CALCULADO'
+    })
+
+    // DEBUG: Verificar se o cálculo está correto
+    console.log(`[vendas][${requestId}] VERIFICAÇÃO FINAL:`, {
+      valorDinheiroDigitado,
+      trocoNumber,
+      valorDinheiroBruto,
+      valorDinheiroCorrigido,
+      esperado: valorDinheiroDigitado > trocoNumber ? valorDinheiroDigitado - trocoNumber : 0,
+      problema: valorDinheiroCorrigido === 0 && valorDinheiroDigitado > trocoNumber ? 'VALOR ZERADO INCORRETAMENTE' : 'OK',
+      pagamentosNorm: pagamentosNorm.map(p => ({ tipo: p.tipo, valor: p.valor })),
+      somaPagamentosNorm: pagamentosNorm.reduce((s, p) => s + Number(p.valor), 0)
+    })
 
     console.log(`[vendas][${requestId}] Valores por forma de pagamento:`, {
       dinheiro_digitado: valorDinheiroDigitado,
-      dinheiro_efetivo: valorDinheiro, // Valor real utilizado para a venda
-      troco: Number(troco || 0),
+      dinheiro_efetivo: valorDinheiroCorrigido, // Valor real utilizado para a venda
+      troco: trocoNumber,
       cartao_debito: valorCartaoDebito,
       cartao_credito: valorCartaoCredito,
       pix: valorPix,
-      fiado: valorFiado
+      fiado: valorFiado,
+      soma_pagamentos: somaPagamentos,
+      total: total
     })
 
     // Calcular total fiado (se houver)
@@ -191,14 +230,39 @@ export async function POST(request: NextRequest) {
     attempt++
     try {
       console.log(`[vendas][${requestId}] Iniciando transação (tentativa ${attempt}/${maxAttempts})`)
+      console.log(`[vendas][${requestId}] Valores a serem salvos:`, {
+        cliente_id: cliente_id || null,
+        total: Number(total) || 0,
+        valor_pago: Number(somaPagamentos) || 0,
+        troco: Number(troco) || 0,
+        caixa_id: caixaId,
+        valor_dinheiro: valorDinheiroCorrigido,
+        valor_cartao_debito: valorCartaoDebito,
+        valor_cartao_credito: valorCartaoCredito,
+        valor_pix: valorPix,
+        valor_fiado: valorFiado
+      })
       result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    // DEBUG: Verificar valores antes de salvar
+      console.log(`[vendas][${requestId}] DEBUG - Valores finais:`, {
+        valorDinheiroCorrigido,
+        valorCartaoDebito,
+        valorCartaoCredito,
+        valorPix,
+        valorFiado,
+        soma: valorDinheiroCorrigido + valorCartaoDebito + valorCartaoCredito + valorPix + valorFiado,
+        total,
+        troco: trocoNumber,
+        trocoOriginal: troco
+      })
+
       // Criar venda usando raw query para incluir caixa_id e colunas específicas de pagamento
       const vendaResult = await tx.$executeRaw`
         INSERT INTO vendas (cliente_id, total, forma_pagamento_json, valor_pago, troco, caixa_id, data_venda, 
                            valor_dinheiro, valor_cartao_debito, valor_cartao_credito, valor_pix, valor_fiado) 
         VALUES (${cliente_id || null}, ${Number(total) || 0}, ${JSON.stringify(pagamentosNorm || [])}, 
-                ${Number(somaPagamentos) || 0}, ${Number(troco) || 0}, ${caixaId}, NOW(),
-                ${valorDinheiro}, ${valorCartaoDebito}, ${valorCartaoCredito}, ${valorPix}, ${valorFiado})
+                ${Number(somaPagamentos) || 0}, ${trocoNumber}, ${caixaId}, NOW(),
+                ${valorDinheiroCorrigido}, ${valorCartaoDebito}, ${valorCartaoCredito}, ${valorPix}, ${valorFiado})
       `
       
       const vendaIdResult = await tx.$queryRaw`SELECT LAST_INSERT_ID() as id`

@@ -149,7 +149,24 @@ export default function VendasPage() {
   const sumPagamentosRaw = pagamentos.reduce((s, p) => s + parseCurrency(p.valor), 0)
   const sumPagamentos = roundCents(sumPagamentosRaw)
   const restante = Math.max(0, roundCents(totalRounded - sumPagamentos))
-  const troco = Math.max(0, roundCents(sumPagamentos - totalRounded))
+  const trocoRaw = sumPagamentos - totalRounded
+  const troco = Math.max(0, roundCents(trocoRaw))
+
+  console.log('[VENDAS] Cálculo de troco:', {
+    sumPagamentosRaw,
+    sumPagamentos,
+    totalRounded,
+    trocoRaw,
+    troco,
+    trocoType: typeof troco,
+    trocoString: String(troco),
+    pagamentos: pagamentos.map(p => ({ tipo: p.tipo, valor: p.valor, valorParsed: parseCurrency(p.valor) })),
+    diferenca: sumPagamentos - totalRounded,
+    verificacao: {
+      sumPagamentosMaiorQueTotal: sumPagamentos > totalRounded,
+      trocoCorreto: troco === roundCents(Math.max(0, sumPagamentos - totalRounded))
+    }
+  })
 
   // Validação de troco: apenas dinheiro permite valor superior ao total
   const pagamentosDinheiro = pagamentos.filter(p => p.tipo === "dinheiro")
@@ -767,31 +784,11 @@ export default function VendasPage() {
         cliente_id: clienteSelecionado?.id || null,
         total: totalRounded, // Total já com desconto
         total_original: totalOriginal, // Total antes do desconto
-        pagamentos: (() => {
-          // Separar pagamentos em dinheiro dos outros
-          const pagamentosDinheiro = pagamentos.filter(p => p.tipo === 'dinheiro')
-          const pagamentosOutros = pagamentos.filter(p => p.tipo !== 'dinheiro')
-          
-          // Processar pagamentos em dinheiro, subtraindo o troco do último pagamento
-          const pagamentosDinheiroAjustados = pagamentosDinheiro.map((p, index, array) => {
-            const valorBruto = parseCurrency(p.valor)
-            if (index === array.length - 1 && troco > 0) {
-              // Subtrair o troco do último pagamento em dinheiro
-              const valorAjustado = Math.max(0, valorBruto - troco)
-              return { tipo_pagamento: p.tipo, valor: valorAjustado }
-            }
-            return { tipo_pagamento: p.tipo, valor: valorBruto }
-          })
-          
-          // Processar outros pagamentos normalmente
-          const pagamentosOutrosAjustados = pagamentosOutros.map(p => ({
-            tipo_pagamento: p.tipo, 
-            valor: parseCurrency(p.valor)
-          }))
-          
-          return [...pagamentosDinheiroAjustados, ...pagamentosOutrosAjustados]
-        })(),
-        troco,
+        pagamentos: pagamentos.map((p) => ({
+          tipo_pagamento: p.tipo,
+          valor: parseCurrency(p.valor)
+        })),
+        troco: Number(troco), // Garantir que seja número
         desconto_tipo: discountType !== 'none' ? discountType : null,
         desconto_valor: descontoValorCalculado, // Valor real do desconto
         desconto_percentual: discountType === 'percent' ? parsedDiscount : 0,
@@ -802,6 +799,14 @@ export default function VendasPage() {
           subtotal: item.subtotal,
         })),
       }
+
+      console.log('[VENDAS] Dados sendo enviados para API:', {
+        troco: troco,
+        trocoType: typeof troco,
+        trocoString: String(troco),
+        pagamentos: vendaData.pagamentos,
+        somaPagamentos: vendaData.pagamentos.reduce((s, p) => s + p.valor, 0)
+      })
 
       console.log('[VENDAS] Dados do desconto sendo enviados:', {
         discountType,

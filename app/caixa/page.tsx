@@ -599,6 +599,11 @@ export default function CaixaPage() {
       const resumo = await response.json()
       
       if (response.ok) {
+        console.log('[CAIXA] Resumo carregado:', {
+          id: resumo.id,
+          valores: resumo.valores,
+          vendas: resumo.vendas
+        })
         setResumoFechamento(resumo)
         setShowResumoModal(true)
       } else {
