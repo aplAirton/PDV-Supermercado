@@ -204,35 +204,156 @@ export default function FuncionariosPage() {
     }
   }
 
+  // Componente Card para Funcionario
+  const FuncionarioCard = ({
+    funcionario,
+    onVerDetalhes,
+    onEditar,
+    onToggleStatus,
+    delayIndex = 0
+  }: {
+    funcionario: Funcionario
+    onVerDetalhes: (funcionario: Funcionario) => void
+    onEditar: (funcionario: Funcionario) => void
+    onToggleStatus: (funcionario: Funcionario) => void
+    delayIndex?: number
+  }) => {
+    return (
+      <div
+        className="funcionario-card fade-in"
+        style={{ animationDelay: `${delayIndex * 0.1}s` }}
+      >
+        {/* Cabeçalho do Card */}
+        <div className="card-header">
+          <div className="funcionario-info">
+            <h3 className="funcionario-nome">{funcionario.nome}</h3>
+            <span className={`status-badge ${funcionario.ativo ? 'ativo' : 'inativo'}`}>
+              {funcionario.ativo ? (
+                <>
+                  <UserCheck size={12} />
+                  Ativo
+                </>
+              ) : (
+                <>
+                  <UserX size={12} />
+                  Inativo
+                </>
+              )}
+            </span>
+          </div>
+        </div>
+
+        {/* Corpo do Card */}
+        <div className="card-body">
+          <div className="card-grid">
+            <div className="card-item">
+              <span className="item-label">
+                <User size={14} />
+                Cargo
+              </span>
+              <span className="item-value">
+                {funcionario.cargo}
+              </span>
+            </div>
+
+            <div className="card-item">
+              <span className="item-label">
+                <DollarSign size={14} />
+                Salário
+              </span>
+              <span className="item-value salario">
+                R$ {Number(funcionario.salario).toFixed(2)}
+              </span>
+            </div>
+
+            <div className="card-item">
+              <span className="item-label">
+                <MapPin size={14} />
+                CPF
+              </span>
+              <span className="item-value">
+                {funcionario.cpf}
+              </span>
+            </div>
+
+            <div className="card-item">
+              <span className="item-label">
+                <User size={14} />
+                Admissão
+              </span>
+              <span className="item-value">
+                {formatarData(funcionario.data_admissao)}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Rodapé com Botões de Ação */}
+        <div className="card-footer-actions">
+          <button
+            className="btn btn-outline btn-sm"
+            onClick={() => onVerDetalhes(funcionario)}
+            title="Ver detalhes"
+          >
+            <Eye size={14} />
+            <span className="btn-text">Detalhes</span>
+          </button>
+          <button
+            className="btn btn-outline btn-sm"
+            onClick={() => onEditar(funcionario)}
+            title="Editar funcionário"
+          >
+            <Edit size={14} />
+            <span className="btn-text">Editar</span>
+          </button>
+          <button
+            className={`btn btn-sm ${funcionario.ativo ? 'danger' : 'success'}`}
+            onClick={() => onToggleStatus(funcionario)}
+            title={funcionario.ativo ? 'Desativar' : 'Ativar'}
+          >
+            {funcionario.ativo ? <UserX size={14} /> : <UserCheck size={14} />}
+            <span className="btn-text">{funcionario.ativo ? 'Desativar' : 'Ativar'}</span>
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   const calcularResumo = (data: Funcionario[]) => {
     const totalAtivos = data.filter(f => f.ativo).length
     const totalInativos = data.filter(f => !f.ativo).length
     const totalFolha = data.filter(f => f.ativo).reduce((total, f) => total + f.salario, 0)
-    
-    const mediaGeral = totalAtivos > 0 ? totalFolha / totalAtivos : 0
-    
-    // Média salarial por cargo
-    const porCargo: { [cargo: string]: number } = {}
-    const cargoCount: { [cargo: string]: number } = {}
-    
+
+    const mediasSalariais: { geral: number; porCargo: { [cargo: string]: number } } = {
+      geral: 0,
+      porCargo: {}
+    }
+
+    // Calcular média geral
+    if (totalAtivos > 0) {
+      mediasSalariais.geral = totalFolha / totalAtivos
+    }
+
+    // Calcular médias por cargo
+    const cargoTotals: { [cargo: string]: { total: number; count: number } } = {}
+
     data.filter(f => f.ativo).forEach(f => {
-      if (!porCargo[f.cargo]) {
-        porCargo[f.cargo] = 0
-        cargoCount[f.cargo] = 0
+      if (!cargoTotals[f.cargo]) {
+        cargoTotals[f.cargo] = { total: 0, count: 0 }
       }
-      porCargo[f.cargo] += f.salario
-      cargoCount[f.cargo]++
+      cargoTotals[f.cargo].total += f.salario
+      cargoTotals[f.cargo].count += 1
     })
-    
-    Object.keys(porCargo).forEach(cargo => {
-      porCargo[cargo] = porCargo[cargo] / cargoCount[cargo]
+
+    Object.keys(cargoTotals).forEach(cargo => {
+      mediasSalariais.porCargo[cargo] = cargoTotals[cargo].total / cargoTotals[cargo].count
     })
 
     setResumo({
       totalAtivos,
       totalInativos,
       totalFolha,
-      mediasSalariais: { geral: mediaGeral, porCargo }
+      mediasSalariais
     })
   }
 
@@ -497,9 +618,79 @@ export default function FuncionariosPage() {
   if (loading) {
     return (
       <div className="funcionarios-container">
-        <div className="loading-state">
-          <Loader2 className="loading-spinner" />
-          <p>Carregando funcionários...</p>
+        {/* Header Skeleton */}
+        <div className="page-header">
+          <div className="header-actions">
+            <div className="skeleton skeleton-button"></div>
+            <div className="skeleton skeleton-button-primary"></div>
+          </div>
+        </div>
+
+        {/* Resumo Cards Skeleton */}
+        <div className="resumo-grid">
+          <div className="total-card">
+            <div className="skeleton skeleton-icon"></div>
+            <div className="card-content">
+              <div className="skeleton skeleton-label"></div>
+              <div className="skeleton skeleton-value"></div>
+            </div>
+          </div>
+          <div className="total-card">
+            <div className="skeleton skeleton-icon"></div>
+            <div className="card-content">
+              <div className="skeleton skeleton-label"></div>
+              <div className="skeleton skeleton-value"></div>
+            </div>
+          </div>
+          <div className="total-card">
+            <div className="skeleton skeleton-icon"></div>
+            <div className="card-content">
+              <div className="skeleton skeleton-label"></div>
+              <div className="skeleton skeleton-value"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Lista Skeleton */}
+        <div className="funcionarios-table-container">
+          <div className="table-header">
+            <div className="skeleton skeleton-title"></div>
+          </div>
+          <div className="funcionarios-cards">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="funcionario-skeleton-card">
+                <div className="skeleton-card-header">
+                  <div className="skeleton skeleton-name"></div>
+                  <div className="skeleton skeleton-badge"></div>
+                </div>
+                <div className="skeleton-card-body">
+                  <div className="skeleton-grid">
+                    <div className="skeleton-item">
+                      <div className="skeleton skeleton-label"></div>
+                      <div className="skeleton skeleton-value"></div>
+                    </div>
+                    <div className="skeleton-item">
+                      <div className="skeleton skeleton-label"></div>
+                      <div className="skeleton skeleton-value"></div>
+                    </div>
+                    <div className="skeleton-item">
+                      <div className="skeleton skeleton-label"></div>
+                      <div className="skeleton skeleton-value"></div>
+                    </div>
+                    <div className="skeleton-item">
+                      <div className="skeleton skeleton-label"></div>
+                      <div className="skeleton skeleton-value"></div>
+                    </div>
+                  </div>
+                </div>
+                <div className="skeleton-card-footer">
+                  <div className="skeleton skeleton-button"></div>
+                  <div className="skeleton skeleton-button"></div>
+                  <div className="skeleton skeleton-button"></div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     )
@@ -626,7 +817,7 @@ export default function FuncionariosPage() {
         <div className="table-header">
           <h3>Lista de Funcionários ({funcionariosFiltrados.length})</h3>
         </div>
-        
+
         {funcionariosFiltrados.length === 0 ? (
           <div className="empty-state">
             <User size={48} className="empty-icon" />
@@ -634,86 +825,20 @@ export default function FuncionariosPage() {
             <p>Não há funcionários registrados com os filtros aplicados</p>
           </div>
         ) : (
-          <div className="funcionarios-table">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Nome</th>
-                  <th>CPF</th>
-                  <th>Cargo</th>
-                  <th>Salário</th>
-                  <th>Status</th>
-                  <th>Admissão</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {funcionariosFiltrados.map((funcionario) => (
-                  <tr key={funcionario.id}>
-                    <td>
-                      <div className="user-info">
-                        <User size={16} />
-                        <div>
-                          <div className="user-name">{funcionario.nome}</div>
-                          {funcionario.email && (
-                            <div className="user-email">{funcionario.email}</div>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td>{funcionario.cpf}</td>
-                    <td>
-                      <span className="cargo-badge">{funcionario.cargo}</span>
-                    </td>
-                    <td className="currency">{formatarValor(funcionario.salario)}</td>
-                    <td>
-                      <span className={`status-badge ${funcionario.ativo ? 'ativo' : 'inativo'}`}>
-                        {funcionario.ativo ? (
-                          <>
-                            <UserCheck size={14} />
-                            Ativo
-                          </>
-                        ) : (
-                          <>
-                            <UserX size={14} />
-                            Inativo
-                          </>
-                        )}
-                      </span>
-                    </td>
-                    <td>{formatarData(funcionario.data_admissao)}</td>
-                    <td>
-                      <div className="action-buttons">
-                        <button
-                          className="btn btn-outline btn-sm"
-                          onClick={() => {
-                            setFuncionarioSelecionado(funcionario)
-                            setShowDetalhesModal(true)
-                          }}
-                          title="Ver detalhes"
-                        >
-                          <Eye size={14} />
-                        </button>
-                        <button
-                          className="btn btn-outline btn-sm"
-                          onClick={() => abrirModalEdicao(funcionario)}
-                          title="Editar"
-                        >
-                          <Edit size={14} />
-                        </button>
-                        <button
-                          className={`btn btn-outline btn-sm ${funcionario.ativo ? 'danger' : 'success'}`}
-                          onClick={() => toggleStatus(funcionario)}
-                          title={funcionario.ativo ? 'Desativar' : 'Ativar'}
-                        >
-                          {funcionario.ativo ? <UserX size={14} /> : <UserCheck size={14} />}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="funcionarios-cards">
+            {funcionariosFiltrados.map((funcionario, index) => (
+              <FuncionarioCard
+                key={funcionario.id}
+                funcionario={funcionario}
+                onVerDetalhes={(f) => {
+                  setFuncionarioSelecionado(f)
+                  setShowDetalhesModal(true)
+                }}
+                onEditar={abrirModalEdicao}
+                onToggleStatus={toggleStatus}
+                delayIndex={index}
+              />
+            ))}
           </div>
         )}
       </div>
