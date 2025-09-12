@@ -47,6 +47,7 @@ export default function FiadosPage() {
   const [fiados, setFiados] = useState<Fiado[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [loading, setLoading] = useState(true)
+  const [clientesLoading, setClientesLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [showPagamentoModal, setShowPagamentoModal] = useState(false)
   const [pagamentoCliente, setPagamentoCliente] = useState<Cliente | null>(null)
@@ -116,6 +117,8 @@ export default function FiadosPage() {
       }
     } catch (error) {
       console.error('Erro ao carregar clientes:', error)
+    } finally {
+      setClientesLoading(false)
     }
   }
 
@@ -203,10 +206,45 @@ export default function FiadosPage() {
     return 0
   }
 
-  if (loading) {
+  if (loading || clientesLoading) {
     return (
-      <div className="flex justify-center items-center" style={{ height: '24rem', padding: '2rem' }}>
-        <Loader2 className="animate-spin" size={32} />
+      <div className="container p-8">
+        <div className="card">
+          <div className="p-4">
+            <div className="fiados-loading">
+              <div className="loading-header">
+                <div className="skeleton skeleton-title"></div>
+                <div className="skeleton skeleton-text"></div>
+              </div>
+              <div className="fiados-skeleton-cards">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <div key={index} className="fiado-skeleton-card">
+                    <div className="skeleton-card-header">
+                      <div className="skeleton skeleton-name"></div>
+                      <div className="skeleton skeleton-badge"></div>
+                    </div>
+                    <div className="skeleton-card-body">
+                      <div className="skeleton-grid">
+                        <div className="skeleton-item">
+                          <div className="skeleton skeleton-label"></div>
+                          <div className="skeleton skeleton-value"></div>
+                        </div>
+                        <div className="skeleton-item">
+                          <div className="skeleton skeleton-label"></div>
+                          <div className="skeleton skeleton-value"></div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="skeleton-card-footer">
+                      <div className="skeleton skeleton-button"></div>
+                      <div className="skeleton skeleton-button"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -379,6 +417,34 @@ export default function FiadosPage() {
     }
   }
 
+  // Função para calcular dias desde o último pagamento
+  const calcularDiasDesdeUltimoPagamento = async (clienteId: number) => {
+    try {
+      const response = await fetch(`/api/fiados/${clienteId}/extrato`)
+      if (response.ok) {
+        const movimentos = await response.json()
+        const pagamentos = movimentos.filter((m: any) => m.tipo === 'pagamento')
+        
+        if (pagamentos.length > 0) {
+          const ultimoPagamento = pagamentos.sort((a: any, b: any) => 
+            new Date(b.data_movimento).getTime() - new Date(a.data_movimento).getTime()
+          )[0]
+          
+          const hoje = new Date()
+          const dataUltimoPagamento = new Date(ultimoPagamento.data_movimento)
+          const diffTime = Math.abs(hoje.getTime() - dataUltimoPagamento.getTime())
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+          
+          return diffDays
+        }
+      }
+      return null // Nenhum pagamento encontrado
+    } catch (error) {
+      console.error('Erro ao calcular dias:', error)
+      return null
+    }
+  }
+
   // Exibe cupom fiscal da venda (se houver) em nova janela
   const viewCupomVenda = async (vendaId?: number) => {
     if (!vendaId) {
@@ -441,33 +507,135 @@ export default function FiadosPage() {
     }
   }
 
+  // Componente Card para Fiado
+  const FiadoCard = ({ 
+    cliente, 
+    onAbrirExtrato, 
+    onAbrirPagamento, 
+    pagamentoLoading,
+    delayIndex = 0
+  }: {
+    cliente: Cliente
+    onAbrirExtrato: (cliente: Cliente) => void
+    onAbrirPagamento: (cliente: Cliente) => void
+    pagamentoLoading: boolean
+    delayIndex?: number
+  }) => {
+    const [diasDesdeUltimoPagamento, setDiasDesdeUltimoPagamento] = useState<number | null>(null)
+    const [loadingDias, setLoadingDias] = useState(false)
+
+    useEffect(() => {
+      const carregarDias = async () => {
+        setLoadingDias(true)
+        const dias = await calcularDiasDesdeUltimoPagamento(cliente.id)
+        setDiasDesdeUltimoPagamento(dias)
+        setLoadingDias(false)
+      }
+      carregarDias()
+    }, [cliente.id])
+
+    return (
+      <div 
+        className="fiado-card fade-in" 
+        style={{ animationDelay: `${delayIndex * 0.1}s` }}
+      >
+        {/* Cabeçalho do Card */}
+        <div className="card-header">
+          <div className="cliente-info">
+            <h3 className="cliente-nome">{cliente.nome}</h3>
+            {diasDesdeUltimoPagamento !== null && (
+              <span className={`dias-badge ${diasDesdeUltimoPagamento > 30 ? 'atraso' : diasDesdeUltimoPagamento > 7 ? 'alerta' : 'normal'}`}>
+                <Clock size={12} />
+                {diasDesdeUltimoPagamento === 0 ? 'Hoje' : `${diasDesdeUltimoPagamento} dias`}
+              </span>
+            )}
+            {loadingDias && (
+              <div className="dias-badge-loading">
+                <div className="loading-dots">
+                  <div className="dot dot1"></div>
+                  <div className="dot dot2"></div>
+                  <div className="dot dot3"></div>
+                </div>
+                <span>Calculando...</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Corpo do Card */}
+        <div className="card-body">
+          <div className="card-grid">
+            <div className="card-item">
+              <span className="item-label">
+                <DollarSign size={14} />
+                Débito Atual
+              </span>
+              <span className="item-value debito">
+                R$ {Number(cliente.debito_atual || 0).toFixed(2)}
+              </span>
+            </div>
+
+            <div className="card-item">
+              <span className="item-label">
+                <CreditCard size={14} />
+                Status
+              </span>
+              <span className="item-value status">
+                <CheckCircle size={12} className="value-icon" />
+                Ativo
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Rodapé com Botões de Ação */}
+        <div className="card-footer-actions">
+          <button
+            className="btn btn-outline btn-sm"
+            onClick={() => onAbrirExtrato(cliente)}
+            title="Ver extrato completo"
+          >
+            <FileText size={14} />
+            Extrato
+          </button>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => onAbrirPagamento(cliente)}
+            disabled={pagamentoLoading}
+            title="Registrar novo pagamento"
+          >
+            <DollarSign size={14} />
+            {pagamentoLoading ? 'Processando...' : 'Pagar'}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="container p-8">
 
       <div className="card">
         <div className="p-4">
           {clientesDevedores.length === 0 ? (
-            <p className="text-center text-muted">Nenhum cliente com débito atual</p>
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4 mx-auto">
+                <DollarSign size={24} className="text-gray-400" />
+              </div>
+              <p className="text-gray-500 text-lg font-medium">Nenhum cliente com débito atual</p>
+              <p className="text-gray-400 text-sm mt-2">Os clientes com fiados aparecerão aqui</p>
+            </div>
           ) : (
-            <div className="space-y-3">
-              {clientesDevedores.map(cliente => (
-                <div key={cliente.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div>
-                    <div className="font-semibold">{cliente.nome}</div>
-                    <div className="text-sm text-muted">Débito: R$ {Number(cliente.debito_atual || 0).toFixed(2)}</div>
-                  </div>
-                  <div className="flex gap-2">
-                    {/* botão Visualizar removido: extrato substitui esta função */}
-                    <button className="btn btn-sm btn-secondary" onClick={() => abrirExtrato(cliente)}>
-                      <FileText size={14} />
-                      Extrato
-                    </button>
-                    <button className="btn btn-sm btn-primary" onClick={() => abrirPagamento(cliente)} disabled={pagamentoLoading}>
-                      <DollarSign size={14} />
-                      {pagamentoLoading ? 'Registrando pagamento...' : 'Registrar Pagamento'}
-                    </button>
-                  </div>
-                </div>
+            <div className="fiados-cards">
+              {clientesDevedores.map((cliente, index) => (
+                <FiadoCard 
+                  key={cliente.id} 
+                  cliente={cliente} 
+                  onAbrirExtrato={abrirExtrato}
+                  onAbrirPagamento={abrirPagamento}
+                  pagamentoLoading={pagamentoLoading}
+                  delayIndex={index}
+                />
               ))}
             </div>
           )}
