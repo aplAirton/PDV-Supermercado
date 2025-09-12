@@ -40,6 +40,7 @@ interface MovimentoExtrato {
   direcao: 'debito' | 'credito'
   valor: number
   saldo_corrente: number
+  venda_id?: number // Adicionado para impressão de segunda via
 }
 
 export default function FiadosPage() {
@@ -358,6 +359,23 @@ export default function FiadosPage() {
         description: "Não foi possível gerar o recibo para impressão",
         variant: "destructive"
       })
+    }
+  }
+
+  const imprimirSegundaViaCupom = (vendaId: number) => {
+    // Abrir cupom HTML em nova janela
+    const cupomUrl = `/api/vendas/${vendaId}/cupom`
+    const w = window.open(cupomUrl, '_blank', 'width=800,height=600,scrollbars=yes')
+    if (w) {
+      w.focus()
+      // Esperar carregar e tentar imprimir
+      setTimeout(() => {
+        try { 
+          w.print() 
+        } catch (e) { 
+          console.log('Print automático não disponível') 
+        }
+      }, 1000)
     }
   }
 
@@ -824,15 +842,26 @@ export default function FiadosPage() {
                           Saldo: R$ {movimento.saldo_corrente.toFixed(2)}
                         </div>
                       </div>
-                      {movimento.tipo === 'pagamento' && (
-                        <button
-                          onClick={() => imprimirReciboMovimento(movimento.id)}
-                          className="btn-recibo-small"
-                          title="Imprimir recibo do pagamento"
-                        >
-                          <Printer size={14} />
-                        </button>
-                      )}
+                      <div className="flex gap-1">
+                        {movimento.tipo === 'pagamento' && (
+                          <button
+                            onClick={() => imprimirReciboMovimento(movimento.id)}
+                            className="btn-recibo-small"
+                            title="Imprimir recibo do pagamento"
+                          >
+                            <Printer size={14} />
+                          </button>
+                        )}
+                        {movimento.tipo === 'lancamento' && movimento.venda_id && (
+                          <button
+                            onClick={() => imprimirSegundaViaCupom(movimento.venda_id!)}
+                            className="btn-recibo-small bg-blue-500 hover:bg-blue-600"
+                            title="Imprimir 2ª via do cupom"
+                          >
+                            <FileText size={14} />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                   {movimento.referencia && (

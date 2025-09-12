@@ -32,6 +32,7 @@ export async function GET(request: NextRequest, context: any) {
         direcao: m.direcao,
         valor: Number(m.valor || 0),
         saldo_corrente: Number((saldo).toFixed(2)),
+        venda_id: m.venda_id, // Incluir venda_id para impressão de segunda via
       }
     })
 
