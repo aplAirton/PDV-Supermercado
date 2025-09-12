@@ -779,39 +779,6 @@ export default function FuncionariosPage() {
         </div>
       )}
 
-      {/* Cards de Resumo */}
-      <div className="totals-grid">
-        <div className="total-card">
-          <div className="card-icon funcionarios-ativos">
-            <UserCheck size={24} />
-          </div>
-          <div className="card-content">
-            <div className="card-label">Funcionários Ativos</div>
-            <div className="card-value">{resumo.totalAtivos}</div>
-          </div>
-        </div>
-
-        <div className="total-card">
-          <div className="card-icon folha-salarial">
-            <User size={24} />
-          </div>
-          <div className="card-content">
-            <div className="card-label">Folha Salarial</div>
-            <div className="card-value">{formatarValor(resumo.totalFolha)}</div>
-          </div>
-        </div>
-
-        <div className="total-card">
-          <div className="card-icon salario-medio">
-            <User size={24} />
-          </div>
-          <div className="card-content">
-            <div className="card-label">Salário Médio</div>
-            <div className="card-value">{formatarValor(resumo.mediasSalariais.geral)}</div>
-          </div>
-        </div>
-      </div>
-
       {/* Lista de Funcionários */}
       <div className="funcionarios-table-container">
         <div className="table-header">
