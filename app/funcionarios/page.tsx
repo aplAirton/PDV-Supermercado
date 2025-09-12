@@ -227,19 +227,21 @@ export default function FuncionariosPage() {
         <div className="card-header">
           <div className="funcionario-info">
             <h3 className="funcionario-nome">{funcionario.nome}</h3>
-            <span className={`status-badge ${funcionario.ativo ? 'ativo' : 'inativo'}`}>
-              {funcionario.ativo ? (
-                <>
-                  <UserCheck size={12} />
-                  Ativo
-                </>
-              ) : (
-                <>
-                  <UserX size={12} />
-                  Inativo
-                </>
-              )}
-            </span>
+            <div className="status-container">
+              <span className={`status-badge ${funcionario.ativo ? 'ativo' : 'inativo'}`}>
+                {funcionario.ativo ? (
+                  <>
+                    <UserCheck size={12} />
+                    Ativo
+                  </>
+                ) : (
+                  <>
+                    <UserX size={12} />
+                    Inativo
+                  </>
+                )}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -291,7 +293,7 @@ export default function FuncionariosPage() {
         {/* Rodapé com Botões de Ação */}
         <div className="card-footer-actions">
           <button
-            className="btn btn-outline btn-sm"
+            className="btn btn-info btn-sm"
             onClick={() => onVerDetalhes(funcionario)}
             title="Ver detalhes"
           >
@@ -299,7 +301,7 @@ export default function FuncionariosPage() {
             <span className="btn-text">Detalhes</span>
           </button>
           <button
-            className="btn btn-outline btn-sm"
+            className="btn btn-warning btn-sm"
             onClick={() => onEditar(funcionario)}
             title="Editar funcionário"
           >
@@ -307,7 +309,7 @@ export default function FuncionariosPage() {
             <span className="btn-text">Editar</span>
           </button>
           <button
-            className={`btn btn-sm ${funcionario.ativo ? 'danger' : 'success'}`}
+            className={`btn btn-sm ${funcionario.ativo ? 'btn-danger' : 'btn-success'}`}
             onClick={() => onToggleStatus(funcionario)}
             title={funcionario.ativo ? 'Desativar' : 'Ativar'}
           >
