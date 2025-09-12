@@ -1,0 +1,56 @@
+{
+  "appId": "com.airton.pdv-supermercado",
+  "productName": "PDV Supermercado",
+  "directories": {
+    "output": "dist"
+  },
+  "files": [
+    "dist/**",
+    "electron/**",
+    "node_modules/**",
+    "package.json"
+  ],
+  "mac": {
+    "category": "public.app-category.business",
+    "target": [
+      {
+        "target": "dmg",
+        "arch": ["x64", "arm64"]
+      }
+    ]
+  },
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64", "ia32"]
+      }
+    ],
+    "icon": "public/placeholder-logo.ico"
+  },
+  "linux": {
+    "target": [
+      {
+        "target": "AppImage",
+        "arch": ["x64"]
+      },
+      {
+        "target": "deb",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "public/placeholder-logo.png"
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true,
+    "installerIcon": "public/placeholder-logo.ico",
+    "uninstallerIcon": "public/placeholder-logo.ico",
+    "installerHeaderIcon": "public/placeholder-logo.ico",
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "PDV Supermercado"
+  },
+  "publish": null
+}

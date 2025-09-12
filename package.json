@@ -9,9 +9,19 @@
     "dev:poll": "next dev --experimental-watcher",
     "lint": "next lint",
     "start": "next start",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate:dev": "prisma migrate dev --name init",
-    "prisma:db:pull": "prisma db pull"
+    "electron": "electron .",
+    "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:3000 --timeout 30000 && electron .\"",
+    "electron:dev:simple": "start /B npm run dev && timeout /t 15 /nobreak >nul && electron .",
+    "build:electron": "next build && electron-builder",
+    "build:electron:win": "next build && electron-builder --win",
+    "build:electron:linux": "next build && electron-builder --linux",
+    "build:electron:mac": "next build && electron-builder --mac",
+    "dist": "npm run build:electron",
+    "dist:win": "npm run build:electron:win",
+    "dist:linux": "npm run build:electron:linux",
+    "dist:mac": "npm run build:electron:mac",
+    "clean": "echo '🧹 Limpando processos e cache...' && (taskkill /F /IM node.exe /T 2>nul || echo 'Nenhum processo Node.js encontrado') && (rmdir /S /Q .next 2>nul || echo 'Diretório .next não encontrado') && npm cache clean --force 2>nul || echo 'Cache limpo'",
+    "dev:clean": "npm run clean && echo '📦 Reinstalando dependências...' && npm install && echo '🚀 Iniciando desenvolvimento...' && npm run dev"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -68,7 +78,35 @@
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
-    "zod": "3.25.67"
+    "zod": "3.25.67",
+    "electron": "^33.0.0",
+    "electron-builder": "^26.0.0",
+    "concurrently": "^9.0.0",
+    "wait-on": "^8.0.0"
+  },
+  "main": "electron/main.js",
+  "homepage": "./",
+  "build": {
+    "appId": "com.pdvsupermercado.app",
+    "productName": "PDV Supermercado",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**/*",
+      "out/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.business"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.9",

@@ -152,21 +152,6 @@ export default function VendasPage() {
   const trocoRaw = sumPagamentos - totalRounded
   const troco = Math.max(0, roundCents(trocoRaw))
 
-  console.log('[VENDAS] Cálculo de troco:', {
-    sumPagamentosRaw,
-    sumPagamentos,
-    totalRounded,
-    trocoRaw,
-    troco,
-    trocoType: typeof troco,
-    trocoString: String(troco),
-    pagamentos: pagamentos.map(p => ({ tipo: p.tipo, valor: p.valor, valorParsed: parseCurrency(p.valor) })),
-    diferenca: sumPagamentos - totalRounded,
-    verificacao: {
-      sumPagamentosMaiorQueTotal: sumPagamentos > totalRounded,
-      trocoCorreto: troco === roundCents(Math.max(0, sumPagamentos - totalRounded))
-    }
-  })
 
   // Validação de troco: apenas dinheiro permite valor superior ao total
   const pagamentosDinheiro = pagamentos.filter(p => p.tipo === "dinheiro")
