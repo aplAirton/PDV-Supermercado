@@ -49,6 +49,14 @@ export default function FuncionariosPage() {
   const [loading, setLoading] = useState(true)
   const [modalLoading, setModalLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<"basico" | "dados" | "acesso">("basico")
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [confirmAction, setConfirmAction] = useState<'desativar' | 'novo' | null>(null)
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [confirmLoading, setConfirmLoading] = useState(false)
+  const [showLoadingModal, setShowLoadingModal] = useState(false)
+  const [loadingMessage, setLoadingMessage] = useState('')
+  const [confirmError, setConfirmError] = useState('')
+  const [animacaoExecutada, setAnimacaoExecutada] = useState(false)
   const [showValidationCard, setShowValidationCard] = useState(false)
   const [validationErrors, setValidationErrors] = useState<string[]>([])
   
@@ -85,6 +93,16 @@ export default function FuncionariosPage() {
     senha: '',
     ativo: true
   })
+
+  // Marcar animação como executada após carregamento inicial
+  useEffect(() => {
+    if (!loading && funcionarios.length > 0 && !animacaoExecutada) {
+      const timer = setTimeout(() => {
+        setAnimacaoExecutada(true)
+      }, 1000) // Tempo suficiente para todas as animações terminarem
+      return () => clearTimeout(timer)
+    }
+  }, [loading, funcionarios.length, animacaoExecutada])
 
   // Função para mostrar cards de mensagem temporários
   const showMessageCard = (type: 'success' | 'error' | 'warning', title: string, message: string) => {
@@ -210,18 +228,20 @@ export default function FuncionariosPage() {
     onVerDetalhes,
     onEditar,
     onToggleStatus,
-    delayIndex = 0
+    delayIndex = 0,
+    animacaoExecutada = false
   }: {
     funcionario: Funcionario
     onVerDetalhes: (funcionario: Funcionario) => void
     onEditar: (funcionario: Funcionario) => void
     onToggleStatus: (funcionario: Funcionario) => void
     delayIndex?: number
+    animacaoExecutada?: boolean
   }) => {
     return (
       <div
-        className="funcionario-card fade-in"
-        style={{ animationDelay: `${delayIndex * 0.1}s` }}
+        className={`funcionario-card ${animacaoExecutada ? '' : 'fade-in'}`}
+        style={animacaoExecutada ? {} : { animationDelay: `${delayIndex * 0.1}s` }}
       >
         {/* Cabeçalho do Card */}
         <div className="card-header">
@@ -491,29 +511,83 @@ export default function FuncionariosPage() {
     }
   }
 
-  const toggleStatus = async (funcionario: Funcionario) => {
-    try {
-      const response = await fetch(`/api/funcionarios/${funcionario.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...funcionario,
-          ativo: !funcionario.ativo
-        })
-      })
+  const toggleStatus = (funcionario: Funcionario) => {
+    setFuncionarioSelecionado(funcionario)
+    setConfirmAction('desativar')
+    setShowConfirmModal(true)
+  }
 
-      if (response.ok) {
-        carregarDados()
-        showMessageCard('success', `Funcionário ${!funcionario.ativo ? 'ativado' : 'desativado'}`, `${funcionario.nome} foi ${!funcionario.ativo ? 'ativado' : 'desativado'} com sucesso`)
-      } else {
-        const errBody = await response.json().catch(() => null)
-        let message = errBody && errBody.error ? String(errBody.error) : 'Erro ao alterar status'
-        showMessageCard('error', 'Erro ao alterar status', message)
+  // Função para executar a ação confirmada
+  const executarAcaoConfirmada = async () => {
+    if (!confirmAction) return
+
+    setConfirmLoading(true)
+    setShowConfirmModal(false)
+    setShowLoadingModal(true)
+
+    try {
+      if (confirmAction === 'desativar' && funcionarioSelecionado) {
+        setLoadingMessage('Alterando status do funcionário...')
+
+        const response = await fetch(`/api/funcionarios/${funcionarioSelecionado.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...funcionarioSelecionado,
+            ativo: !funcionarioSelecionado.ativo
+          })
+        })
+
+        if (response.ok) {
+          await carregarDados()
+          showMessageCard('success', `Funcionário ${!funcionarioSelecionado.ativo ? 'ativado' : 'desativado'}`, `${funcionarioSelecionado.nome} foi ${!funcionarioSelecionado.ativo ? 'ativado' : 'desativado'} com sucesso`)
+        } else {
+          const errBody = await response.json().catch(() => null)
+          let message = errBody && errBody.error ? String(errBody.error) : 'Erro ao alterar status'
+          showMessageCard('error', 'Erro ao alterar status', message)
+        }
+      } else if (confirmAction === 'novo') {
+        setLoadingMessage('Abrindo formulário de novo funcionário...')
+
+        // Simular delay para mostrar o loading
+        await new Promise(resolve => setTimeout(resolve, 500))
+
+        // Abrir modal do formulário
+        limparForm()
+        setEditMode(false)
+        setActiveTab('basico')
+        setShowValidationCard(false)
+        setValidationErrors([])
+        setShowModal(true)
+
+        // Impedir scroll do body quando modal está aberto
+        if (typeof document !== 'undefined') {
+          document.body.classList.add('modal-open')
+        }
       }
     } catch (error) {
-      console.error("Erro ao alterar status:", error)
-      showMessageCard('error', 'Erro de conexão', 'Não foi possível alterar o status do funcionário. Verifique sua conexão e tente novamente.')
+      console.error("Erro ao executar ação:", error)
+      showMessageCard('error', 'Erro de conexão', 'Não foi possível completar a ação. Verifique sua conexão e tente novamente.')
+    } finally {
+      setConfirmLoading(false)
+      setShowLoadingModal(false)
+      setConfirmPassword('')
+      setConfirmError('')
+      setConfirmAction(null)
+      setFuncionarioSelecionado(null)
     }
+  }
+
+  // Função para confirmar senha gerencial
+  const confirmarAcao = async () => {
+    if (confirmPassword !== process.env.MASTERKEY) {
+      setConfirmError('A senha gerencial informada está incorreta.')
+      setConfirmPassword('')
+      return
+    }
+
+    setConfirmError('')
+    await executarAcaoConfirmada()
   }
 
   const abrirModalEdicao = (funcionario: Funcionario) => {
@@ -545,17 +619,8 @@ export default function FuncionariosPage() {
   }
 
   const abrirModalNovo = () => {
-    limparForm()
-    setEditMode(false)
-    setActiveTab('basico')
-    setShowValidationCard(false)
-    setValidationErrors([])
-    setShowModal(true)
-
-    // Impedir scroll do body quando modal está aberto
-    if (typeof document !== 'undefined') {
-      document.body.classList.add('modal-open')
-    }
+    setConfirmAction('novo')
+    setShowConfirmModal(true)
   }
 
   const fecharModal = () => {
@@ -806,6 +871,7 @@ export default function FuncionariosPage() {
                 onEditar={abrirModalEdicao}
                 onToggleStatus={toggleStatus}
                 delayIndex={index}
+                animacaoExecutada={animacaoExecutada}
               />
             ))}
           </div>
@@ -1211,6 +1277,113 @@ export default function FuncionariosPage() {
           </div>
         </div>
       )}
+
+      {/* Modal de Confirmação com Senha Gerencial */}
+      {showConfirmModal && (
+        <div className="modal-overlay fade-in" onClick={() => {
+          setShowConfirmModal(false)
+          setConfirmPassword('')
+          setConfirmError('')
+          setConfirmAction(null)
+        }}>
+          <div className="modal-content-confirm" onClick={e => e.stopPropagation()}>
+            <div className="modal-header-confirm">
+              <h3>
+                <Shield size={20} style={{ marginRight: '8px' }} />
+                Confirmação Gerencial
+              </h3>
+              <button
+                className="modal-close"
+                onClick={() => setShowConfirmModal(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="confirm-content">
+                <div className="confirm-icon">
+                  <OctagonAlert size={48} />
+                </div>
+                <h4>
+                  {confirmAction === 'desativar'
+                    ? `Desativar Funcionário: ${funcionarioSelecionado?.nome}`
+                    : 'Cadastrar Novo Funcionário'
+                  }
+                </h4>
+                <p>
+                  {confirmAction === 'desativar'
+                    ? 'Esta ação irá alterar o status do funcionário. Para prosseguir, digite a senha gerencial:'
+                    : 'Esta ação irá abrir o formulário para cadastrar um novo funcionário. Para prosseguir, digite a senha gerencial:'
+                  }
+                </p>
+                <div className="password-input-group">
+                  <input
+                    type="password"
+                    placeholder="Digite a senha gerencial"
+                    value={confirmPassword}
+                    onChange={(e) => {
+                    setConfirmPassword(e.target.value)
+                    if (confirmError) setConfirmError('') // Limpar erro ao digitar
+                  }}
+                    className={`password-input ${confirmError ? 'error' : ''}`}
+                    onKeyPress={(e) => e.key === 'Enter' && confirmarAcao()}
+                  />
+                  {confirmError && (
+                    <div className="error-message">
+                      <OctagonAlert size={14} />
+                      {confirmError}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer-confirm">
+              <button
+                className="btn btn-outline"
+                onClick={() => {
+                  setShowConfirmModal(false)
+                  setConfirmPassword('')
+                  setConfirmError('')
+                  setConfirmAction(null)
+                }}
+                disabled={confirmLoading}
+              >
+                Cancelar
+              </button>
+              <button
+                className="btn btn-danger"
+                onClick={confirmarAcao}
+                disabled={confirmLoading || !confirmPassword.trim()}
+              >
+                {confirmLoading ? (
+                  <>
+                    <Loader2 size={16} className="loading-spinner" />
+                    Confirmando...
+                  </>
+                ) : (
+                  'Confirmar'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Loading */}
+      {showLoadingModal && (
+        <div className="modal-overlay fade-in">
+          <div className="modal-content-f small">
+            <div className="loading-modal-content">
+              <div className="loading-spinner-large">
+                <Loader2 size={48} />
+              </div>
+              <h4>Processando...</h4>
+              <p>{loadingMessage}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

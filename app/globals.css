@@ -2595,6 +2595,237 @@ body.sidebar-open {
   }
 }
 
+/* ===========================================
+   MODAIS DE CONFIRMAÇÃO E LOADING
+   =========================================== */
+
+.fade-in {
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Cabeçalho específico do Modal de Confirmação */
+.modal-header-confirm {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 12px 12px 0 0;
+}
+
+.modal-header-confirm h3 {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.modal-header-confirm .modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.modal-header-confirm .modal-close:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+/* Rodapé específico do Modal de Confirmação */
+.modal-footer-confirm {
+  padding: 20px 24px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  border-radius: 0 0 12px 12px;
+}
+
+.modal-footer-confirm .btn {
+  min-width: 100px;
+  padding: 10px 16px;
+}
+
+/* Conteúdo específico do Modal de Confirmação */
+.modal-content-confirm {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  max-width: 480px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Corpo específico do Modal de Confirmação */
+.modal-body {
+  padding: 24px;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.confirm-icon {
+  color: #f59e0b;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.confirm-content h4 {
+  color: #1f2937;
+  margin: 16px 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+  max-width: 400px;
+}
+
+.confirm-content p {
+  color: #6b7280;
+  margin-bottom: 24px;
+  line-height: 1.5;
+  text-align: center;
+  max-width: 400px;
+}
+
+.password-input-group {
+  margin: 24px 0;
+}
+
+.password-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 16px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.password-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.password-input.error {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.password-input::placeholder {
+  color: #9ca3af;
+}
+
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #ef4444;
+  font-size: 14px;
+  margin-top: 8px;
+  animation: errorShake 0.5s ease-in-out;
+}
+
+@keyframes errorShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* Modal de Loading */
+.loading-modal-content {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.loading-spinner-large {
+  color: #3b82f6;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+.loading-modal-content h4 {
+  color: #1f2937;
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.loading-modal-content p {
+  color: #6b7280;
+  margin: 0;
+  font-size: 14px;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.confirm-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+  max-width: 400px;
+}
+
+/* Responsividade para modais */
+@media (max-width: 768px) {
+  .confirm-content {
+    max-width: 100%;
+    padding: 0 16px;
+  }
+
+  .confirm-content h4 {
+    font-size: 16px;
+  }
+
+  .password-input {
+    font-size: 16px;
+    padding: 14px 16px;
+  }
+
+  .loading-modal-content {
+    padding: 32px 16px;
+  }
+
+  .loading-spinner-large {
+    margin-bottom: 16px;
+  }
+}
+
 .fiados-cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
