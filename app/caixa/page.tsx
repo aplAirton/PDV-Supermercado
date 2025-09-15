@@ -875,9 +875,122 @@ export default function CaixaPage() {
   if (loading) {
     return (
       <div className="caixa-container">
-        <div className="loading-state">
-          <Loader2 className="loading-spinner" />
-          <p>Carregando dados do caixa...</p>
+        {/* Header Skeleton */}
+        <div className="page-header">
+          <div className="header-info">
+            <div className="skeleton skeleton-title" style={{ width: '250px', height: '32px', marginBottom: '8px' }}></div>
+            <div className="skeleton skeleton-label" style={{ width: '350px', height: '16px', marginBottom: '16px' }}></div>
+            <div className="header-stats">
+              <div className="stat-item">
+                <div className="skeleton skeleton-label" style={{ width: '80px', height: '12px', marginBottom: '4px' }}></div>
+                <div className="skeleton skeleton-value" style={{ width: '30px', height: '20px' }}></div>
+              </div>
+              <div className="stat-item">
+                <div className="skeleton skeleton-label" style={{ width: '90px', height: '12px', marginBottom: '4px' }}></div>
+                <div className="skeleton skeleton-value" style={{ width: '25px', height: '20px' }}></div>
+              </div>
+              <div className="stat-item">
+                <div className="skeleton skeleton-label" style={{ width: '85px', height: '12px', marginBottom: '4px' }}></div>
+                <div className="skeleton skeleton-value" style={{ width: '28px', height: '20px' }}></div>
+              </div>
+            </div>
+          </div>
+          <div className="header-actions">
+            <div className="funcionario-info">
+              <div className="funcionario-avatar">
+                <div className="skeleton" style={{ width: '48px', height: '48px', borderRadius: '50%' }}></div>
+              </div>
+              <div className="funcionario-details">
+                <div className="skeleton skeleton-title" style={{ width: '150px', height: '20px', marginBottom: '4px' }}></div>
+                <div className="skeleton skeleton-label" style={{ width: '100px', height: '14px', marginBottom: '8px' }}></div>
+                <div className="status-indicator">
+                  <div className="skeleton" style={{ width: '60px', height: '16px', borderRadius: '8px' }}></div>
+                </div>
+              </div>
+            </div>
+            <div className="skeleton skeleton-button-primary" style={{ width: '120px', height: '40px' }}></div>
+          </div>
+        </div>
+
+        {/* Status do Caixa Skeleton */}
+        <div className="caixa-status-section">
+          <div className="caixa-status-card">
+            <div className="skeleton skeleton-icon" style={{ width: '48px', height: '48px', borderRadius: '50%' }}></div>
+            <div className="status-content">
+              <div className="skeleton skeleton-label" style={{ width: '150px', height: '16px', marginBottom: '8px' }}></div>
+              <div className="skeleton skeleton-value" style={{ width: '100px', height: '24px' }}></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Cards de Ação Skeleton */}
+        <div className="caixa-actions-grid">
+          <div className="action-card">
+            <div className="skeleton skeleton-icon" style={{ width: '48px', height: '48px', borderRadius: '50%', marginBottom: '16px' }}></div>
+            <div className="skeleton skeleton-title" style={{ width: '120px', height: '20px', marginBottom: '8px' }}></div>
+            <div className="skeleton skeleton-label" style={{ width: '180px', height: '14px', marginBottom: '16px' }}></div>
+            <div className="skeleton skeleton-button-primary" style={{ width: '100%', height: '44px' }}></div>
+          </div>
+          <div className="action-card">
+            <div className="skeleton skeleton-icon" style={{ width: '48px', height: '48px', borderRadius: '50%', marginBottom: '16px' }}></div>
+            <div className="skeleton skeleton-title" style={{ width: '100px', height: '20px', marginBottom: '8px' }}></div>
+            <div className="skeleton skeleton-label" style={{ width: '160px', height: '14px', marginBottom: '16px' }}></div>
+            <div className="skeleton skeleton-button" style={{ width: '100%', height: '44px' }}></div>
+          </div>
+          <div className="action-card">
+            <div className="skeleton skeleton-icon" style={{ width: '48px', height: '48px', borderRadius: '50%', marginBottom: '16px' }}></div>
+            <div className="skeleton skeleton-title" style={{ width: '110px', height: '20px', marginBottom: '8px' }}></div>
+            <div className="skeleton skeleton-label" style={{ width: '170px', height: '14px', marginBottom: '16px' }}></div>
+            <div className="skeleton skeleton-button" style={{ width: '100%', height: '44px' }}></div>
+          </div>
+        </div>
+
+        {/* Lista de Caixas Skeleton */}
+        <div className="caixa-list-section">
+          <div className="section-header">
+            <div className="skeleton skeleton-title" style={{ width: '150px', height: '24px' }}></div>
+            <div className="skeleton skeleton-badge" style={{ width: '60px', height: '24px' }}></div>
+          </div>
+
+          <div className="caixa-cards-grid">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="caixa-skeleton-card">
+                <div className="caixa-card-header">
+                  <div className="skeleton skeleton-icon" style={{ width: '32px', height: '32px', borderRadius: '50%' }}></div>
+                  <div className="caixa-card-info">
+                    <div className="skeleton skeleton-title" style={{ width: '120px', height: '18px', marginBottom: '4px' }}></div>
+                    <div className="skeleton skeleton-label" style={{ width: '80px', height: '14px' }}></div>
+                  </div>
+                  <div className="skeleton skeleton-value" style={{ width: '70px', height: '18px' }}></div>
+                </div>
+                <div className="caixa-card-body">
+                  <div className="caixa-info-grid">
+                    <div className="info-item">
+                      <div className="skeleton skeleton-label" style={{ width: '50px', height: '12px', marginBottom: '4px' }}></div>
+                      <div className="skeleton skeleton-value" style={{ width: '60px', height: '14px' }}></div>
+                    </div>
+                    <div className="info-item">
+                      <div className="skeleton skeleton-label" style={{ width: '45px', height: '12px', marginBottom: '4px' }}></div>
+                      <div className="skeleton skeleton-value" style={{ width: '55px', height: '14px' }}></div>
+                    </div>
+                    <div className="info-item">
+                      <div className="skeleton skeleton-label" style={{ width: '40px', height: '12px', marginBottom: '4px' }}></div>
+                      <div className="skeleton skeleton-value" style={{ width: '50px', height: '14px' }}></div>
+                    </div>
+                    <div className="info-item">
+                      <div className="skeleton skeleton-label" style={{ width: '55px', height: '12px', marginBottom: '4px' }}></div>
+                      <div className="skeleton skeleton-value" style={{ width: '65px', height: '14px' }}></div>
+                    </div>
+                  </div>
+                </div>
+                <div className="caixa-card-footer">
+                  <div className="skeleton skeleton-button" style={{ width: '80px', height: '36px' }}></div>
+                  <div className="skeleton skeleton-button" style={{ width: '90px', height: '36px' }}></div>
+                  <div className="skeleton skeleton-button" style={{ width: '70px', height: '36px' }}></div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     )
@@ -891,9 +1004,17 @@ export default function CaixaPage() {
         <div className="header-actions">
           {caixaAtual && (
             <div className="funcionario-info">
-              <User size={16} />
-              <span>{caixaAtual.funcionario_nome}</span>
-              <small>({caixaAtual.funcionario_cargo})</small>
+              <div className="funcionario-avatar">
+                <User size={20} />
+              </div>
+              <div className="funcionario-details">
+                <span className="funcionario-name">{caixaAtual.funcionario_nome}</span>
+                <small className="funcionario-role">{caixaAtual.funcionario_cargo}</small>
+              </div>
+              <div className="status-indicator">
+                <div className="status-dot active"></div>
+                <span className="status-text">Caixa Aberto</span>
+              </div>
             </div>
           )}
           
