@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { ShoppingCart, Package, Users, History, CreditCard, DollarSign, Calculator, UserCog, Menu, User } from "lucide-react"
+import { ShoppingCart, Package, Users, History, CreditCard, DollarSign, Calculator, UserCog, Menu, User, Truck } from "lucide-react"
 import VendasPage from "./vendas/page"
 import ProdutosPage from "./produtos/page"
 import ClientesPage from "./clientes/page"
@@ -10,11 +10,12 @@ import FiadosPage from "./fiados/page"
 import PagamentosPage from "./pagamentos/page"
 import CaixaPage from "./caixa/page"
 import FuncionariosPage from "./funcionarios/page"
+import FornecedoresPage from "./fornecedores/page"
 import Sidebar from "@/components/sidebar"
 import ConfirmationModal from '@/components/confirmation-modal'
 import '../styles/components.css'
 
-type Page = "vendas" | "produtos" | "clientes" | "historico" | "fiados" | "pagamentos" | "caixa" | "funcionarios"
+type Page = "vendas" | "produtos" | "clientes" | "historico" | "fiados" | "pagamentos" | "caixa" | "funcionarios" | "fornecedores"
 
 const pageConfig = {
   vendas: {
@@ -33,7 +34,7 @@ const pageConfig = {
     icon: Users,
   },
   historico: {
-    title: "Histórico deVendas",
+    title: "Histórico de Vendas",
     subtitle: "Visualize o histórico de vendas realizadas",
     icon: History,
   },
@@ -56,6 +57,11 @@ const pageConfig = {
     title: "Gerenciamento de Funcionários",
     subtitle: "Cadastre e gerencie funcionários",
     icon: UserCog,
+  },
+  fornecedores: {
+    title: "Gerenciamento de Fornecedores",
+    subtitle: "Gerencie fornecedores e pagamentos",
+    icon: Truck,
   },
 }
 
@@ -168,6 +174,8 @@ export default function HomePage() {
         return <CaixaPage />
       case "funcionarios":
         return <FuncionariosPage />
+      case "fornecedores":
+        return <FornecedoresPage />
       default:
         return <VendasPage />
     }

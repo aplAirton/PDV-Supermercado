@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ShoppingCart, Package, Users, History, CreditCard, Menu, X, DollarSign, Calculator, UserCog } from "lucide-react"
+import { ShoppingCart, Package, Users, History, CreditCard, Menu, X, DollarSign, Calculator, UserCog, Truck } from "lucide-react"
 
-type Page = "vendas" | "produtos" | "clientes" | "historico" | "fiados" | "pagamentos" | "caixa" | "funcionarios"
+type Page = "vendas" | "produtos" | "clientes" | "historico" | "fiados" | "pagamentos" | "caixa" | "funcionarios" | "fornecedores"
 
 const pageConfig = {
   vendas: {
@@ -45,6 +45,11 @@ const pageConfig = {
     title: "Funcionários",
     subtitle: "Cadastre e gerencie funcionários",
     icon: UserCog,
+  },
+  fornecedores: {
+    title: "Fornecedores",
+    subtitle: "Gerencie fornecedores e pagamentos",
+    icon: Truck,
   },
 }
 
@@ -210,6 +215,15 @@ export default function Sidebar({ currentPage, onPageChange, isOpen: isOpenProp,
               >
                 <Calculator size={20} />
                 <span className="nav-text">Caixa</span>
+              </button>
+            </div>
+            <div className="nav-item">
+              <button
+                className={`nav-link ${currentPage === 'fornecedores' ? "active" : ""}`}
+                onClick={() => handlePageChange('fornecedores')}
+              >
+                <Truck size={20} />
+                <span className="nav-text">Fornecedores</span>
               </button>
             </div>
           </div>

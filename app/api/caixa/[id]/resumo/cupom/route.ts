@@ -44,6 +44,14 @@ export async function GET(
     const totalSangrias = Number(caixaData.total_sangrias || 0)
     const totalVendasCalculado = Number(caixaData.total_vendas || 0)
 
+    // Buscar total de pagamentos a fornecedores associados a este caixa
+    const pagamentosFornecedorResult = await executeQuery(`
+      SELECT COALESCE(SUM(valor_pagamento), 0) as total
+      FROM pagamentos_fornecedor
+      WHERE caixa_id = ? AND status = 'pago'
+    `, [caixaId]) as any[]
+    const totalPagamentosFornecedor = Number(pagamentosFornecedorResult[0]?.total || 0)
+
     // Valor esperado no caixa (apenas dinheiro físico que deve estar presente)
     const valorEsperado = Number(caixaData.valor_inicial) + totaisPorForma.dinheiro + totalSuprimentos - totalSangrias
     const valorContado = Number(caixaData.valor_contado_dinheiro || caixaData.valor_final || 0)
@@ -118,6 +126,12 @@ export async function GET(
         <div class="linha">
           <span>Suprimentos:</span>
           <span class="valor">+ R$ ${formatarValor(totalSuprimentos)}</span>
+        </div>
+        ` : ''}
+        ${totalPagamentosFornecedor > 0 ? `
+        <div class="linha">
+          <span>Fornecedores:</span>
+          <span class="valor">- R$ ${formatarValor(totalPagamentosFornecedor)}</span>
         </div>
         ` : ''}
       </div>

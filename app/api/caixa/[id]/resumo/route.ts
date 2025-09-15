@@ -71,6 +71,15 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const totalSuprimentos = totalSuprimentosMov
     const totalSangrias = totalSangriasMov
 
+    // Buscar total de pagamentos a fornecedores associados a este caixa
+    const pagamentosFornecedorQuery = `
+      SELECT COALESCE(SUM(valor_pagamento), 0) as total
+      FROM pagamentos_fornecedor
+      WHERE caixa_id = ? AND status = 'pago'
+    `
+    const pagamentosFornecedor = await executeQuery(pagamentosFornecedorQuery, [caixaId]) as any[]
+    const totalPagamentosFornecedor = parseFloat(pagamentosFornecedor[0]?.total || 0)
+
     // DEBUG: Verificar se os campos existem na tabela
     console.log(`[caixa-resumo][${caixaId}] DEBUG - Campos da tabela caixas:`, {
       camposDisponiveis: Object.keys(caixa),
@@ -84,6 +93,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         tipo: typeof caixa.total_sangrias,
         convertido: totalSangrias
       },
+      totalPagamentosFornecedor,
       todosCampos: caixa
     })
 
@@ -122,6 +132,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         vendas_dinheiro: totalDinheiro,
         suprimentos: totalSuprimentos,
         sangrias: totalSangrias,
+        pagamentos_fornecedor: totalPagamentosFornecedor,
         esperado: valorEsperado,
         contado: valorContado,
         diferenca: diferenca

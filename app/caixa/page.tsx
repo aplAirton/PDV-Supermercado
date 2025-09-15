@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Calculator, User, DollarSign, Shield, Clock, OctagonAlert, TrendingUp, Plus, Settings, AlertCircle, CheckCircle, Loader2, ArrowUp, ArrowDown, Lock, FileText, Printer, ArrowRightLeft, Check, X, Banknote, CreditCard, Smartphone, Receipt, Handshake, ShoppingCart, Wallet } from 'lucide-react'
+import { Calculator, User, DollarSign, Shield, Clock, OctagonAlert, TrendingUp, Plus, Settings, AlertCircle, CheckCircle, Loader2, ArrowUp, ArrowDown, Lock, FileText, Printer, ArrowRightLeft, Check, X, Banknote, CreditCard, Smartphone, Receipt, Handshake, ShoppingCart, Wallet, ChevronDown, ChevronRight } from 'lucide-react'
 import LoadingModal from '../../components/loading-modal'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import '../../styles/caixa.css'
 
 // Função toast limpa - sem alertas de navegador
@@ -57,6 +58,7 @@ export default function CaixaPage() {
   const [loadingFecharCaixa, setLoadingFecharCaixa] = useState(false)
   const [loadingDados, setLoadingDados] = useState(false)
   const [showSangriaModal, setShowSangriaModal] = useState(false)
+  const [formasPagamentoExpanded, setFormasPagamentoExpanded] = useState(false)
   const [sangriaForm, setSangriaForm] = useState({
     valor: '',
     descricao: ''
@@ -1977,28 +1979,40 @@ export default function CaixaPage() {
                             resumoFechamento.valores.inicial + 
                             resumoFechamento.valores.vendas + 
                             resumoFechamento.valores.suprimentos - 
-                            resumoFechamento.valores.sangrias
+                            resumoFechamento.valores.sangrias -
+                            (resumoFechamento.valores.pagamentos_fornecedor || 0)
                           )}
                         </div>
                       </div>
                       <Wallet size={40} style={{ opacity: 0.8 }} />
                     </div>
                     <div className="modal-resumo-total-breakdown">
-                      <div>
-                        <div className="modal-resumo-total-item-label">Inicial</div>
-                        <div className="modal-resumo-total-item-value">{formatarValor(resumoFechamento.valores.inicial)}</div>
+                      {/* Primeira linha: Inicial e Vendas lado a lado */}
+                      <div className="modal-resumo-principal-row">
+                        <div className="modal-resumo-principal-item">
+                          <div className="modal-resumo-total-item-label">Inicial</div>
+                          <div className="modal-resumo-total-item-value">{formatarValor(resumoFechamento.valores.inicial)}</div>
+                        </div>
+                        <div className="modal-resumo-principal-item">
+                          <div className="modal-resumo-total-item-label">Vendas</div>
+                          <div className="modal-resumo-total-item-value">+{formatarValor(resumoFechamento.valores.vendas)}</div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="modal-resumo-total-item-label">Vendas</div>
-                        <div className="modal-resumo-total-item-value">+{formatarValor(resumoFechamento.valores.vendas)}</div>
-                      </div>
-                      <div>
-                        <div className="modal-resumo-total-item-label">Suprimentos</div>
-                        <div className="modal-resumo-total-item-value">+{formatarValor(resumoFechamento.valores.suprimentos)}</div>
-                      </div>
-                      <div>
-                        <div className="modal-resumo-total-item-label">Sangrias</div>
-                        <div className="modal-resumo-total-item-value">-{formatarValor(resumoFechamento.valores.sangrias)}</div>
+
+                      {/* Segunda linha: Suprimentos, Sangrias e Fornecedores lado a lado */}
+                      <div className="modal-resumo-movimentacoes-row">
+                        <div className="modal-resumo-movimentacao-item">
+                          <div className="modal-resumo-total-item-label">Suprimentos</div>
+                          <div className="modal-resumo-total-item-value">+{formatarValor(resumoFechamento.valores.suprimentos)}</div>
+                        </div>
+                        <div className="modal-resumo-movimentacao-item">
+                          <div className="modal-resumo-total-item-label">Sangrias</div>
+                          <div className="modal-resumo-total-item-value">-{formatarValor(resumoFechamento.valores.sangrias)}</div>
+                        </div>
+                        <div className="modal-resumo-movimentacao-item">
+                          <div className="modal-resumo-total-item-label">Fornecedores</div>
+                          <div className="modal-resumo-total-item-value">-{formatarValor(resumoFechamento.valores.pagamentos_fornecedor || 0)}</div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -2040,77 +2054,98 @@ export default function CaixaPage() {
                 )}
               </div>
 
-              {/* Formas de Pagamento */}
-              <div className="modal-resumo-pagamentos-container">
-                <div className="modal-resumo-pagamentos-header">
-                  <h4 className="modal-resumo-pagamentos-title">
-                    Formas de Pagamento
-                  </h4>
+              {/* Formas de Pagamento - Expansível */}
+              <Collapsible open={formasPagamentoExpanded} onOpenChange={setFormasPagamentoExpanded}>
+                <div className="modal-resumo-pagamentos-container">
+                  <CollapsibleTrigger asChild>
+                    <div className="modal-resumo-pagamentos-header collapsible">
+                      <h4 className="modal-resumo-pagamentos-title">
+                        Formas de Pagamento
+                      </h4>
+                      <ChevronRight size={20} className="collapsible-icon" data-state={formasPagamentoExpanded ? "open" : "closed"} />
+                    </div>
+                  </CollapsibleTrigger>
+
+                  <CollapsibleContent>
+                    <div className="modal-resumo-pagamentos-grid">
+                      {/* Dinheiro */}
+                      {(resumoFechamento.vendas?.valor_dinheiro || 0) > 0 && (
+                        <div className="modal-resumo-pagamento-card">
+                          <div className="modal-resumo-pagamento-info">
+                            <div className="modal-resumo-pagamento-icon dinheiro">
+                              <Banknote size={18} style={{ color: '#059669' }} />
+                            </div>
+                            <span className="modal-resumo-pagamento-name">Dinheiro</span>
+                          </div>
+                          <strong className="modal-resumo-pagamento-value">
+                            {formatarValor(resumoFechamento.vendas?.valor_dinheiro || 0)}
+                          </strong>
+                        </div>
+                      )}
+
+                      {/* Cartão Débito */}
+                      {(resumoFechamento.vendas?.valor_cartao_debito || 0) > 0 && (
+                        <div className="modal-resumo-pagamento-card">
+                          <div className="modal-resumo-pagamento-info">
+                            <div className="modal-resumo-pagamento-icon debito">
+                              <CreditCard size={18} style={{ color: '#2563eb' }} />
+                            </div>
+                            <span className="modal-resumo-pagamento-name">Débito</span>
+                          </div>
+                          <strong className="modal-resumo-pagamento-value debito">
+                            {formatarValor(resumoFechamento.vendas?.valor_cartao_debito || 0)}
+                          </strong>
+                        </div>
+                      )}
+
+                      {/* Cartão Crédito */}
+                      {(resumoFechamento.vendas?.valor_cartao_credito || 0) > 0 && (
+                        <div className="modal-resumo-pagamento-card">
+                          <div className="modal-resumo-pagamento-info">
+                            <div className="modal-resumo-pagamento-icon credito">
+                              <CreditCard size={18} style={{ color: '#dc2626' }} />
+                            </div>
+                            <span className="modal-resumo-pagamento-name">Crédito</span>
+                          </div>
+                          <strong className="modal-resumo-pagamento-value credito">
+                            {formatarValor(resumoFechamento.vendas?.valor_cartao_credito || 0)}
+                          </strong>
+                        </div>
+                      )}
+
+                      {/* PIX */}
+                      {(resumoFechamento.vendas?.valor_pix || 0) > 0 && (
+                        <div className="modal-resumo-pagamento-card">
+                          <div className="modal-resumo-pagamento-info">
+                            <div className="modal-resumo-pagamento-icon pix">
+                              <Smartphone size={18} style={{ color: '#7c3aed' }} />
+                            </div>
+                            <span className="modal-resumo-pagamento-name">PIX</span>
+                          </div>
+                          <strong className="modal-resumo-pagamento-value pix">
+                            {formatarValor(resumoFechamento.vendas?.valor_pix || 0)}
+                          </strong>
+                        </div>
+                      )}
+
+                      {/* Fiado */}
+                      {(resumoFechamento.vendas?.valor_fiado || 0) > 0 && (
+                        <div className="modal-resumo-pagamento-card">
+                          <div className="modal-resumo-pagamento-info">
+                            <div className="modal-resumo-pagamento-icon fiado">
+                              <Handshake size={18} style={{ color: '#ea580c' }} />
+                            </div>
+                            <span className="modal-resumo-pagamento-name">Fiado</span>
+                          </div>
+                          <strong className="modal-resumo-pagamento-value fiado">
+                            {formatarValor(resumoFechamento.vendas?.valor_fiado || 0)}
+                          </strong>
+                        </div>
+                      )}
+                    </div>
+                  </CollapsibleContent>
                 </div>
-                
-                <div className="modal-resumo-pagamentos-grid">
-                  <div className="modal-resumo-pagamento-card">
-                    <div className="modal-resumo-pagamento-info">
-                      <div className="modal-resumo-pagamento-icon dinheiro">
-                        <Banknote size={18} style={{ color: '#059669' }} />
-                      </div>
-                      <span className="modal-resumo-pagamento-name">Dinheiro</span>
-                    </div>
-                    <strong className="modal-resumo-pagamento-value">
-                      {formatarValor(resumoFechamento.vendas?.valor_dinheiro || 0)}
-                    </strong>
-                  </div>
-
-                  <div className="modal-resumo-pagamento-card">
-                    <div className="modal-resumo-pagamento-info">
-                      <div className="modal-resumo-pagamento-icon debito">
-                        <CreditCard size={18} style={{ color: '#2563eb' }} />
-                      </div>
-                      <span className="modal-resumo-pagamento-name">Débito</span>
-                    </div>
-                    <strong className="modal-resumo-pagamento-value debito">
-                      {formatarValor(resumoFechamento.vendas?.valor_cartao_debito || 0)}
-                    </strong>
-                  </div>
-
-                  <div className="modal-resumo-pagamento-card">
-                    <div className="modal-resumo-pagamento-info">
-                      <div className="modal-resumo-pagamento-icon credito">
-                        <CreditCard size={18} style={{ color: '#dc2626' }} />
-                      </div>
-                      <span className="modal-resumo-pagamento-name">Crédito</span>
-                    </div>
-                    <strong className="modal-resumo-pagamento-value credito">
-                      {formatarValor(resumoFechamento.vendas?.valor_cartao_credito || 0)}
-                    </strong>
-                  </div>
-
-                  <div className="modal-resumo-pagamento-card">
-                    <div className="modal-resumo-pagamento-info">
-                      <div className="modal-resumo-pagamento-icon pix">
-                        <Smartphone size={18} style={{ color: '#7c3aed' }} />
-                      </div>
-                      <span className="modal-resumo-pagamento-name">PIX</span>
-                    </div>
-                    <strong className="modal-resumo-pagamento-value pix">
-                      {formatarValor(resumoFechamento.vendas?.valor_pix || 0)}
-                    </strong>
-                  </div>
-
-                  <div className="modal-resumo-pagamento-card">
-                    <div className="modal-resumo-pagamento-info">
-                      <div className="modal-resumo-pagamento-icon fiado">
-                        <Handshake size={18} style={{ color: '#ea580c' }} />
-                      </div>
-                      <span className="modal-resumo-pagamento-name">Fiado</span>
-                    </div>
-                    <strong className="modal-resumo-pagamento-value fiado">
-                      {formatarValor(resumoFechamento.vendas?.valor_fiado || 0)}
-                    </strong>
-                  </div>
-
-                </div>
-              </div>
+              </Collapsible>
             </div>
 
             <div className="modal-footer-caixa">

@@ -89,6 +89,38 @@ CREATE TABLE pagamentos_fiado (
     FOREIGN KEY (fiado_id) REFERENCES fiados(id) ON DELETE CASCADE
 );
 
+-- Tabela de Movimentações Financeiras Gerais (para todas as movimentações do sistema)
+-- Recriar tabela se já existir com estrutura incorreta
+DROP TABLE IF EXISTS movimentacoes_financeiras;
+CREATE TABLE movimentacoes_financeiras (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tipo VARCHAR(10) NOT NULL,
+    categoria VARCHAR(30) NOT NULL,
+    valor DECIMAL(10,2) NOT NULL,
+    descricao TEXT,
+    referencia VARCHAR(255),
+    entidade_tipo VARCHAR(20) DEFAULT 'sistema',
+    entidade_id INT NULL,
+    forma_pagamento VARCHAR(50),
+    usuario_id INT NULL,
+    saldo_anterior DECIMAL(10,2) NULL,
+    saldo_posterior DECIMAL(10,2) NULL,
+    data_movimento TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Adicionar índices separadamente para melhor compatibilidade
+CREATE INDEX idx_mov_financeiras_tipo ON movimentacoes_financeiras(tipo);
+CREATE INDEX idx_mov_financeiras_categoria ON movimentacoes_financeiras(categoria);
+CREATE INDEX idx_mov_financeiras_data ON movimentacoes_financeiras(data_movimento);
+CREATE INDEX idx_mov_financeiras_entidade ON movimentacoes_financeiras(entidade_tipo, entidade_id);
+CREATE INDEX idx_mov_financeiras_usuario ON movimentacoes_financeiras(usuario_id);
+CREATE INDEX idx_mov_financeiras_tipo_categoria ON movimentacoes_financeiras(tipo, categoria);
+CREATE INDEX idx_mov_financeiras_data_range ON movimentacoes_financeiras(data_movimento, tipo);
+CREATE INDEX idx_mov_financeiras_valor ON movimentacoes_financeiras(valor);
+CREATE INDEX idx_mov_financeiras_referencia ON movimentacoes_financeiras(referencia(50));
+
 -- Índices para melhor performance
 CREATE INDEX idx_produtos_codigo ON produtos(codigo_barras);
 CREATE INDEX idx_produtos_categoria ON produtos(categoria);
@@ -97,5 +129,8 @@ CREATE INDEX idx_vendas_data ON vendas(data_venda);
 CREATE INDEX idx_vendas_cliente ON vendas(cliente_id);
 CREATE INDEX idx_fiados_cliente ON fiados(cliente_id);
 CREATE INDEX idx_fiados_status ON fiados(status);
+CREATE INDEX idx_fiado_movimentos_cliente ON fiado_movimentos(cliente_id);
+CREATE INDEX idx_fiado_movimentos_tipo ON fiado_movimentos(tipo);
+CREATE INDEX idx_fiado_movimentos_data ON fiado_movimentos(data_movimento);
 
 SELECT 'Banco de dados PDV criado com sucesso!' as status;

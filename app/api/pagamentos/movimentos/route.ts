@@ -103,6 +103,29 @@ export async function GET(request: NextRequest) {
 
         UNION ALL
 
+        -- Pagamentos de fornecedores (saídas) - da nova tabela
+        SELECT
+          mf.id + 300000 AS id,
+          'saida' AS tipo,
+          CASE
+            WHEN mf.categoria = 'sangria' AND mf.referencia LIKE 'Pagamento fornecedor%' THEN 'sangria'
+            ELSE 'pagamento_fornecedor'
+          END AS categoria,
+          mf.valor,
+          COALESCE(mf.descricao, 'Pagamento a fornecedor') AS descricao,
+          mf.referencia,
+          NULL AS forma_pagamento_json,
+          mf.forma_pagamento,
+          mf.data_movimento,
+          f.nome AS cliente_nome,
+          NULL AS valor_pago,
+          NULL AS troco
+        FROM movimentacoes_financeiras mf
+        LEFT JOIN fornecedores f ON mf.entidade_id = f.id AND mf.entidade_tipo = 'fornecedor'
+        WHERE mf.tipo = 'saida' AND (mf.categoria = 'pagamento_fornecedor' OR (mf.categoria = 'sangria' AND mf.referencia LIKE 'Pagamento fornecedor%'))
+
+        UNION ALL
+
         -- Ajustes (podem ser entrada ou saída)
         SELECT
           fm.id + 100000 AS id,
@@ -147,8 +170,9 @@ export async function GET(request: NextRequest) {
   + (SELECT COALESCE(SUM(fm.valor),0) FROM fiado_movimentos fm WHERE fm.tipo = 'ajuste' AND fm.direcao = 'credito' AND DATE(fm.data_movimento) >= ? AND DATE(fm.data_movimento) <= ?)
         AS totalEntradas,
 
-        -- Saídas (ajustes débito)
-        (SELECT COALESCE(SUM(fm.valor),0) FROM fiado_movimentos fm WHERE fm.tipo = 'ajuste' AND fm.direcao = 'debito' AND DATE(fm.data_movimento) >= ? AND DATE(fm.data_movimento) <= ?) AS totalSaidas,
+        -- Saídas (ajustes débito + pagamentos de fornecedores + sangrias)
+        (SELECT COALESCE(SUM(fm.valor),0) FROM fiado_movimentos fm WHERE fm.tipo = 'ajuste' AND fm.direcao = 'debito' AND DATE(fm.data_movimento) >= ? AND DATE(fm.data_movimento) <= ?)
+        + (SELECT COALESCE(SUM(mf.valor),0) FROM movimentacoes_financeiras mf WHERE mf.tipo = 'saida' AND mf.categoria IN ('pagamento_fornecedor', 'sangria') AND DATE(mf.data_movimento) >= ? AND DATE(mf.data_movimento) <= ?) AS totalSaidas,
 
         -- Totais por forma extraídos do JSON das vendas (itera até 10 itens)
         (SELECT COALESCE(SUM(
@@ -191,6 +215,7 @@ export async function GET(request: NextRequest) {
       dataInicio, dataFim, // vendas - entradas
       dataInicio, dataFim, // ajustes credito
       dataInicio, dataFim, // ajustes debito (totalSaidas)
+      dataInicio, dataFim, // pagamentos fornecedores (totalSaidas)
       dataInicio, dataFim, // totalVendasDinheiro
       dataInicio, dataFim, // totalVendasCartaoDebito
       dataInicio, dataFim, // totalVendasCartaoCredito
