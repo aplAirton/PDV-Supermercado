@@ -26,7 +26,7 @@ export default function ClientesPage() {
   const [showModal, setShowModal] = useState(false)
   const [editingCliente, setEditingCliente] = useState<Cliente | null>(null)
   const [loading, setLoading] = useState(false)
-  const [loadingClientes, setLoadingClientes] = useState(false)
+  const [loadingClientes, setLoadingClientes] = useState(true)
 
   const [formData, setFormData] = useState({
     nome: "",
@@ -54,6 +54,8 @@ export default function ClientesPage() {
     title: '',
     message: ''
   })
+
+  const [animacaoExecutada, setAnimacaoExecutada] = useState(false)
 
   const [showLoadingModal, setShowLoadingModal] = useState(false)
 
@@ -172,6 +174,12 @@ export default function ClientesPage() {
   useEffect(() => {
     carregarClientes()
   }, [])
+
+  useEffect(() => {
+    if (!loadingClientes && clientes.length > 0 && !animacaoExecutada) {
+      setAnimacaoExecutada(true)
+    }
+  }, [loadingClientes, clientes.length, animacaoExecutada])
 
   const carregarClientes = async () => {
     setLoadingClientes(true)
@@ -379,6 +387,70 @@ export default function ClientesPage() {
     }
   }
 
+  if (loadingClientes) {
+    return (
+      <div className="clientes-page">
+        {/* Header Skeleton */}
+        <div className="card">
+          <div className="card-header">
+            <div className="header-actions">
+              <div className="skeleton skeleton-button-primary"></div>
+            </div>
+          </div>
+
+          {/* Filtro Skeleton */}
+          <div className="form-group">
+            <div className="flex gap-2">
+              <div className="skeleton" style={{ width: '300px', height: '40px', borderRadius: '8px' }}></div>
+              <div className="skeleton skeleton-button" style={{ width: '40px', height: '40px' }}></div>
+            </div>
+          </div>
+
+          {/* Tabela Skeleton */}
+          <div style={{ overflowX: "auto" }}>
+            <div className="desktop-view">
+              <div className="table">
+                <div className="table-header">
+                  <div className="skeleton skeleton-title" style={{ width: '100px', height: '20px', marginBottom: '16px' }}></div>
+                </div>
+                <div className="table-body">
+                  {Array.from({ length: 8 }).map((_, index) => (
+                    <div key={index} className="table-row">
+                      <div className="table-cell">
+                        <div className="skeleton" style={{ width: '120px', height: '16px' }}></div>
+                      </div>
+                      <div className="table-cell">
+                        <div className="skeleton" style={{ width: '100px', height: '16px' }}></div>
+                      </div>
+                      <div className="table-cell">
+                        <div className="skeleton" style={{ width: '110px', height: '16px' }}></div>
+                      </div>
+                      <div className="table-cell">
+                        <div className="skeleton" style={{ width: '80px', height: '16px' }}></div>
+                      </div>
+                      <div className="table-cell">
+                        <div className="skeleton" style={{ width: '70px', height: '16px' }}></div>
+                      </div>
+                      <div className="table-cell">
+                        <div className="skeleton" style={{ width: '60px', height: '16px', borderRadius: '12px' }}></div>
+                      </div>
+                      <div className="table-cell">
+                        <div className="flex gap-2">
+                          <div className="skeleton skeleton-button" style={{ width: '32px', height: '32px' }}></div>
+                          <div className="skeleton skeleton-button" style={{ width: '32px', height: '32px' }}></div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="clientes-page">
       <div className="card">
@@ -431,7 +503,7 @@ export default function ClientesPage() {
             <>
               {/* Tabela para Desktop */}
               <div className="desktop-view">
-                <table className="table">
+                <table className={`table ${animacaoExecutada ? '' : 'fade-in'}`}>
                   <thead>
                     <tr>
                       <th>Nome</th>

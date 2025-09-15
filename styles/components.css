@@ -4307,3 +4307,17 @@
     font-size: 16px;
   }
 }
+
+/* Fade-in animation for content loading */
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

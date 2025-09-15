@@ -53,6 +53,8 @@ export default function VendasPage() {
   const [loading, setLoading] = useState(false)
   const [loadingProdutos, setLoadingProdutos] = useState(false)
   const [loadingClientes, setLoadingClientes] = useState(false)
+  const [loadingInicial, setLoadingInicial] = useState(true)
+  const [animacaoExecutada, setAnimacaoExecutada] = useState(false)
   // Estados relacionados ao cupom
   const [vendaConcluida, setVendaConcluida] = useState(false)
   const [vendaIdConcluida, setVendaIdConcluida] = useState<number | null>(null)
@@ -168,8 +170,12 @@ export default function VendasPage() {
   const excessoNaoPermitido = excessoNaoDinheiro || (temMultiplasFormas && totalNaoDinheiro > (totalRounded - totalDinheiro) && totalDinheiro < troco)
 
   useEffect(() => {
-    verificarStatusCaixa()
-    carregarClientes()
+    const carregarDadosIniciais = async () => {
+      await Promise.all([verificarStatusCaixa(), carregarClientes()])
+      setLoadingInicial(false)
+    }
+    
+    carregarDadosIniciais()
     
     // Evento cleanup para notificar mudanças
     return () => {
@@ -241,6 +247,12 @@ export default function VendasPage() {
       }, 100)
     }
   }, [showPagamentoModal])
+
+  useEffect(() => {
+    if (!loadingInicial && (produtos.length > 0 || clientes.length >= 0) && !animacaoExecutada) {
+      setAnimacaoExecutada(true)
+    }
+  }, [loadingInicial, produtos.length, clientes.length, animacaoExecutada])
 
   // Nova função de busca de produtos mais robusta
   const buscarProdutos = async (query: string, mode: 'search' | 'exact' = 'search', limit: number = 3) => {
@@ -876,11 +888,92 @@ export default function VendasPage() {
     processarPagamento()
   }
 
+  if (loadingInicial) {
+    return (
+      <div className="pdv-container">
+        {/* Header Skeleton */}
+        <div className="card">
+          <div className="card-header">
+            <div className="skeleton skeleton-title" style={{ width: '200px', height: '28px' }}></div>
+          </div>
+
+          <div className="card-content">
+            <div className="form-group form-group-no-shrink">
+              <div className="row row-gap">
+                <div style={{ display: 'flex', gap: '0.5rem', flex: 1 }}>
+                  <div className="skeleton" style={{ width: '100%', height: '44px', borderRadius: '8px' }}></div>
+                  <div className="skeleton skeleton-button" style={{ width: '44px', height: '44px' }}></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Products List Skeleton */}
+            <div className="products-list">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <div key={index} className="product-item-skeleton">
+                  <div className="product-info">
+                    <div className="skeleton skeleton-title" style={{ width: '150px', height: '18px', marginBottom: '4px' }}></div>
+                    <div className="skeleton skeleton-label" style={{ width: '100px', height: '14px' }}></div>
+                  </div>
+                  <div className="product-price">
+                    <div className="skeleton skeleton-value" style={{ width: '60px', height: '20px' }}></div>
+                  </div>
+                  <div className="product-actions">
+                    <div className="skeleton skeleton-button" style={{ width: '32px', height: '32px' }}></div>
+                    <div className="skeleton skeleton-button" style={{ width: '32px', height: '32px' }}></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Cart Skeleton */}
+        <div className="card">
+          <div className="card-header">
+            <div className="skeleton skeleton-title" style={{ width: '120px', height: '28px' }}></div>
+          </div>
+
+          <div className="card-content">
+            <div className="cart-items">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div key={index} className="cart-item-skeleton">
+                  <div className="item-info">
+                    <div className="skeleton skeleton-title" style={{ width: '120px', height: '16px', marginBottom: '4px' }}></div>
+                    <div className="skeleton skeleton-label" style={{ width: '80px', height: '12px' }}></div>
+                  </div>
+                  <div className="item-quantity">
+                    <div className="skeleton" style={{ width: '60px', height: '28px', borderRadius: '4px' }}></div>
+                  </div>
+                  <div className="item-price">
+                    <div className="skeleton skeleton-value" style={{ width: '50px', height: '16px' }}></div>
+                  </div>
+                  <div className="item-actions">
+                    <div className="skeleton skeleton-button" style={{ width: '28px', height: '28px' }}></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="cart-total">
+              <div className="skeleton skeleton-title" style={{ width: '80px', height: '20px', marginBottom: '8px' }}></div>
+              <div className="skeleton skeleton-value" style={{ width: '100px', height: '24px' }}></div>
+            </div>
+          </div>
+
+          <div className="card-footer">
+            <div className="skeleton skeleton-button-primary" style={{ width: '100%', height: '44px' }}></div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="pdv-container">
       {/* Área de Produtos / Novo ciclo */}
       {!vendaConcluida ? (
-        <div className="card">
+        <div className={`card ${animacaoExecutada ? '' : 'fade-in'}`}>
           <div className="card-header">
             <h2 className="card-title">Adicionar Produtos</h2>
           </div>
@@ -1070,7 +1163,7 @@ export default function VendasPage() {
       )}
 
       {/* Carrinho PDV */}
-      <div className="card">
+      <div className={`card ${animacaoExecutada ? '' : 'fade-in'}`}>
         {/* Header do Carrinho */}
           <div className="card-header card-header-custom">
           <div className="row row-between">

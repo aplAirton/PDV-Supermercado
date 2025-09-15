@@ -53,12 +53,13 @@ interface Produto {
 }
 
 export default function ProdutosPage() {
-  const [produtos, setProdutos] = useState<Produto[]>([]);
-  const [filtro, setFiltro] = useState("");
-  const [showModal, setShowModal] = useState(false);
-  const [editingProduto, setEditingProduto] = useState<Produto | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [loadingProdutos, setLoadingProdutos] = useState(false);
+  const [produtos, setProdutos] = useState<Produto[]>([])
+  const [filtro, setFiltro] = useState("")
+  const [showModal, setShowModal] = useState(false)
+  const [editingProduto, setEditingProduto] = useState<Produto | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [loadingProdutos, setLoadingProdutos] = useState(true)
+  const [animacaoExecutada, setAnimacaoExecutada] = useState(false)
   const [showConfirmExcluir, setShowConfirmExcluir] = useState(false);
   const [confirmExcluirId, setConfirmExcluirId] = useState<number | null>(null);
 
@@ -94,6 +95,12 @@ export default function ProdutosPage() {
   useEffect(() => {
     carregarProdutos();
   }, []);
+
+  useEffect(() => {
+    if (!loadingProdutos && produtos.length > 0 && !animacaoExecutada) {
+      setAnimacaoExecutada(true);
+    }
+  }, [loadingProdutos, produtos.length, animacaoExecutada]);
 
   const carregarProdutos = async () => {
     setLoadingProdutos(true);
@@ -293,6 +300,46 @@ export default function ProdutosPage() {
       setFormData({ ...formData, preco: preco.toFixed(2) });
     }
   };
+
+  if (loadingProdutos) {
+    return (
+      <div className="produtos-page">
+        {/* Header Skeleton */}
+        <div className="page-header">
+          <div className="skeleton skeleton-button-primary" style={{ width: '140px', height: '44px' }}></div>
+        </div>
+
+        {/* Search Section Skeleton */}
+        <div className="search-section">
+          <div className="search-container">
+            <div className="search-input-wrapper">
+              <div className="skeleton" style={{ width: '400px', height: '44px', borderRadius: '8px' }}></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Products Grid Skeleton */}
+        <div className="products-grid">
+          {Array.from({ length: 12 }).map((_, index) => (
+            <div key={index} className="product-card-skeleton">
+              <div className="product-image-skeleton">
+                <div className="skeleton" style={{ width: '100%', height: '120px', borderRadius: '8px' }}></div>
+              </div>
+              <div className="product-info-skeleton">
+                <div className="skeleton skeleton-title" style={{ width: '80%', height: '20px', marginBottom: '8px' }}></div>
+                <div className="skeleton skeleton-label" style={{ width: '60%', height: '14px', marginBottom: '4px' }}></div>
+                <div className="skeleton skeleton-value" style={{ width: '40%', height: '18px', marginBottom: '12px' }}></div>
+                <div className="product-actions-skeleton">
+                  <div className="skeleton skeleton-button" style={{ width: '32px', height: '32px' }}></div>
+                  <div className="skeleton skeleton-button" style={{ width: '32px', height: '32px' }}></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="produtos-page">
@@ -495,8 +542,8 @@ export default function ProdutosPage() {
 
             {/* Cards para Mobile */}
             <div className="mobile-view products-cards">
-              {produtosFiltrados.map((produto) => (
-                <div key={produto.id} className="product-card">
+              {produtosFiltrados.map((produto, index) => (
+                <div key={produto.id} className={`product-card ${animacaoExecutada ? '' : 'fade-in'}`} style={animacaoExecutada ? {} : { animationDelay: `${index * 0.05}s` }}>
                   {/* Cabeçalho do Card */}
                   <div className="card-header">
                     <div className="product-info">
