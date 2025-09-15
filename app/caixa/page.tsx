@@ -2356,7 +2356,7 @@ export default function CaixaPage() {
       {showTipoMovimentoModal && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '500px', width: '90%' }}>
-            <div className="modal-header">
+            <div className="modal-header-caixa">
               <h3>Selecionar Tipo de Movimentação</h3>
               <button
                 onClick={cancelarMovimentacao}

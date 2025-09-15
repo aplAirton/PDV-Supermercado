@@ -103,13 +103,15 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       totalDinheiro,
       totalSuprimentos,
       totalSangrias,
+      totalPagamentosFornecedor,
       totalVendas
     })
 
     // Valor esperado no caixa (dinheiro físico total)
-    const valorEsperado = valorInicial + totalDinheiro + totalSuprimentos - totalSangrias
+    // Cálculo: valor inicial + vendas em dinheiro + suprimentos - sangrias - pagamentos a fornecedores
+    const valorEsperado = valorInicial + totalDinheiro + totalSuprimentos - totalSangrias - totalPagamentosFornecedor
 
-    console.log(`[caixa-resumo][${caixaId}] Valor esperado calculado:`, valorEsperado)
+    console.log(`[caixa-resumo][${caixaId}] Valor esperado calculado:`, valorEsperado, `(inicial: ${valorInicial} + dinheiro: ${totalDinheiro} + suprimentos: ${totalSuprimentos} - sangrias: ${totalSangrias} - pagamentos_fornecedor: ${totalPagamentosFornecedor})`)
     
     const valorContado = parseFloat(caixa.valor_contado_dinheiro || 0)
     const diferenca = valorContado - valorEsperado
