@@ -580,14 +580,33 @@ export default function FuncionariosPage() {
 
   // Função para confirmar senha gerencial
   const confirmarAcao = async () => {
-    if (confirmPassword !== process.env.MASTERKEY) {
-      setConfirmError('A senha gerencial informada está incorreta.')
-      setConfirmPassword('')
-      return
-    }
+    try {
+      setConfirmLoading(true)
 
-    setConfirmError('')
-    await executarAcaoConfirmada()
+      const response = await fetch('/api/validar-senha-gerencial', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ senha: confirmPassword }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.valido) {
+        setConfirmError('')
+        await executarAcaoConfirmada()
+      } else {
+        setConfirmError(data.error || 'Erro ao validar senha')
+        setConfirmPassword('')
+      }
+    } catch (error) {
+      console.error('Erro ao validar senha:', error)
+      setConfirmError('Erro de conexão. Tente novamente.')
+      setConfirmPassword('')
+    } finally {
+      setConfirmLoading(false)
+    }
   }
 
   const abrirModalEdicao = (funcionario: Funcionario) => {
