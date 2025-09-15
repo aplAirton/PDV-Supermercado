@@ -401,6 +401,10 @@ const renderFormasPagamento = (movimento: MovimentoCaixa) => {
         if (response.ok) {
           const dadosFornecedor = await response.json()
 
+          // Determinar se afetou o caixa baseado na categoria do movimento
+          // Sangria significa que retirou dinheiro do caixa
+          const afetaCaixa = movimento.categoria === 'sangria' ? 'true' : 'false'
+
           // Criar URL com parâmetros EXATAMENTE como no caixa
           const params = new URLSearchParams({
             fornecedor_nome: dadosFornecedor.fornecedor_nome,
@@ -408,7 +412,7 @@ const renderFormasPagamento = (movimento: MovimentoCaixa) => {
             valor: dadosFornecedor.valor.toString(),
             forma_pagamento: dadosFornecedor.forma_pagamento,
             descricao: dadosFornecedor.observacoes || '',
-            afeta_caixa: 'false',
+            afeta_caixa: afetaCaixa,
             data_pagamento: dadosFornecedor.data_pagamento,
             pagamento_id: dadosFornecedor.pagamento_id.toString()
           })
