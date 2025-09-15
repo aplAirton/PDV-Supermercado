@@ -2452,7 +2452,66 @@ body.sidebar-open {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Skeleton Cards para Funcionários */
+/* Skeleton Cards para Pagamentos */
+.pagamento-skeleton-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
+  animation: skeletonCardFadeIn 0.6s ease-out forwards;
+}
+
+.pagamento-skeleton-card:nth-child(1) { animation-delay: 0.1s; }
+.pagamento-skeleton-card:nth-child(2) { animation-delay: 0.2s; }
+.pagamento-skeleton-card:nth-child(3) { animation-delay: 0.3s; }
+.pagamento-skeleton-card:nth-child(4) { animation-delay: 0.4s; }
+.pagamento-skeleton-card:nth-child(5) { animation-delay: 0.5s; }
+.pagamento-skeleton-card:nth-child(6) { animation-delay: 0.6s; }
+
+.skeleton-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.skeleton-card-info {
+  flex: 1;
+}
+
+.skeleton-card-body {
+  border-top: 1px solid #f3f4f6;
+  padding-top: 16px;
+}
+
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+}
+
+.skeleton-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Skeleton elements específicos para pagamentos */
+.skeleton-input {
+  border-radius: 8px;
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 2s infinite ease-in-out;
+}
+
+.skeleton-select {
+  border-radius: 8px;
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 2s infinite ease-in-out;
+}
 .funcionario-skeleton-card {
   background: white;
   border: 1px solid #e2e8f0;

@@ -178,6 +178,109 @@ const renderFormasPagamento = (movimento: MovimentoCaixa) => {
   return movimento.forma_pagamento || null
 }
 
+  if (loading) {
+    return (
+      <div className="pagamentos-container">
+        {/* Header Skeleton */}
+        <div className="page-header">
+          <div className="header-actions">
+            <div className="skeleton skeleton-button-primary"></div>
+          </div>
+        </div>
+
+        {/* Card de Filtros Skeleton */}
+        <div className="pagamentos-filter-section card mb-4">
+          <div className="skeleton skeleton-button" style={{ width: '200px', height: '40px', marginBottom: '16px' }}></div>
+          <div className="pagamentos-filter-options expanded">
+            <div className="pagamentos-filters-grid">
+              <div className="form-group">
+                <div className="skeleton skeleton-label" style={{ width: '100px', height: '16px', marginBottom: '8px' }}></div>
+                <div className="skeleton skeleton-input" style={{ width: '100%', height: '40px' }}></div>
+              </div>
+              <div className="form-group">
+                <div className="skeleton skeleton-label" style={{ width: '80px', height: '16px', marginBottom: '8px' }}></div>
+                <div className="skeleton skeleton-input" style={{ width: '100%', height: '40px' }}></div>
+              </div>
+              <div className="form-group">
+                <div className="skeleton skeleton-label" style={{ width: '60px', height: '16px', marginBottom: '8px' }}></div>
+                <div className="skeleton skeleton-select" style={{ width: '100%', height: '40px' }}></div>
+              </div>
+              <div className="form-group">
+                <div className="skeleton skeleton-label" style={{ width: '90px', height: '16px', marginBottom: '8px' }}></div>
+                <div className="skeleton skeleton-select" style={{ width: '100%', height: '40px' }}></div>
+              </div>
+            </div>
+            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+              <div className="skeleton skeleton-label" style={{ width: '120px', height: '16px', marginBottom: '8px' }}></div>
+              <div className="skeleton skeleton-input" style={{ width: '100%', height: '40px' }}></div>
+            </div>
+            <div className="filter-actions" style={{ gridColumn: '1 / -1' }}>
+              <div className="skeleton skeleton-button" style={{ width: '100px', height: '40px' }}></div>
+              <div className="skeleton skeleton-button" style={{ width: '120px', height: '40px' }}></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Resumo Financeiro Skeleton */}
+        <div className="pagamentos-resumo-grid">
+          <div className="resumo-card">
+            <div className="skeleton skeleton-icon" style={{ width: '48px', height: '48px', borderRadius: '50%', marginBottom: '12px' }}></div>
+            <div className="skeleton skeleton-label" style={{ width: '120px', height: '16px', marginBottom: '8px' }}></div>
+            <div className="skeleton skeleton-value" style={{ width: '100px', height: '24px' }}></div>
+          </div>
+          <div className="resumo-card">
+            <div className="skeleton skeleton-icon" style={{ width: '48px', height: '48px', borderRadius: '50%', marginBottom: '12px' }}></div>
+            <div className="skeleton skeleton-label" style={{ width: '100px', height: '16px', marginBottom: '8px' }}></div>
+            <div className="skeleton skeleton-value" style={{ width: '90px', height: '24px' }}></div>
+          </div>
+          <div className="resumo-card">
+            <div className="skeleton skeleton-icon" style={{ width: '48px', height: '48px', borderRadius: '50%', marginBottom: '12px' }}></div>
+            <div className="skeleton skeleton-label" style={{ width: '80px', height: '16px', marginBottom: '8px' }}></div>
+            <div className="skeleton skeleton-value" style={{ width: '110px', height: '24px' }}></div>
+          </div>
+        </div>
+
+        {/* Lista de Movimentos Skeleton */}
+        <div className="pagamentos-table-container">
+          <div className="table-header">
+            <div className="skeleton skeleton-title" style={{ width: '200px', height: '24px' }}></div>
+            <div className="skeleton skeleton-badge" style={{ width: '80px', height: '24px' }}></div>
+          </div>
+          <div className="pagamentos-cards">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="pagamento-skeleton-card">
+                <div className="skeleton-card-header">
+                  <div className="skeleton skeleton-icon" style={{ width: '32px', height: '32px', borderRadius: '50%' }}></div>
+                  <div className="skeleton-card-info">
+                    <div className="skeleton skeleton-title" style={{ width: '150px', height: '20px', marginBottom: '4px' }}></div>
+                    <div className="skeleton skeleton-label" style={{ width: '100px', height: '14px' }}></div>
+                  </div>
+                  <div className="skeleton skeleton-value" style={{ width: '80px', height: '20px' }}></div>
+                </div>
+                <div className="skeleton-card-body">
+                  <div className="skeleton-grid">
+                    <div className="skeleton-item">
+                      <div className="skeleton skeleton-label" style={{ width: '60px', height: '12px', marginBottom: '4px' }}></div>
+                      <div className="skeleton skeleton-value" style={{ width: '80px', height: '14px' }}></div>
+                    </div>
+                    <div className="skeleton-item">
+                      <div className="skeleton skeleton-label" style={{ width: '50px', height: '12px', marginBottom: '4px' }}></div>
+                      <div className="skeleton skeleton-value" style={{ width: '70px', height: '14px' }}></div>
+                    </div>
+                    <div className="skeleton-item">
+                      <div className="skeleton skeleton-label" style={{ width: '40px', height: '12px', marginBottom: '4px' }}></div>
+                      <div className="skeleton skeleton-value" style={{ width: '60px', height: '14px' }}></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const gerarHistoricoMovimentacoes = async () => {
     try {
       const params = new URLSearchParams({
@@ -486,15 +589,10 @@ const renderFormasPagamento = (movimento: MovimentoCaixa) => {
           </span>
         </div>
 
-        {loading ? (
-          <div className="loading">
-            <Loader2 className="animate-spin" size={24} />
-            <span>Carregando...</span>
-          </div>
-        ) : movimentosFiltrados.length === 0 ? (
+        {movimentosFiltrados.length === 0 ? (
           <div className="empty">
             <DollarSign size={32} />
-            <h3>Nenhum movimento encontrado</h3>
+            <h3>Nenhum movimento para o período</h3>
             <p>Não há movimentações para os filtros selecionados</p>
           </div>
         ) : (
@@ -624,7 +722,7 @@ const renderFormasPagamento = (movimento: MovimentoCaixa) => {
 
       {/* Modal de Extratos */}
       {showExtratosModal && (
-        <div className="modal-overlay" onClick={() => setShowExtratosModal(false)}>
+        <div className="modal-overlay modal-fade-in" onClick={() => setShowExtratosModal(false)}>
           <div className="modal-content-pag extratos-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header-pag">
               <h2>Selecione o tipo de extrato</h2>
