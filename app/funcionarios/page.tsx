@@ -899,7 +899,7 @@ export default function FuncionariosPage() {
 
       {/* Modal Cadastro/Edição */}
       {showModal && (
-        <div className="modal-overlay" onClick={() => fecharModal()}>
+        <div className="modal-overlay modal-fade-in" onClick={() => fecharModal()}>
           <div className="modal-content-f large" onClick={e => e.stopPropagation()}>
             <div className="modal-header-1">
               <div className="modal-header-content">
@@ -1299,7 +1299,7 @@ export default function FuncionariosPage() {
 
       {/* Modal de Confirmação com Senha Gerencial */}
       {showConfirmModal && (
-        <div className="modal-overlay fade-in" onClick={() => {
+        <div className="modal-overlay modal-fade-in" onClick={() => {
           setShowConfirmModal(false)
           setConfirmPassword('')
           setConfirmError('')
@@ -1390,7 +1390,7 @@ export default function FuncionariosPage() {
 
       {/* Modal de Loading */}
       {showLoadingModal && (
-        <div className="modal-overlay fade-in">
+        <div className="modal-overlay modal-fade-in">
           <div className="modal-content-f small">
             <div className="loading-modal-content">
               <div className="loading-spinner-large">

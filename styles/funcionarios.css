@@ -947,3 +947,17 @@ body.modal-open {
     font-size: 14px;
   }
 }
+
+/* Modal fade-in animation - específica para modais */
+.modal-fade-in {
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
