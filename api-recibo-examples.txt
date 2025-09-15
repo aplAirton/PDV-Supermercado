@@ -1,0 +1,25 @@
+// Exemplo de uso da API de recibos com parâmetros flexíveis
+//
+// URL: /api/pagamentos/123/recibo?valor=150.50&destino=João Silva&motivacao=Pagamento de serviços&forma_pagamento=Dinheiro&data=2025-09-15&funcionario=Maria&tipo=entrada
+//
+// Parâmetros obrigatórios:
+// - valor: valor da transação (ex: 150.50)
+// - destino: nome do cliente/fornecedor (ex: João Silva)
+// - motivacao: descrição da transação (ex: Pagamento de serviços)
+//
+// Parâmetros opcionais:
+// - forma_pagamento: forma de pagamento (ex: Dinheiro, PIX, Cartão)
+// - data: data da transação (formato YYYY-MM-DD)
+// - funcionario: nome do funcionário responsável
+// - tipo: 'entrada' ou 'saida' (padrão: entrada)
+//
+// Exemplos de uso:
+//
+// 1. Recibo de entrada (recebimento):
+// /api/pagamentos/123/recibo?valor=100&destino=Cliente ABC&motivacao=Venda de produto&forma_pagamento=Dinheiro
+//
+// 2. Recibo de saída (pagamento):
+// /api/pagamentos/123/recibo?valor=500&destino=Fornecedor XYZ&motivacao=Pagamento fornecedor&tipo=saida&forma_pagamento=Transferência
+//
+// 3. Recibo com data específica:
+// /api/pagamentos/123/recibo?valor=250&destino=Empresa LTDA&motivacao=Serviços prestados&data=2025-09-15&funcionario=João

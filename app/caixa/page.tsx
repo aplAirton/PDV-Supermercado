@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Calculator, User, DollarSign, Shield, Clock, OctagonAlert, TrendingUp, Plus, Settings, AlertCircle, CheckCircle, Loader2, ArrowUp, ArrowDown, Lock, FileText, Printer, ArrowRightLeft, Check, X, Banknote, CreditCard, Smartphone, Receipt, Handshake, ShoppingCart, Wallet, ChevronDown, ChevronRight } from 'lucide-react'
+import { Calculator, User, DollarSign, Shield, Clock, OctagonAlert, TrendingUp, Plus, Settings, AlertCircle, CheckCircle, Loader2, ArrowUp, ArrowDown, Lock, FileText, Printer, ArrowRightLeft, Check, X, Banknote, CreditCard, Smartphone, Receipt, Handshake, ShoppingCart, Wallet, ChevronDown, ChevronRight, ArrowLeft } from 'lucide-react'
 import LoadingModal from '../../components/loading-modal'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import '../../styles/caixa.css'
@@ -67,9 +67,25 @@ export default function CaixaPage() {
   const [showMovimentacaoModal, setShowMovimentacaoModal] = useState(false)
   const [showValidacaoSenhaModal, setShowValidacaoSenhaModal] = useState(false)
   const [showTipoMovimentoModal, setShowTipoMovimentoModal] = useState(false)
-  const [showFormMovimentoModal, setShowFormMovimentoModal] = useState(false)
+  const [showPagamentoModal, setShowPagamentoModal] = useState(false)
+  const [pagamentoEtapa, setPagamentoEtapa] = useState<'fornecedor' | 'dados' | 'senha' | null>(null)
+  const [fornecedores, setFornecedores] = useState<any[]>([])
+  const [fornecedorSelecionado, setFornecedorSelecionado] = useState<any>(null)
+  const [showCadastroFornecedor, setShowCadastroFornecedor] = useState(false)
+  const [pagamentoForm, setPagamentoForm] = useState({
+    valor: '',
+    forma_pagamento: 'dinheiro',
+    descricao: '',
+    afeta_caixa: true
+  })
+  const [cadastroFornecedorForm, setCadastroFornecedorForm] = useState({
+    nome: '',
+    cnpj: '',
+    telefone: ''
+  })
+  const [processandoPagamento, setProcessandoPagamento] = useState(false)
   const [validacaoSenhaForm, setValidacaoSenhaForm] = useState({ senha: '' })
-  const [tipoMovimentoSelecionado, setTipoMovimentoSelecionado] = useState<'sangria' | 'suprimento' | null>(null)
+  const [tipoMovimentoSelecionado, setTipoMovimentoSelecionado] = useState<'sangria' | 'suprimento' | 'pagamento' | null>(null)
   const [movimentoForm, setMovimentoForm] = useState({ valor: '', descricao: '' })
   const [processandoMovimento, setProcessandoMovimento] = useState(false)
   const [caixaSelecionado, setCaixaSelecionado] = useState<Caixa | null>(null)
@@ -101,6 +117,8 @@ export default function CaixaPage() {
   
   // Estados para comprovante de abertura
   const [showComprovanteAbertura, setShowComprovanteAbertura] = useState(false)
+  const [showComprovantePagamento, setShowComprovantePagamento] = useState(false)
+  const [dadosPagamentoComprovante, setDadosPagamentoComprovante] = useState<any>(null)
   const [dadosAbertura, setDadosAbertura] = useState<any>(null)
   
   // Estados para feedbacks de erro de senha
@@ -192,6 +210,19 @@ export default function CaixaPage() {
     setProcessandoFechamento(false)
     // Limpar erros
     setErroSenhaFechamento('')
+  }
+
+  const voltarEtapaFechamento = () => {
+    // Volta para a etapa anterior do fluxo de fechamento
+    if (etapaFechamento === 'resumo') {
+      setEtapaFechamento('contagem')
+      setShowResumoFechamento(false)
+      setShowContagemDinheiro(true)
+    } else if (etapaFechamento === 'contagem') {
+      setEtapaFechamento('login')
+      setShowContagemDinheiro(false)
+      setShowValidacaoSenhaFechamento(true)
+    }
   }
 
   const validarSenhaFechamento = async () => {
@@ -732,10 +763,214 @@ export default function CaixaPage() {
     }
   }
 
-  const selecionarTipoMovimento = (tipo: 'sangria' | 'suprimento') => {
+  const selecionarTipoMovimento = (tipo: 'sangria' | 'suprimento' | 'pagamento') => {
     setTipoMovimentoSelecionado(tipo)
     setShowTipoMovimentoModal(false)
-    setShowFormMovimentoModal(true)
+
+    if (tipo === 'pagamento') {
+      setShowPagamentoModal(true)
+      setPagamentoEtapa('fornecedor')
+      buscarFornecedores()
+    } else {
+      setShowTipoMovimentoModal(true)
+    }
+  }
+
+  const buscarFornecedores = async () => {
+    try {
+      const response = await fetch('/api/fornecedores')
+      if (response.ok) {
+        const data = await response.json()
+        setFornecedores(data)
+      } else {
+        toast({ title: 'Erro', description: 'Erro ao buscar fornecedores', variant: 'destructive' })
+      }
+    } catch (error) {
+      console.error('Erro ao buscar fornecedores:', error)
+      toast({ title: 'Erro', description: 'Erro ao buscar fornecedores', variant: 'destructive' })
+    }
+  }
+
+  const selecionarFornecedor = (fornecedor: any) => {
+    setFornecedorSelecionado(fornecedor)
+    setPagamentoEtapa('dados')
+  }
+
+  const avancarParaDadosPagamento = () => {
+    setPagamentoEtapa('dados')
+  }
+
+  const voltarParaFornecedor = () => {
+    setPagamentoEtapa('fornecedor')
+    setFornecedorSelecionado(null)
+  }
+
+  const cancelarPagamento = () => {
+    setShowPagamentoModal(false)
+    setPagamentoEtapa(null)
+    setFornecedorSelecionado(null)
+    setShowCadastroFornecedor(false)
+    setPagamentoForm({ valor: '', forma_pagamento: 'dinheiro', descricao: '', afeta_caixa: true })
+    setCadastroFornecedorForm({ nome: '', cnpj: '', telefone: '' })
+  }
+
+  const avancarParaPagamento = () => {
+    if (pagamentoForm.afeta_caixa) {
+      setPagamentoEtapa('senha')
+    } else {
+      confirmarPagamento()
+    }
+  }
+
+  const confirmarPagamentoComSenha = async () => {
+    if (!validacaoSenhaForm.senha) return
+
+    try {
+      const response = await fetch('/api/validar-senha-gerencial', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ senha: validacaoSenhaForm.senha })
+      })
+
+      if (response.ok) {
+        confirmarPagamento()
+      } else {
+        const error = await response.json()
+        toast({ title: 'Erro', description: error.error || 'Senha incorreta', variant: 'destructive' })
+      }
+    } catch (error) {
+      console.error('Erro na validação da senha:', error)
+      toast({ title: 'Erro', description: 'Erro na validação da senha', variant: 'destructive' })
+    }
+  }
+
+  const confirmarPagamento = async () => {
+    if (!fornecedorSelecionado || !pagamentoForm.valor) return
+
+    setProcessandoPagamento(true)
+
+    try {
+      const response = await fetch('/api/fornecedores/pagamentos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fornecedor_id: fornecedorSelecionado.id,
+          valor_total: pagamentoForm.valor,
+          forma_pagamento: pagamentoForm.forma_pagamento,
+          descricao: pagamentoForm.descricao,
+          afeta_caixa: pagamentoForm.afeta_caixa
+        })
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        toast({
+          title: 'Sucesso',
+          description: `Pagamento de ${formatarValor(parseFloat(pagamentoForm.valor))} realizado com sucesso`
+        })
+
+        // Preparar dados para o comprovante
+        const dadosComprovante = {
+          id: result.id,
+          fornecedor: fornecedorSelecionado,
+          valor: parseFloat(pagamentoForm.valor),
+          forma_pagamento: pagamentoForm.forma_pagamento,
+          descricao: pagamentoForm.descricao,
+          afeta_caixa: pagamentoForm.afeta_caixa,
+          data_pagamento: new Date().toISOString()
+        }
+
+        // Mostrar modal de resumo
+        setDadosPagamentoComprovante(dadosComprovante)
+        setShowComprovantePagamento(true)
+
+        // Fechar modal de pagamento
+        cancelarPagamento()
+
+        // Recarregar dados do caixa
+        if (caixaSelecionado) {
+          await verResumo(caixaSelecionado)
+        }
+      } else {
+        const error = await response.json()
+        toast({ title: 'Erro', description: error.error || 'Erro ao realizar pagamento', variant: 'destructive' })
+      }
+    } catch (error) {
+      console.error('Erro ao realizar pagamento:', error)
+      toast({ title: 'Erro', description: 'Erro ao realizar pagamento', variant: 'destructive' })
+    } finally {
+      setProcessandoPagamento(false)
+    }
+  }
+
+  const cadastrarFornecedor = async () => {
+    if (!cadastroFornecedorForm.nome || !cadastroFornecedorForm.cnpj || !cadastroFornecedorForm.telefone) return
+
+    try {
+      const response = await fetch('/api/fornecedores', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cadastroFornecedorForm)
+      })
+
+      if (response.ok) {
+        toast({ title: 'Sucesso', description: 'Fornecedor cadastrado com sucesso' })
+        setShowCadastroFornecedor(false)
+        setCadastroFornecedorForm({ nome: '', cnpj: '', telefone: '' })
+        buscarFornecedores() // Recarregar lista de fornecedores
+      } else {
+        const error = await response.json()
+        toast({ title: 'Erro', description: error.error || 'Erro ao cadastrar fornecedor', variant: 'destructive' })
+      }
+    } catch (error) {
+      console.error('Erro ao cadastrar fornecedor:', error)
+      toast({ title: 'Erro', description: 'Erro ao cadastrar fornecedor', variant: 'destructive' })
+    }
+  }
+
+  const imprimirComprovantePagamento = async () => {
+    try {
+      if (!dadosPagamentoComprovante) {
+        console.error('[Frontend] Dados do comprovante não encontrados')
+        return
+      }
+
+      console.log('[Frontend] Dados do comprovante:', dadosPagamentoComprovante)
+
+      // Criar URL com parâmetros para o comprovante de pagamento
+      const params = new URLSearchParams({
+        fornecedor_nome: dadosPagamentoComprovante.fornecedor.nome,
+        fornecedor_cnpj: dadosPagamentoComprovante.fornecedor.cnpj,
+        valor: dadosPagamentoComprovante.valor.toString(),
+        forma_pagamento: dadosPagamentoComprovante.forma_pagamento,
+        descricao: dadosPagamentoComprovante.descricao || '',
+        afeta_caixa: dadosPagamentoComprovante.afeta_caixa.toString(),
+        data_pagamento: dadosPagamentoComprovante.data_pagamento,
+        pagamento_id: dadosPagamentoComprovante.id.toString()
+      })
+
+      const url = `/api/fornecedores/pagamentos/${dadosPagamentoComprovante.id}/comprovante?${params.toString()}`
+      console.log('[Frontend] URL gerada:', url)
+
+      const newWindow = window.open(url, '_blank', 'width=400,height=600')
+
+      if (!newWindow) {
+        toast({
+          title: "Erro ao imprimir",
+          description: "Verifique o bloqueador de pop-ups",
+          variant: "destructive"
+        })
+        return
+      }
+
+    } catch (error) {
+      console.error('Erro ao imprimir comprovante:', error)
+      toast({
+        title: "Erro ao imprimir",
+        description: "Não foi possível imprimir o comprovante",
+        variant: "destructive"
+      })
+    }
   }
 
   const realizarMovimentacao = async () => {
@@ -779,7 +1014,7 @@ export default function CaixaPage() {
 
       // Limpar formulários e fechar modais
       setMovimentoForm({ valor: '', descricao: '' })
-      setShowFormMovimentoModal(false)
+      setShowTipoMovimentoModal(false)
       setTipoMovimentoSelecionado(null)
       setCaixaSelecionado(null)
 
@@ -801,7 +1036,6 @@ export default function CaixaPage() {
   const cancelarMovimentacao = () => {
     setShowValidacaoSenhaModal(false)
     setShowTipoMovimentoModal(false)
-    setShowFormMovimentoModal(false)
     setValidacaoSenhaForm({ senha: '' })
     setMovimentoForm({ valor: '', descricao: '' })
     setTipoMovimentoSelecionado(null)
@@ -1753,8 +1987,9 @@ export default function CaixaPage() {
                   justifyContent: 'center',
                   width: '50px', 
                   height: '50px', 
-                  backgroundColor: '#dc2626',
-                  borderRadius: '50%',
+                  backgroundColor: resumoFechamento.status_reconciliacao === 'perfeito' ? '#1f6fd1ff' : 
+                                   resumoFechamento.status_reconciliacao === 'sobra' ? '#15af4eff' : '#f25757ff',
+                  borderRadius: '25%',
                   color: 'white'
                 }}>
                   <Lock size={24} />
@@ -1784,17 +2019,17 @@ export default function CaixaPage() {
               {/* Card de Status da Reconciliação */}
               <div style={{ 
                 background: resumoFechamento.status_reconciliacao === 'perfeito' ? 
-                  '#ffffff' : 
+                  'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' : 
                   resumoFechamento.status_reconciliacao === 'sobra' ?
                   'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' :
                   'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
                 borderRadius: '15px',
                 padding: '25px',
-                color: resumoFechamento.status_reconciliacao === 'perfeito' ? '#374151' : 'white',
+                color: 'white',
                 marginBottom: '25px',
                 position: 'relative',
                 overflow: 'hidden',
-                border: resumoFechamento.status_reconciliacao === 'perfeito' ? '2px solid #e2e8f0' : 'none'
+                border: 'none'
               }}>
                 <div style={{ position: 'relative', zIndex: 2 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
@@ -1814,9 +2049,9 @@ export default function CaixaPage() {
 
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      {resumoFechamento.status_reconciliacao === 'perfeito' && <CheckCircle size={40} style={{ opacity: 0.6, color: '#22c55e' }} />}
-                      {resumoFechamento.status_reconciliacao === 'sobra' && <TrendingUp size={40} style={{ opacity: 0.8 }} />}
-                      {resumoFechamento.status_reconciliacao === 'falta' && <AlertCircle size={40} style={{ opacity: 0.8 }} />}
+                      {resumoFechamento.status_reconciliacao === 'perfeito' && <CheckCircle size={40} style={{ opacity: 0.8, color: '#60a5fa' }} />}
+                      {resumoFechamento.status_reconciliacao === 'sobra' && <TrendingUp size={40} style={{ opacity: 0.8, color: '#4ade80' }} />}
+                      {resumoFechamento.status_reconciliacao === 'falta' && <AlertCircle size={40} style={{ opacity: 0.8, color: '#fca5a5' }} />}
                     </div>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', fontSize: '14px' }}>
@@ -1830,15 +2065,6 @@ export default function CaixaPage() {
                     </div>
                   </div>
                 </div>
-                <div style={{ 
-                  position: 'absolute', 
-                  top: '-20px', 
-                  right: '-20px', 
-                  width: '80px', 
-                  height: '80px', 
-                  backgroundColor: resumoFechamento.status_reconciliacao === 'perfeito' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(255,255,255,0.1)', 
-                  borderRadius: '50%' 
-                }} />
               </div>
 
               {/* Resumo Financeiro */}
@@ -1889,13 +2115,26 @@ export default function CaixaPage() {
 
             <div className="modal-footer-caixa">
               <button 
+                onClick={voltarEtapaFechamento}
+                disabled={processandoFechamento}
+                className="btn btn-outline"
+                style={{ marginRight: 'auto' }}
+              >
+                <ArrowLeft size={16} style={{ marginRight: '6px' }} />
+                Voltar
+              </button>
+              <button 
                 onClick={confirmarFechamentoCaixa}
                 disabled={processandoFechamento}
                 className="btn"
                 style={{ 
-                  backgroundColor: processandoFechamento ? '#9ca3af' : '#dc2626', 
+                  backgroundColor: processandoFechamento ? '#9ca3af' : 
+                    (resumoFechamento.status_reconciliacao === 'perfeito' ? '#1d4ed8' : 
+                     resumoFechamento.status_reconciliacao === 'sobra' ? '#16a34a' : '#dc2626'), 
                   color: 'white',
-                  border: `1px solid ${processandoFechamento ? '#9ca3af' : '#dc2626'}`,
+                  border: `1px solid ${processandoFechamento ? '#9ca3af' : 
+                    (resumoFechamento.status_reconciliacao === 'perfeito' ? '#1d4ed8' : 
+                     resumoFechamento.status_reconciliacao === 'sobra' ? '#16a34a' : '#dc2626')}`,
                   opacity: processandoFechamento ? 0.5 : 1
                 }}
               >
@@ -1906,7 +2145,6 @@ export default function CaixaPage() {
                   </>
                 ) : (
                   <>
-                    <Lock size={16} style={{ marginRight: '6px' }} />
                     Confirmar Fechamento
                   </>
                 )}
@@ -2367,7 +2605,7 @@ export default function CaixaPage() {
             </div>
 
             <div style={{ padding: '30px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
                 {/* Card Suprimento */}
                 <button
                   onClick={() => selecionarTipoMovimento('suprimento')}
@@ -2398,6 +2636,40 @@ export default function CaixaPage() {
                     <h4 style={{ margin: '0 0 8px 0', color: '#10b981', fontSize: '18px' }}>Suprimento</h4>
                     <p style={{ margin: '0', color: '#374151', fontSize: '14px' }}>
                       Adicionar dinheiro ao caixa
+                    </p>
+                  </div>
+                </button>
+
+                {/* Card Pagamento */}
+                <button
+                  onClick={() => selecionarTipoMovimento('pagamento')}
+                  style={{
+                    padding: '30px 20px',
+                    border: '2px solid #3b82f6',
+                    borderRadius: '12px',
+                    backgroundColor: '#eff6ff',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    textAlign: 'center',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '12px'
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.backgroundColor = '#dbeafe'
+                    e.currentTarget.style.transform = 'translateY(-2px)'
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.backgroundColor = '#eff6ff'
+                    e.currentTarget.style.transform = 'translateY(0)'
+                  }}
+                >
+                  <Handshake size={32} color="#3b82f6" />
+                  <div>
+                    <h4 style={{ margin: '0 0 8px 0', color: '#3b82f6', fontSize: '18px' }}>Pagamento</h4>
+                    <p style={{ margin: '0', color: '#374151', fontSize: '14px' }}>
+                      Pagar fornecedor
                     </p>
                   </div>
                 </button>
@@ -2450,8 +2722,358 @@ export default function CaixaPage() {
         </div>
       )}
 
+      {/* Modal Pagamento a Fornecedor */}
+      {showPagamentoModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '600px', width: '90%', maxHeight: '80vh', overflow: 'auto' }}>
+            <div className="modal-header-caixa">
+              <h3>
+                {pagamentoEtapa === 'fornecedor' && 'Selecionar Fornecedor'}
+                {pagamentoEtapa === 'dados' && 'Dados do Pagamento'}
+                {pagamentoEtapa === 'senha' && 'Confirmação de Pagamento'}
+              </h3>
+              <button
+                onClick={cancelarPagamento}
+                className="modal-close"
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ padding: '20px' }}>
+              {/* Etapa 1: Seleção de Fornecedor */}
+              {pagamentoEtapa === 'fornecedor' && (
+                <div>
+                  <div style={{ marginBottom: '20px' }}>
+                    <button
+                      onClick={() => setShowCadastroFornecedor(true)}
+                      className="btn btn-primary"
+                      style={{ marginBottom: '15px' }}
+                    >
+                      <Plus size={16} style={{ marginRight: '8px' }} />
+                      Novo Fornecedor
+                    </button>
+                  </div>
+
+                  <div style={{ maxHeight: '300px', overflow: 'auto' }}>
+                    {fornecedores.length === 0 ? (
+                      <p style={{ textAlign: 'center', color: '#6b7280', padding: '40px' }}>
+                        Nenhum fornecedor cadastrado
+                      </p>
+                    ) : (
+                      fornecedores.map((fornecedor: any) => (
+                        <button
+                          key={fornecedor.id}
+                          onClick={() => selecionarFornecedor(fornecedor)}
+                          style={{
+                            width: '100%',
+                            padding: '15px',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '8px',
+                            backgroundColor: 'white',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            marginBottom: '8px',
+                            transition: 'all 0.2s'
+                          }}
+                          onMouseOver={(e) => {
+                            e.currentTarget.style.backgroundColor = '#f9fafb'
+                            e.currentTarget.style.borderColor = '#3b82f6'
+                          }}
+                          onMouseOut={(e) => {
+                            e.currentTarget.style.backgroundColor = 'white'
+                            e.currentTarget.style.borderColor = '#e5e7eb'
+                          }}
+                        >
+                          <div style={{ fontWeight: '600', color: '#111827' }}>
+                            {fornecedor.nome}
+                          </div>
+                          <div style={{ fontSize: '14px', color: '#6b7280', marginTop: '4px' }}>
+                            CNPJ: {fornecedor.cnpj} | Tel: {fornecedor.telefone}
+                          </div>
+                          {fornecedor.total_debito > 0 && (
+                            <div style={{ fontSize: '14px', color: '#ef4444', marginTop: '4px' }}>
+                              Débito: R$ {formatarValor(fornecedor.total_debito)}
+                            </div>
+                          )}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Etapa 2: Dados do Pagamento */}
+              {pagamentoEtapa === 'dados' && fornecedorSelecionado && (
+                <div>
+                  <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
+                    <h4 style={{ margin: '0 0 10px 0', color: '#111827' }}>Fornecedor Selecionado</h4>
+                    <div style={{ fontWeight: '600' }}>{fornecedorSelecionado.nome}</div>
+                    <div style={{ fontSize: '14px', color: '#6b7280' }}>
+                      CNPJ: {fornecedorSelecionado.cnpj}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gap: '15px' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                        Valor do Pagamento *
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={pagamentoForm.valor}
+                        onChange={(e) => setPagamentoForm({ ...pagamentoForm, valor: e.target.value })}
+                        placeholder="0,00"
+                        style={{
+                          width: '100%',
+                          padding: '10px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '6px',
+                          fontSize: '16px'
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                        Forma de Pagamento *
+                      </label>
+                      <select
+                        value={pagamentoForm.forma_pagamento}
+                        onChange={(e) => setPagamentoForm({ ...pagamentoForm, forma_pagamento: e.target.value })}
+                        style={{
+                          width: '100%',
+                          padding: '10px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '6px',
+                          fontSize: '16px'
+                        }}
+                      >
+                        <option value="dinheiro">Dinheiro</option>
+                        <option value="cartao_debito">Cartão de Débito</option>
+                        <option value="cartao_credito">Cartão de Crédito</option>
+                        <option value="pix">PIX</option>
+                        <option value="transferencia">Transferência</option>
+                        <option value="cheque">Cheque</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                        Descrição/Motivo
+                      </label>
+                      <textarea
+                        value={pagamentoForm.descricao}
+                        onChange={(e) => setPagamentoForm({ ...pagamentoForm, descricao: e.target.value })}
+                        placeholder="Motivo do pagamento (opcional)"
+                        rows={3}
+                        style={{
+                          width: '100%',
+                          padding: '10px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '6px',
+                          fontSize: '16px',
+                          resize: 'vertical'
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={pagamentoForm.afeta_caixa}
+                          onChange={(e) => setPagamentoForm({ ...pagamentoForm, afeta_caixa: e.target.checked })}
+                        />
+                        <span style={{ fontSize: '14px' }}>
+                          Este pagamento afeta o caixa (retira dinheiro físico)
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Etapa 3: Senha Masterkey (apenas se afeta_caixa) */}
+              {pagamentoEtapa === 'senha' && (
+                <div>
+                  <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                    <AlertCircle size={48} color="#f59e0b" />
+                    <h4 style={{ margin: '10px 0', color: '#111827' }}>Confirmação Necessária</h4>
+                    <p style={{ color: '#6b7280' }}>
+                      Este pagamento afetará o caixa. Digite a senha masterkey para confirmar.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                      Senha Masterkey *
+                    </label>
+                    <input
+                      type="password"
+                      value={validacaoSenhaForm.senha}
+                      onChange={(e) => setValidacaoSenhaForm({ senha: e.target.value })}
+                      placeholder="Digite a senha masterkey"
+                      style={{
+                        width: '100%',
+                        padding: '10px',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '6px',
+                        fontSize: '16px'
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer-caixa">
+              {pagamentoEtapa === 'fornecedor' && (
+                <button
+                  onClick={cancelarPagamento}
+                  className="btn btn-outline"
+                >
+                  Cancelar
+                </button>
+              )}
+
+              {pagamentoEtapa === 'dados' && (
+                <>
+                  <button
+                    onClick={voltarParaFornecedor}
+                    className="btn btn-outline"
+                  >
+                    Voltar
+                  </button>
+                  <button
+                    onClick={avancarParaPagamento}
+                    className="btn btn-primary"
+                    disabled={!pagamentoForm.valor || parseFloat(pagamentoForm.valor) <= 0}
+                  >
+                    Continuar
+                  </button>
+                </>
+              )}
+
+              {pagamentoEtapa === 'senha' && (
+                <>
+                  <button
+                    onClick={() => setPagamentoEtapa('dados')}
+                    className="btn btn-outline"
+                  >
+                    Voltar
+                  </button>
+                  <button
+                    onClick={confirmarPagamentoComSenha}
+                    className="btn btn-primary"
+                    disabled={!validacaoSenhaForm.senha || processandoPagamento}
+                  >
+                    {processandoPagamento ? 'Processando...' : 'Confirmar Pagamento'}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Cadastro de Fornecedor */}
+      {showCadastroFornecedor && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '500px', width: '90%' }}>
+            <div className="modal-header-caixa">
+              <h3>Cadastrar Novo Fornecedor</h3>
+              <button
+                onClick={() => setShowCadastroFornecedor(false)}
+                className="modal-close"
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ padding: '20px' }}>
+              <div style={{ display: 'grid', gap: '15px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                    Nome do Fornecedor *
+                  </label>
+                  <input
+                    type="text"
+                    value={cadastroFornecedorForm.nome}
+                    onChange={(e) => setCadastroFornecedorForm({ ...cadastroFornecedorForm, nome: e.target.value })}
+                    placeholder="Nome completo do fornecedor"
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '16px'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                    CNPJ *
+                  </label>
+                  <input
+                    type="text"
+                    value={cadastroFornecedorForm.cnpj}
+                    onChange={(e) => setCadastroFornecedorForm({ ...cadastroFornecedorForm, cnpj: e.target.value })}
+                    placeholder="00.000.000/0000-00"
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '16px'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                    Telefone *
+                  </label>
+                  <input
+                    type="text"
+                    value={cadastroFornecedorForm.telefone}
+                    onChange={(e) => setCadastroFornecedorForm({ ...cadastroFornecedorForm, telefone: e.target.value })}
+                    placeholder="(00) 00000-0000"
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '16px'
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer-caixa">
+              <button
+                onClick={() => setShowCadastroFornecedor(false)}
+                className="btn btn-outline"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={cadastrarFornecedor}
+                className="btn btn-primary"
+                disabled={!cadastroFornecedorForm.nome || !cadastroFornecedorForm.cnpj || !cadastroFornecedorForm.telefone}
+              >
+                Cadastrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal Formulário de Movimento */}
-      {showFormMovimentoModal && tipoMovimentoSelecionado && (
+      {showTipoMovimentoModal && tipoMovimentoSelecionado && tipoMovimentoSelecionado !== 'pagamento' && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '500px', width: '90%' }}>
             <div className="modal-header">
@@ -2569,6 +3191,121 @@ export default function CaixaPage() {
                 className="btn btn-outline"
               >
                 Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Comprovante de Pagamento */}
+      {showComprovantePagamento && dadosPagamentoComprovante && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '500px', width: '90%' }}>
+            <div className="modal-header-caixa">
+              <h3>Pagamento Realizado com Sucesso!</h3>
+              <button
+                onClick={() => {
+                  setShowComprovantePagamento(false)
+                  setDadosPagamentoComprovante(null)
+                }}
+                className="modal-close"
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ padding: '20px', textAlign: 'center' }}>
+              <div className="success-icon" style={{
+                color: '#22c55e',
+                marginBottom: '20px',
+                display: 'flex',
+                justifyContent: 'center'
+              }}>
+                <CheckCircle size={48} />
+              </div>
+
+              <h4 style={{ color: '#22c55e', marginBottom: '20px' }}>
+                COMPROVANTE DE PAGAMENTO
+              </h4>
+
+              <div className="comprovante-detalhes" style={{
+                backgroundColor: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                padding: '20px',
+                margin: '20px 0',
+                textAlign: 'left'
+              }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+                  <div><strong>Pagamento #:</strong> {dadosPagamentoComprovante.id}</div>
+                  <div><strong>Data:</strong> {new Date(dadosPagamentoComprovante.data_pagamento).toLocaleDateString('pt-BR')}</div>
+                </div>
+
+                <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '15px', marginBottom: '15px' }}>
+                  <div style={{ marginBottom: '8px' }}><strong>Fornecedor:</strong> {dadosPagamentoComprovante.fornecedor.nome}</div>
+                  <div style={{ marginBottom: '8px' }}><strong>CNPJ:</strong> {dadosPagamentoComprovante.fornecedor.cnpj}</div>
+                  <div style={{ marginBottom: '8px' }}><strong>Forma de Pagamento:</strong> {dadosPagamentoComprovante.forma_pagamento}</div>
+                  {dadosPagamentoComprovante.afeta_caixa && (
+                    <div style={{ marginBottom: '8px', color: '#dc2626' }}>
+                      <strong>⚠️ Este pagamento afetou o caixa</strong>
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '15px' }}>
+                  <div style={{
+                    fontSize: '18px',
+                    color: '#1e40af',
+                    fontWeight: 'bold'
+                  }}>
+                    <strong>Valor Pago:</strong> {formatarValor(dadosPagamentoComprovante.valor)}
+                  </div>
+                </div>
+
+                {dadosPagamentoComprovante.descricao && (
+                  <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '15px', marginTop: '15px' }}>
+                    <div style={{ marginBottom: '8px' }}><strong>Descrição:</strong></div>
+                    <div style={{
+                      backgroundColor: '#f1f5f9',
+                      padding: '10px',
+                      borderRadius: '4px',
+                      fontStyle: 'italic'
+                    }}>
+                      {dadosPagamentoComprovante.descricao}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div style={{
+                backgroundColor: '#fef2f2',
+                border: '1px solid #fecaca',
+                borderRadius: '6px',
+                padding: '12px',
+                marginBottom: '20px',
+                fontSize: '13px',
+                color: '#dc2626'
+              }}>
+                <strong>Importante:</strong> Guarde este comprovante como prova do pagamento realizado.
+              </div>
+            </div>
+
+            <div className="modal-footer-caixa">
+              <button
+                onClick={imprimirComprovantePagamento}
+                className="btn btn-primary"
+              >
+                <FileText size={16} style={{ marginRight: '6px' }} />
+                Imprimir Comprovante
+              </button>
+              <button
+                onClick={() => {
+                  setShowComprovantePagamento(false)
+                  setDadosPagamentoComprovante(null)
+                }}
+                className="btn btn-outline"
+              >
+                Fechar
               </button>
             </div>
           </div>

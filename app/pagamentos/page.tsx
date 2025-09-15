@@ -8,7 +8,7 @@ import '../../styles/pagamentos-new.css'
 interface MovimentoCaixa {
   id: number
   tipo: 'entrada' | 'saida'
-  categoria: 'venda_dinheiro' | 'venda_cartao' | 'venda_pix' | 'venda_multiplas' | 'pagamento_fiado' | 'ajuste' | 'outros'
+  categoria: 'venda_dinheiro' | 'venda_cartao' | 'venda_pix' | 'venda_multiplas' | 'pagamento_fiado' | 'pagamento_fornecedor' | 'ajuste' | 'outros'
   valor: number
   descricao: string
   referencia?: string
@@ -388,11 +388,57 @@ const renderFormasPagamento = (movimento: MovimentoCaixa) => {
     }
   }
 
-  const imprimirRecibo = async (movimentoId: number) => {
+  const imprimirRecibo = async (movimento: MovimentoCaixa) => {
     try {
-      const url = `/api/pagamentos/${movimentoId}/recibo`
+      // Verificar se é um movimento de pagamento a fornecedor
+      const isPagamentoFornecedor = movimento.categoria === 'pagamento_fornecedor' ||
+                                   movimento.descricao?.toLowerCase().includes('fornecedor') ||
+                                   movimento.referencia?.toLowerCase().includes('fornecedor')
+
+      if (isPagamentoFornecedor) {
+        // Para pagamentos a fornecedores, usar EXATAMENTE a mesma API que funciona no caixa
+        const response = await fetch(`/api/pagamentos/${movimento.id}/dados-fornecedor`)
+        if (response.ok) {
+          const dadosFornecedor = await response.json()
+
+          // Criar URL com parâmetros EXATAMENTE como no caixa
+          const params = new URLSearchParams({
+            fornecedor_nome: dadosFornecedor.fornecedor_nome,
+            fornecedor_cnpj: dadosFornecedor.fornecedor_cpf_cnpj,
+            valor: dadosFornecedor.valor.toString(),
+            forma_pagamento: dadosFornecedor.forma_pagamento,
+            descricao: dadosFornecedor.observacoes || '',
+            afeta_caixa: 'false',
+            data_pagamento: dadosFornecedor.data_pagamento,
+            pagamento_id: dadosFornecedor.pagamento_id.toString()
+          })
+
+          const url = `/api/fornecedores/pagamentos/${dadosFornecedor.pagamento_id}/comprovante?${params.toString()}`
+
+          const newWindow = window.open(url, '_blank', 'width=400,height=600')
+
+          if (!newWindow) {
+            toast({
+              title: "Erro ao imprimir",
+              description: "Verifique o bloqueador de pop-ups",
+              variant: "destructive"
+            })
+            return
+          }
+
+          // Mesmo comportamento do caixa - sem print automático
+          toast({
+            title: "Recibo aberto",
+            description: "Janela de impressão foi aberta"
+          })
+          return
+        }
+      }
+
+      // Para outros tipos de movimento, usar API genérica
+      const url = `/api/pagamentos/${movimento.id}/recibo`
       const newWindow = window.open(url, '_blank', 'width=400,height=600')
-      
+
       if (!newWindow) {
         toast({
           title: "Erro ao imprimir",
@@ -402,9 +448,18 @@ const renderFormasPagamento = (movimento: MovimentoCaixa) => {
         return
       }
 
+      // Aguardar carregar e tentar imprimir automaticamente
+      setTimeout(() => {
+        try {
+          newWindow.print()
+        } catch (e) {
+          console.log('Print automático não disponível')
+        }
+      }, 1000)
+
       toast({
         title: "Recibo aberto",
-        description: "Janela de impressão foi aberta"
+        description: "Impressão automática iniciada"
       })
     } catch (error) {
       console.error('Erro:', error)
@@ -640,7 +695,7 @@ const renderFormasPagamento = (movimento: MovimentoCaixa) => {
                       {movimento.tipo === 'entrada' ? '+' : '-'} {formatarValor(Math.abs(movimento.valor))}
                     </div>
                     <button
-                      onClick={() => imprimirRecibo(movimento.id)}
+                      onClick={() => imprimirRecibo(movimento)}
                       className="movement-action-btn"
                       title="Imprimir recibo"
                     >
@@ -666,7 +721,7 @@ const renderFormasPagamento = (movimento: MovimentoCaixa) => {
                         {movimento.tipo === 'entrada' ? '+' : '-'} {formatarValor(Math.abs(movimento.valor))}
                       </div>
                       <button
-                        onClick={() => imprimirRecibo(movimento.id)}
+                        onClick={() => imprimirRecibo(movimento)}
                         className="movement-action-btn-mobile"
                         title="Imprimir recibo"
                       >

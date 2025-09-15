@@ -71,13 +71,17 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const totalSuprimentos = totalSuprimentosMov
     const totalSangrias = totalSangriasMov
 
-    // Buscar total de pagamentos a fornecedores associados a este caixa
+    // Buscar total de pagamentos a fornecedores que afetam o caixa (através das movimentações)
+    // Pagamentos a fornecedores são registrados como 'sangria' quando afetam_caixa = true
     const pagamentosFornecedorQuery = `
-      SELECT COALESCE(SUM(valor_pagamento), 0) as total
-      FROM pagamentos_fornecedor
-      WHERE caixa_id = ? AND status = 'pago'
+      SELECT COALESCE(SUM(mf.valor), 0) as total
+      FROM movimentacoes_financeiras mf
+      WHERE mf.categoria = 'sangria'
+        AND mf.referencia LIKE 'Pagamento fornecedor%'
+        AND mf.data_movimento >= (SELECT c.data_abertura FROM caixas c WHERE c.id = ?)
+        AND mf.data_movimento <= COALESCE((SELECT c.data_fechamento FROM caixas c WHERE c.id = ?), NOW())
     `
-    const pagamentosFornecedor = await executeQuery(pagamentosFornecedorQuery, [caixaId]) as any[]
+    const pagamentosFornecedor = await executeQuery(pagamentosFornecedorQuery, [caixaId, caixaId]) as any[]
     const totalPagamentosFornecedor = parseFloat(pagamentosFornecedor[0]?.total || 0)
 
     // DEBUG: Verificar se os campos existem na tabela

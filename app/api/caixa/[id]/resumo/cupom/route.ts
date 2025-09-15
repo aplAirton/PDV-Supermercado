@@ -44,16 +44,20 @@ export async function GET(
     const totalSangrias = Number(caixaData.total_sangrias || 0)
     const totalVendasCalculado = Number(caixaData.total_vendas || 0)
 
-    // Buscar total de pagamentos a fornecedores associados a este caixa
+    // Buscar total de pagamentos a fornecedores que afetam o caixa (através das movimentações)
+    // Pagamentos a fornecedores são registrados como 'sangria' quando afetam_caixa = true
     const pagamentosFornecedorResult = await executeQuery(`
-      SELECT COALESCE(SUM(valor_pagamento), 0) as total
-      FROM pagamentos_fornecedor
-      WHERE caixa_id = ? AND status = 'pago'
-    `, [caixaId]) as any[]
+      SELECT COALESCE(SUM(mf.valor), 0) as total
+      FROM movimentacoes_financeiras mf
+      WHERE mf.categoria = 'sangria'
+        AND mf.referencia LIKE 'Pagamento fornecedor%'
+        AND mf.data_movimento >= (SELECT c.data_abertura FROM caixas c WHERE c.id = ?)
+        AND mf.data_movimento <= COALESCE((SELECT c.data_fechamento FROM caixas c WHERE c.id = ?), NOW())
+    `, [caixaId, caixaId]) as any[]
     const totalPagamentosFornecedor = Number(pagamentosFornecedorResult[0]?.total || 0)
 
     // Valor esperado no caixa (apenas dinheiro físico que deve estar presente)
-    const valorEsperado = Number(caixaData.valor_inicial) + totaisPorForma.dinheiro + totalSuprimentos - totalSangrias
+    const valorEsperado = Number(caixaData.valor_inicial) + totaisPorForma.dinheiro + totalSuprimentos - totalSangrias - totalPagamentosFornecedor
     const valorContado = Number(caixaData.valor_contado_dinheiro || caixaData.valor_final || 0)
     const diferenca = valorContado - valorEsperado
 
