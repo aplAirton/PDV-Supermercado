@@ -672,9 +672,6 @@ export default function ClientesPage() {
             {/* Header do Modal */}
             <div className="modal-header-1">
               <div className="modal-header-content">
-                <div className="modal-icon">
-                  {editingCliente ? <Edit size={24} /> : <Plus size={24} />}
-                </div>
                 <div className="modal-title-info-1">
                   <h2>
                     {editingCliente ? "Editar Cliente" : "Novo Cliente"}
@@ -684,13 +681,6 @@ export default function ClientesPage() {
                   </p>
                 </div>
               </div>
-              <button
-                className="modal-close-btn"
-                onClick={fecharModal}
-                title="Fechar"
-              >
-                <X size={20} />
-              </button>
             </div>
 
             {/* Navegação por Abas */}

@@ -414,13 +414,6 @@ export default function ProdutosPage() {
                   <p>{editingProduto ? "Atualize as informações do produto" : "Adicione um novo produto ao catálogo"}</p>
                 </div>
               </div>
-              <button
-                className="modal-close-btn"
-                onClick={fecharModal}
-                title="Fechar"
-              >
-                <X size={20} />
-              </button>
             </div>
 
             {/* Navegação por Abas */}

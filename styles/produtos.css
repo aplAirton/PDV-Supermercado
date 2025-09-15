@@ -368,6 +368,7 @@ body.modal-open {
   display: flex;
   align-items: center;
   gap: 16px;
+  flex-direction: row !important;
 }
 
 .modal-icon {
