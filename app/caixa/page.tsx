@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Calculator, User, DollarSign, Clock, TrendingUp, Plus, Settings, AlertCircle, CheckCircle, Loader2, ArrowUp, ArrowDown, Lock, FileText, Printer, ArrowRightLeft, Check, X, Banknote, CreditCard, Smartphone, Receipt, Handshake, ShoppingCart, Wallet } from 'lucide-react'
+import { Calculator, User, DollarSign, Shield, Clock, OctagonAlert, TrendingUp, Plus, Settings, AlertCircle, CheckCircle, Loader2, ArrowUp, ArrowDown, Lock, FileText, Printer, ArrowRightLeft, Check, X, Banknote, CreditCard, Smartphone, Receipt, Handshake, ShoppingCart, Wallet } from 'lucide-react'
 import LoadingModal from '../../components/loading-modal'
 import '../../styles/caixa.css'
 
@@ -82,7 +82,7 @@ export default function CaixaPage() {
   const [funcionarioAbertura, setFuncionarioAbertura] = useState<Funcionario | null>(null)
   
   // Estados para abertura em etapas
-  const [etapaAbertura, setEtapaAbertura] = useState<'login' | 'fundos'>('login')
+  const [etapaAbertura, setEtapaAbertura] = useState<'login' | 'configuracao' | 'confirmacao'>('login')
   const [loginForm, setLoginForm] = useState({
     cpf: '',
     senha: ''
@@ -423,7 +423,7 @@ export default function CaixaPage() {
         try {
           const parsed = JSON.parse(storedFuncionario)
           setFuncionarioAbertura(parsed)
-          setEtapaAbertura('fundos')
+          setEtapaAbertura('configuracao')
           return
         } catch (err) {
           // se parsing falhar, prosseguir com validação normal
@@ -451,7 +451,7 @@ export default function CaixaPage() {
           // Salvar dados do funcionário para uso posterior (sessionStorage + estado local)
           sessionStorage.setItem('funcionario_caixa', JSON.stringify(funcionario))
           setFuncionarioAbertura(funcionario)
-          setEtapaAbertura('fundos')
+          setEtapaAbertura('configuracao')
           // Toast removido - transição silenciosa
         } else {
           const error = await response.json()
@@ -463,7 +463,10 @@ export default function CaixaPage() {
       } finally {
         setLoadingAbrirCaixa(false)
       }
-    } else if (etapaAbertura === 'fundos') {
+    } else if (etapaAbertura === 'configuracao') {
+      // Avançar para confirmação
+      setEtapaAbertura('confirmacao')
+    } else if (etapaAbertura === 'confirmacao') {
       // Abrir caixa com fundos
       try {
         setLoadingAbrirCaixa(true)
@@ -1135,161 +1138,273 @@ export default function CaixaPage() {
 
       {/* Modal Novo Caixa */}
       {showNovoModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header-caixa">
-              <h3>Abrir Novo Caixa</h3>
-              <button
-                onClick={cancelarAberturaCaixa}
-                className="modal-close"
-              >
-                ×
-              </button>
+        <div className="modal-overlay" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content-f medium" onClick={e => e.stopPropagation()}>
+            <div className="modal-header-1">
+              <div className="modal-header-content">
+                <div className="modal-title-info-1">
+                  <h2>
+                    Abrir Novo Caixa
+                  </h2>
+                  <p>
+                    {etapaAbertura === 'login' 
+                      ? 'Valide suas credenciais para continuar' 
+                      : etapaAbertura === 'configuracao'
+                      ? 'Configure os parâmetros iniciais do caixa'
+                      : 'Confirme os dados antes de abrir o caixa'
+                    }
+                  </p>
+                </div>
+                {/* Indicador de Etapa */}
+                <div className="step-indicator">
+                  <div className={`step ${etapaAbertura === 'login' ? 'active' : 'completed'}`}>
+                    <div className="step-number">1</div>
+                    <span>Login</span>
+                  </div>
+                  <div className="step-line"></div>
+                  <div className={`step ${etapaAbertura === 'configuracao' ? 'active' : (etapaAbertura === 'confirmacao' ? 'completed' : '')}`}>
+                    <div className="step-number">2</div>
+                    <span>Configuração</span>
+                  </div>
+                  <div className="step-line"></div>
+                  <div className={`step ${etapaAbertura === 'confirmacao' ? 'active' : ''}`}>
+                    <div className="step-number">3</div>
+                    <span>Confirmação</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <form onSubmit={abrirCaixa} style={{ padding: '20px' }}>
-              {etapaAbertura === 'login' ? (
-                <>
-                  <div className="form-group" style={{ marginBottom: '16px' }}>
-                    <label htmlFor="cpf" style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>
-                      CPF do Funcionário (11 dígitos)
-                    </label>
-                    <input
-                      id="cpf"
-                      type="text"
-                      value={loginForm.cpf}
-                      onChange={(e) => {
-                        // Permitir apenas números e limitar a 11 dígitos
-                        const value = e.target.value.replace(/\D/g, '').slice(0, 11)
-                        setLoginForm({...loginForm, cpf: value})
-                        if (erroSenhaAbertura) setErroSenhaAbertura('')
-                      }}
-                      required
-                      placeholder="(apenas números)"
-                      maxLength={11}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        border: erroSenhaAbertura ? '1px solid #ef4444' : '1px solid #d1d5db',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        outline: 'none'
-                      }}
-                    />
+            <form onSubmit={abrirCaixa}>
+              {/* Etapa 1: Login */}
+              {etapaAbertura === 'login' && (
+                <div className="tab-content">
+                  <div className="form-section">
+                    <div className="form-section-header">
+                      <User size={18} />
+                      <h4>Validação de Credenciais</h4>
+                    </div>
+                    <p className="form-section-description">
+                      Digite seu CPF e senha para validar sua identidade antes de abrir o caixa.
+                    </p>
                   </div>
 
-                  <div className="form-group" style={{ marginBottom: '16px' }}>
-                    <label htmlFor="senha" style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>
-                      Senha
-                    </label>
-                    <input
-                      id="senha"
-                      type="password"
-                      value={loginForm.senha}
-                      onChange={(e) => {
-                        setLoginForm({...loginForm, senha: e.target.value})
-                        if (erroSenhaAbertura) setErroSenhaAbertura('') // Limpar erro ao digitar
-                      }}
-                      required
-                      placeholder="Digite a senha"
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        border: erroSenhaAbertura ? '1px solid #ef4444' : '1px solid #d1d5db',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        outline: 'none'
-                      }}
-                    />
-                    {erroSenhaAbertura && (
-                      <div style={{
-                        marginTop: '8px',
-                        padding: '12px',
-                        backgroundColor: '#fef2f2',
-                        border: '1px solid #fecaca',
-                        borderRadius: '6px',
-                        display: 'flex',
-                        alignItems: 'center'
-                      }}>
-                        <AlertCircle size={16} style={{ color: '#ef4444', marginRight: '8px' }} />
-                        <span style={{ color: '#dc2626', fontSize: '13px' }}>{erroSenhaAbertura}</span>
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <label>CPF do Funcionário *</label>
+                      <input
+                        type="text"
+                        value={loginForm.cpf}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, '').slice(0, 11)
+                          setLoginForm({...loginForm, cpf: value})
+                          if (erroSenhaAbertura) setErroSenhaAbertura('')
+                        }}
+                        className={`form-control ${erroSenhaAbertura ? 'error' : ''}`}
+                        placeholder="00000000000"
+                        maxLength={11}
+                        required
+                      />
+                      <small className="form-hint">Digite apenas números (11 dígitos)</small>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Senha *</label>
+                      <input
+                        type="password"
+                        value={loginForm.senha}
+                        onChange={(e) => {
+                          setLoginForm({...loginForm, senha: e.target.value})
+                          if (erroSenhaAbertura) setErroSenhaAbertura('')
+                        }}
+                        className={`form-control ${erroSenhaAbertura ? 'error' : ''}`}
+                        placeholder="Digite sua senha"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {erroSenhaAbertura && (
+                    <div className="error-message-card">
+                      <OctagonAlert size={20} />
+                      <div>
+                        <strong>Erro de validação</strong>
+                        <p>{erroSenhaAbertura}</p>
                       </div>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="form-group" style={{ marginBottom: '16px' }}>
-                    <label htmlFor="valor_inicial" style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>
-                      Valor Inicial
-                    </label>
-                    <input
-                      id="valor_inicial"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={novoForm.valor_inicial}
-                      onChange={(e) => setNovoForm({...novoForm, valor_inicial: e.target.value})}
-                      placeholder="0,00"
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        outline: 'none'
-                      }}
-                    />
-                  </div>
-
-                  <div className="form-group" style={{ marginBottom: '24px' }}>
-                    <label htmlFor="observacoes" style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>
-                      Observações
-                    </label>
-                    <textarea
-                      id="observacoes"
-                      value={novoForm.observacoes}
-                      onChange={(e) => setNovoForm({...novoForm, observacoes: e.target.value})}
-                      placeholder="Observações sobre a abertura..."
-                      rows={3}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        outline: 'none',
-                        resize: 'vertical'
-                      }}
-                    />
-                  </div>
-                </>
+                    </div>
+                  )}
+                </div>
               )}
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                <button 
-                  type="button" 
-                  onClick={cancelarAberturaCaixa} 
-                  className="btn btn-outline"
-                  disabled={loadingAbrirCaixa}
-                >
-                  Cancelar
-                </button>
-                <button 
-                  type="submit" 
-                  className="btn btn-primary"
-                  disabled={loadingAbrirCaixa}
-                  style={{ opacity: loadingAbrirCaixa ? 0.5 : 1 }}
-                >
-                  {loadingAbrirCaixa ? (
-                    <>
-                      <Loader2 size={16} style={{ marginRight: '6px', animation: 'spin 1s linear infinite' }} />
-                      {etapaAbertura === 'login' ? 'Validando...' : 'Abrindo...'}
-                    </>
-                  ) : (
-                    etapaAbertura === 'login' ? 'Validar Login' : 'Abrir Caixa'
-                  )}
-                </button>
+              {/* Etapa 2: Configuração */}
+              {etapaAbertura === 'configuracao' && (
+                <div className="tab-content">
+                  <div className="form-section">
+                    <div className="form-section-header">
+                      <Settings size={18} />
+                      <h4>Configuração do Caixa</h4>
+                    </div>
+                    <p className="form-section-description">
+                      Defina o valor inicial e observações para abertura do caixa.
+                    </p>
+                  </div>
+
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <label>Valor Inicial *</label>
+                      <div className="input-with-icon">
+                        <DollarSign size={16} />
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={novoForm.valor_inicial}
+                          onChange={(e) => setNovoForm({...novoForm, valor_inicial: e.target.value})}
+                          className="form-control"
+                          placeholder="0,00"
+                          required
+                        />
+                      </div>
+                      <small className="form-hint">Valor em dinheiro que será depositado no caixa</small>
+                    </div>
+
+                    <div className="form-group form-group-full">
+                      <label>Observações</label>
+                      <textarea
+                        value={novoForm.observacoes}
+                        onChange={(e) => setNovoForm({...novoForm, observacoes: e.target.value})}
+                        className="form-control"
+                        placeholder="Observações sobre a abertura do caixa (opcional)"
+                        rows={3}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Etapa 3: Confirmação */}
+              {etapaAbertura === 'confirmacao' && (
+                <div className="tab-content">
+                  <div className="form-section">
+                    <div className="form-section-header">
+                      <CheckCircle size={18} />
+                      <h4>Confirmação de Abertura</h4>
+                    </div>
+                    <p className="form-section-description">
+                      Revise atentamente todas as informações abaixo. Após confirmar, o caixa será aberto e registrado no sistema.
+                    </p>
+                  </div>
+
+                  <div className="confirmation-summary">
+                    <div className="confirmation-alert">
+                      <AlertCircle size={20} />
+                      <div>
+                        <strong>Atenção:</strong> Certifique-se de que todas as informações estão corretas antes de prosseguir.
+                      </div>
+                    </div>
+                    <div className="summary-card summary-card-primary summary-card-horizontal">
+                      <div className="summary-header">
+                        <User size={20} />
+                        <h5>Funcionário Responsável</h5>
+                      </div>
+                      <div className="summary-content">
+                        <div className="summary-item">
+                          <span className="summary-label">Nome:</span>
+                          <span className="summary-value">{funcionarioAbertura?.nome}</span>
+                        </div>
+                        <div className="summary-item">
+                          <span className="summary-label">Cargo:</span>
+                          <span className="summary-value">{funcionarioAbertura?.cargo}</span>
+                        </div>
+                        <div className="summary-item">
+                          <span className="summary-label">CPF:</span>
+                          <span className="summary-value">{loginForm.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="summary-card summary-card-horizontal">
+                      <div className="summary-header">
+                        <Clock size={20} />
+                        <h5>Data e Hora da Abertura</h5>
+                      </div>
+                      <div className="summary-content">
+                        <div className="summary-item">
+                          <span className="summary-label">Data:</span>
+                          <span className="summary-value">{new Date().toLocaleDateString('pt-BR')}</span>
+                        </div>
+                        <div className="summary-item">
+                          <span className="summary-label">Hora:</span>
+                          <span className="summary-value">{new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="summary-card">
+                      <div className="summary-header">
+                        <Wallet size={20} />
+                        <h5>Configuração do Caixa</h5>
+                      </div>
+                      <div className="summary-content">
+                        <div className="summary-item">
+                          <span className="summary-label">Valor Inicial:</span>
+                          <span className="summary-value currency">{formatarValor(parseFloat(novoForm.valor_inicial) || 0)}</span>
+                        </div>
+                        {novoForm.observacoes && (
+                          <div className="summary-item">
+                            <span className="summary-label">Observações:</span>
+                            <span className="summary-value">{novoForm.observacoes}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Footer do Modal */}
+              <div className="modal-footer-1">
+                <div className="footer-actions">
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-lg"
+                    onClick={() => cancelarAberturaCaixa()}
+                    disabled={loadingAbrirCaixa}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary btn-lg"
+                    disabled={loadingAbrirCaixa}
+                  >
+                    {loadingAbrirCaixa ? (
+                      <>
+                        <Loader2 className="animate-spin" size={18} />
+                        {etapaAbertura === 'login' ? 'Validando...' : 'Abrindo Caixa...'}
+                      </>
+                    ) : (
+                      <>
+                        {etapaAbertura === 'login' ? (
+                          <>
+                            <Shield size={18} />
+                            Validar Login
+                          </>
+                        ) : etapaAbertura === 'configuracao' ? (
+                          <>
+                            <Settings size={18} />
+                            Continuar
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle size={18} />
+                            Confirmar Abertura
+                          </>
+                        )}
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
