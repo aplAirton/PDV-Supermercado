@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { User, Plus, Edit, Trash2, Eye, Filter, Search, UserCheck, UserX, Loader2, Menu, X, DollarSign, MapPin, Save, AlertCircle, Shield, OctagonAlert } from 'lucide-react'
+import { User, Plus, Edit, Trash2, Eye, Filter, Search, UserCheck, UserX, Loader2, Menu, X, DollarSign, MapPin, Save, AlertCircle, Shield, OctagonAlert, UserPlus } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import '../../styles/funcionarios.css'
 
@@ -304,7 +304,7 @@ export default function FuncionariosPage() {
                 Admissão
               </span>
               <span className="item-value">
-                {formatarData(funcionario.data_admissao)}
+                {funcionario.data_admissao ? formatarData(funcionario.data_admissao) : 'Não informado'}
               </span>
             </div>
           </div>
@@ -619,7 +619,7 @@ export default function FuncionariosPage() {
       endereco: funcionario.endereco || '',
       cargo: funcionario.cargo,
       salario: funcionario.salario.toString(),
-      data_admissao: funcionario.data_admissao.split('T')[0],
+      data_admissao: funcionario.data_admissao ? funcionario.data_admissao.split('T')[0] : '',
       login: funcionario.login || '',
       senha: '',
       ativo: funcionario.ativo
@@ -901,15 +901,15 @@ export default function FuncionariosPage() {
       {showModal && (
         <div className="modal-overlay modal-fade-in" onClick={() => fecharModal()}>
           <div className="modal-content-f large" onClick={e => e.stopPropagation()}>
-            <div className="modal-header-1">
-              <div className="modal-header-content">
-                <div className="modal-title-info-1">
-                  <h2>
+            <div className="employee-header">
+              <div className="employee-header-info">
+                <div className="employee-header-icon">
+                  <UserPlus size={24} />
+                </div>
+                <div>
+                  <h2 className="employee-header-title">
                     {editMode ? "Editar Funcionário" : "Novo Funcionário"}
                   </h2>
-                  <p>
-                    {editMode ? "Atualize as informações do funcionário" : "Adicione um novo funcionário ao sistema"}
-                  </p>
                 </div>
               </div>
               <button
@@ -1230,13 +1230,23 @@ export default function FuncionariosPage() {
       {showDetalhesModal && funcionarioSelecionado && (
         <div className="modal-overlay" onClick={() => setShowDetalhesModal(false)}>
           <div className="modal-content-f large" onClick={e => e.stopPropagation()}>
-            <div className="modal-header-2">
-              <h3>Detalhes - {funcionarioSelecionado.nome}</h3>
-              <button 
-                className="modal-close"
+            <div className="employee-header">
+              <div className="employee-header-info">
+                <div className="employee-header-icon">
+                  <Eye size={24} />
+                </div>
+                <div>
+                  <h2 className="employee-header-title">
+                    Dados do Funcionário
+                  </h2>
+                </div>
+              </div>
+              <button
+                className="modal-close-btn"
                 onClick={() => setShowDetalhesModal(false)}
+                title="Fechar"
               >
-                ×
+                <X size={20} />
               </button>
             </div>
             <div className="funcionario-detalhes">
@@ -1271,7 +1281,7 @@ export default function FuncionariosPage() {
                 </div>
                 <div className="detalhe-item">
                   <span className="label">Data Admissão:</span>
-                  <span>{formatarData(funcionarioSelecionado.data_admissao)}</span>
+                  <span>{funcionarioSelecionado.data_admissao ? formatarData(funcionarioSelecionado.data_admissao) : 'Não informado'}</span>
                 </div>
                 <div className="detalhe-item">
                   <span className="label">Status:</span>
@@ -1289,7 +1299,7 @@ export default function FuncionariosPage() {
                 </div>
                 <div className="detalhe-item">
                   <span className="label">Cadastrado em:</span>
-                  <span>{formatarData(funcionarioSelecionado.created_at)}</span>
+                  <span>{funcionarioSelecionado.created_at ? formatarData(funcionarioSelecionado.created_at) : 'Não informado'}</span>
                 </div>
               </div>
             </div>

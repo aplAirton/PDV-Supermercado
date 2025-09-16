@@ -670,15 +670,15 @@ export default function ClientesPage() {
         <div className="product-modal-overlay" onClick={fecharModal}>
           <div className="product-modal" onClick={(e) => e.stopPropagation()}>
             {/* Header do Modal */}
-            <div className="modal-header-1">
-              <div className="modal-header-content">
-                <div className="modal-title-info-1">
-                  <h2>
+            <div className="client-header">
+              <div className="client-header-info">
+                <div className="client-header-icon">
+                  <User size={24} />
+                </div>
+                <div>
+                  <h2 className="client-header-title">
                     {editingCliente ? "Editar Cliente" : "Novo Cliente"}
                   </h2>
-                  <p>
-                    {editingCliente ? "Atualize as informações do cliente" : "Adicione um novo cliente ao sistema"}
-                  </p>
                 </div>
               </div>
             </div>

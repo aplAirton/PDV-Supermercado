@@ -969,3 +969,56 @@ body.modal-open {
     opacity: 1;
   }
 }
+
+/* ===========================================
+   CABEÇALHO DE CLIENTE - ESTILO PAGAMENTO
+   =========================================== */
+
+.client-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid var(--border);
+  padding: 1.5rem;
+}
+
+.client-header-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.client-header-icon {
+  width: 3rem;
+  height: 3rem;
+  background: #0970ed;
+  border-radius: 25%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+}
+
+.client-header-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* Versão Mobile */
+@media (max-width: 767px) {
+  .client-header-info {
+    gap: 0.75rem;
+  }
+
+  .client-header-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .client-header-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+}
