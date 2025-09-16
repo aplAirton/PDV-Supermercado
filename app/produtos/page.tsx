@@ -686,13 +686,13 @@ export default function ProdutosPage() {
         <div className="product-modal-overlay" onClick={fecharModal}>
           <div className="product-modal" onClick={(e) => e.stopPropagation()}>
             {/* Header do Modal */}
-            <div className="modal-header-1">
-              <div className="modal-header-content">
-                <div className="modal-icon">
+            <div className="product-header">
+              <div className="product-header-info">
+                <div className="product-header-icon">
                   {editingProduto ? <Edit size={24} /> : <Plus size={24} />}
                 </div>
-                <div className="modal-title-info-1">
-                  <h2>
+                <div>
+                  <h2 className="product-header-title">
                     {editingProduto ? "Editar Produto" : "Novo Produto"}
                   </h2>
                 </div>
