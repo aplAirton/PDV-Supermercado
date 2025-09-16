@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Calendar, Filter, Eye, Printer, Settings, ChevronDown, ChevronUp, Loader2 } from "lucide-react"
+import { Calendar, Filter, Eye, Printer, Settings, ChevronDown, ChevronUp, Loader2, X } from "lucide-react"
 import '../../styles/historico.css'
 
 interface Venda {
@@ -115,6 +115,13 @@ export default function HistoricoPage() {
   const verDetalhes = (venda: Venda) => {
     setVendaSelecionada(venda)
     setShowModal(true)
+    document.body.classList.add('modal-open')
+  }
+
+  const fecharModal = () => {
+    setShowModal(false)
+    setVendaSelecionada(null)
+    document.body.classList.remove('modal-open')
   }
 
   const imprimirCupomSegundaVia = (vendaId: number) => {
@@ -521,91 +528,70 @@ export default function HistoricoPage() {
       {/* Modal de Detalhes da Venda */}
       {showModal && vendaSelecionada && (
         <div className="modal-overlay">
-          <div className="modal" style={{ maxWidth: '500px', width: '90%' }}>
-            {/* Cabeçalho */}
-            <div style={{ 
-              background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))', 
-              color: 'black', 
-              padding: '12px 16px', 
-              borderRadius: '6px 6px 0 0',
-              marginBottom: '0'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Eye size={18} />
-                  <div>
-                    <h3 className="text-base font-bold margin-0">Venda #{vendaSelecionada.id.toString().padStart(6, '0')}</h3>
-                  </div>
+          <div className="modal">
+            {/* Header do Modal - Estilo Produtos */}
+            <div className="sale-header">
+              <div className="sale-header-info">
+                <div className="sale-header-icon">
+                  <Eye size={24} />
                 </div>
-                <button 
-                  className="btn" 
-                  onClick={() => setShowModal(false)}
-                  style={{ 
-                    background: 'rgba(255, 255, 255, 0.1)', 
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    color: 'white',
-                    padding: '2px 6px',
-                    fontSize: '14px'
-                  }}
-                >
-                  ×
-                </button>
+                <div>
+                  <h2 className="sale-header-title">
+                    Venda #{vendaSelecionada.id.toString().padStart(6, '0')}
+                  </h2>
+                </div>
               </div>
+              <button
+                className="modal-close-btn"
+                onClick={() => fecharModal()}
+                title="Fechar"
+              >
+                <X size={20} />
+              </button>
             </div>
 
-            <div style={{ padding: '16px' }}>
+            {/* Conteúdo do Modal - Estilo Extrato Fiado */}
+            <div className="sale-modal-content">
               {/* Seção: Informações da Venda */}
-              <div style={{ 
-                background: 'var(--surface)', 
-                padding: '12px', 
-                borderRadius: '6px',
-                border: '1px solid var(--border-light)',
-                marginBottom: '12px'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Calendar size={14} style={{ color: 'var(--text-muted)' }} />
-                    <span className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>Data da Venda</span>
+              <div className="sale-info-card">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <Calendar size={20} style={{ color: 'var(--text-muted)' }} />
+                    <span className="text-base font-medium" style={{ color: 'var(--text-muted)' }}>Data: {formatarData(vendaSelecionada.data_venda)}</span>
                   </div>
-                  <span className="text-2xl font-bold" style={{ color: 'var(--success)' }}>
-                    R$ {(Number(vendaSelecionada.total) || 0).toFixed(2)}
-                  </span>
                 </div>
-                
-                <div style={{ fontSize: '14px', color: 'var(--text-primary)', marginBottom: '6px' }}>
-                  {formatarData(vendaSelecionada.data_venda)}
-                </div>
-                
+
+
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <div style={{ 
-                      width: '20px', 
-                      height: '20px', 
-                      borderRadius: '50%', 
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{
+                      width: '2.5rem',
+                      height: '2.5rem',
+                      borderRadius: '50%',
                       background: vendaSelecionada.cliente_nome ? 'var(--success)' : 'var(--text-muted)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       color: 'white',
                       fontWeight: 'bold',
-                      fontSize: '10px'
+                      fontSize: '14px'
                     }}>
-                      {vendaSelecionada.cliente_nome ? 
-                        vendaSelecionada.cliente_nome.charAt(0).toUpperCase() : 
+                      {vendaSelecionada.cliente_nome ?
+                        vendaSelecionada.cliente_nome.charAt(0).toUpperCase() :
                         'A'
                       }
                     </div>
                     <div>
-                      <div className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>
+                      <div className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>
                         {vendaSelecionada.cliente_nome || "Cliente Avulso"}
                       </div>
-                      <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                      <div className="text-sm" style={{ color: 'var(--text-muted)' }}>
                         {formatarFormaPagamento(vendaSelecionada.forma_pagamento)}
                       </div>
                     </div>
                   </div>
-                  
-                  <div style={{ textAlign: 'right', fontSize: '12px', color: 'var(--text-muted)' }}>
+
+                  <div style={{ textAlign: 'right', fontSize: '14px', color: 'var(--text-muted)' }}>
                     {vendaSelecionada.itens.length} produto{vendaSelecionada.itens.length !== 1 ? 's' : ''}
                     <br />
                     {vendaSelecionada.itens.reduce((sum, item) => sum + Number(item.quantidade || 0), 0)} iten{vendaSelecionada.itens.reduce((sum, item) => sum + Number(item.quantidade || 0), 0) !== 1 ? 's' : ''}
@@ -615,21 +601,15 @@ export default function HistoricoPage() {
 
               {/* Seção: Desconto (se houver) */}
               {vendaSelecionada.desconto_tipo && (Number(vendaSelecionada.desconto_valor) > 0 || Number(vendaSelecionada.desconto_percentual) > 0) && (
-                <div style={{ 
-                  background: '#fff8dc', 
-                  padding: '12px', 
-                  borderRadius: '6px',
-                  border: '1px solid #ddd',
-                  marginBottom: '12px'
-                }}>
+                <div className="sale-discount-card">
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ fontSize: '14px', fontWeight: '500', color: '#d9534f' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <span style={{ fontSize: '16px', fontWeight: '600', color: '#d97706' }}>
                         Desconto Aplicado
                       </span>
                     </div>
-                    <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#d9534f' }}>
-                      {vendaSelecionada.desconto_tipo === 'percent' 
+                    <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#d97706' }}>
+                      {vendaSelecionada.desconto_tipo === 'percent'
                         ? `${Number(vendaSelecionada.desconto_percentual)}%`
                         : 'Valor fixo'
                       } (-R$ {Number(vendaSelecionada.desconto_valor || 0).toFixed(2)})
@@ -639,37 +619,23 @@ export default function HistoricoPage() {
               )}
 
               {/* Seção: Itens da Venda */}
-              <div style={{ marginBottom: '12px' }}>
-                <h4 className="text-sm font-semibold margin-0" style={{ 
-                  color: 'var(--text-primary)',
-                  marginBottom: '6px',
-                  paddingBottom: '3px',
-                  borderBottom: '1px solid var(--border-light)'
-                }}>
+              <div className="sale-items-section">
+                <h4 className="sale-items-header">
                   Itens da Venda
                 </h4>
-                
-                <div style={{ maxHeight: '160px', overflowY: 'auto' }}>
+
+                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
                   {vendaSelecionada.itens.map((item, index) => (
-                    <div key={index} style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '6px 8px',
-                      background: index % 2 === 0 ? 'var(--surface)' : 'transparent',
-                      borderRadius: '3px',
-                      marginBottom: '1px',
-                      fontSize: '13px'
-                    }}>
-                      <div style={{ flex: 1 }}>
-                        <div className="font-medium" style={{ color: 'var(--text-primary)', marginBottom: '2px' }}>
+                    <div key={index} className="sale-item">
+                      <div className="sale-item-info">
+                        <div className="sale-item-name">
                           {item.produto_nome}
                         </div>
-                        <div style={{ color: 'var(--text-muted)', fontSize: '11px' }}>
+                        <div className="sale-item-details">
                           {item.quantidade}x R$ {item.preco_unitario.toFixed(2)}
                         </div>
                       </div>
-                      <div className="font-semibold" style={{ color: 'var(--success)' }}>
+                      <div className="sale-item-price">
                         R$ {item.subtotal.toFixed(2)}
                       </div>
                     </div>
@@ -678,43 +644,37 @@ export default function HistoricoPage() {
               </div>
 
               {/* Seção: Resumo e Ações */}
-              <div style={{ 
-                borderTop: '1px solid var(--border-light)',
-                paddingTop: '12px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
-                <div>
-                  <div className="text-xs" style={{ color: 'var(--text-muted)', marginBottom: '2px' }}>
+              <div className="sale-summary">
+                <div className="sale-total-info">
+                  <div className="sale-total-label">
                     Total Geral
                   </div>
-                  <div className="text-lg font-bold" style={{ color: 'var(--success)' }}>
+                  <div className="sale-total-value">
                     R$ {(Number(vendaSelecionada.total) || 0).toFixed(2)}
                   </div>
                 </div>
-                
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  <button 
-                    className="btn btn-primary" 
+
+                <div className="sale-actions">
+                  <button
+                    className="btn btn-primary"
                     onClick={() => imprimirCupom(vendaSelecionada)}
-                    style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: '4px',
-                      padding: '6px 10px',
-                      fontSize: '12px'
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 16px',
+                      fontSize: '14px'
                     }}
                   >
-                    <Printer size={12} />
+                    <Printer size={14} />
                     Cupom
                   </button>
-                  <button 
-                    className="btn btn-outline" 
-                    onClick={() => setShowModal(false)}
-                    style={{ 
-                      padding: '6px 10px',
-                      fontSize: '12px'
+                  <button
+                    className="btn btn-outline"
+                    onClick={() => fecharModal()}
+                    style={{
+                      padding: '8px 16px',
+                      fontSize: '14px'
                     }}
                   >
                     Fechar
