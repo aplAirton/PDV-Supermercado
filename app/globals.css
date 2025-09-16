@@ -3094,6 +3094,11 @@ body.sidebar-open {
   color: #991b1b;
 }
 
+.dias-badge.nunca {
+  background: #e5e7eb;
+  color: #374151;
+}
+
 .dias-badge.loading {
   background: #f3f4f6;
   color: #6b7280;

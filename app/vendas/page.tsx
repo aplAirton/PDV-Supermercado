@@ -53,7 +53,6 @@ export default function VendasPage() {
   const [loading, setLoading] = useState(false)
   const [loadingProdutos, setLoadingProdutos] = useState(false)
   const [loadingClientes, setLoadingClientes] = useState(false)
-  const [loadingInicial, setLoadingInicial] = useState(true)
   const [animacaoExecutada, setAnimacaoExecutada] = useState(false)
   // Estados relacionados ao cupom
   const [vendaConcluida, setVendaConcluida] = useState(false)
@@ -172,7 +171,7 @@ export default function VendasPage() {
   useEffect(() => {
     const carregarDadosIniciais = async () => {
       await Promise.all([verificarStatusCaixa(), carregarClientes()])
-      setLoadingInicial(false)
+      // Loading inicial removido
     }
     
     carregarDadosIniciais()
@@ -249,10 +248,10 @@ export default function VendasPage() {
   }, [showPagamentoModal])
 
   useEffect(() => {
-    if (!loadingInicial && (produtos.length > 0 || clientes.length >= 0) && !animacaoExecutada) {
+    if ((produtos.length > 0 || clientes.length >= 0) && !animacaoExecutada) {
       setAnimacaoExecutada(true)
     }
-  }, [loadingInicial, produtos.length, clientes.length, animacaoExecutada])
+  }, [produtos.length, clientes.length, animacaoExecutada])
 
   // Nova função de busca de produtos mais robusta
   const buscarProdutos = async (query: string, mode: 'search' | 'exact' = 'search', limit: number = 3) => {
@@ -888,7 +887,7 @@ export default function VendasPage() {
     processarPagamento()
   }
 
-  if (loadingInicial) {
+  if (false) { // Loading inicial removido
     return (
       <div className="pdv-container">
         {/* Header Skeleton */}
@@ -928,43 +927,7 @@ export default function VendasPage() {
           </div>
         </div>
 
-        {/* Cart Skeleton */}
-        <div className="card">
-          <div className="card-header">
-            <div className="skeleton skeleton-title" style={{ width: '120px', height: '28px' }}></div>
-          </div>
-
-          <div className="card-content">
-            <div className="cart-items">
-              {Array.from({ length: 3 }).map((_, index) => (
-                <div key={index} className="cart-item-skeleton">
-                  <div className="item-info">
-                    <div className="skeleton skeleton-title" style={{ width: '120px', height: '16px', marginBottom: '4px' }}></div>
-                    <div className="skeleton skeleton-label" style={{ width: '80px', height: '12px' }}></div>
-                  </div>
-                  <div className="item-quantity">
-                    <div className="skeleton" style={{ width: '60px', height: '28px', borderRadius: '4px' }}></div>
-                  </div>
-                  <div className="item-price">
-                    <div className="skeleton skeleton-value" style={{ width: '50px', height: '16px' }}></div>
-                  </div>
-                  <div className="item-actions">
-                    <div className="skeleton skeleton-button" style={{ width: '28px', height: '28px' }}></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="cart-total">
-              <div className="skeleton skeleton-title" style={{ width: '80px', height: '20px', marginBottom: '8px' }}></div>
-              <div className="skeleton skeleton-value" style={{ width: '100px', height: '24px' }}></div>
-            </div>
-          </div>
-
-          <div className="card-footer">
-            <div className="skeleton skeleton-button-primary" style={{ width: '100%', height: '44px' }}></div>
-          </div>
-        </div>
+        {/* Cart Skeleton REMOVED */}
       </div>
     )
   }
