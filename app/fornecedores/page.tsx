@@ -68,6 +68,9 @@ export default function FornecedoresPage() {
   const [showLoadingModal, setShowLoadingModal] = useState(false)
   const [loadingMessage, setLoadingMessage] = useState('')
   const [showPagamentoLoadingModal, setShowPagamentoLoadingModal] = useState(false)
+  const [saldoDinheiroDisponivel, setSaldoDinheiroDisponivel] = useState(0)
+  const [valorInicialCaixa, setValorInicialCaixa] = useState(0)
+  const [showConfirmacaoConsumoInicial, setShowConfirmacaoConsumoInicial] = useState(false)
 
   // Marcar animação como executada após carregamento inicial
   useEffect(() => {
@@ -169,7 +172,25 @@ export default function FornecedoresPage() {
     setShowModal(true)
   }
 
-  const abrirModalPagamento = (fornecedor: Fornecedor) => {
+  const buscarSaldoDinheiroDisponivel = async () => {
+    try {
+      const response = await fetch('/api/caixa/saldo-dinheiro')
+      if (response.ok) {
+        const data = await response.json()
+        setSaldoDinheiroDisponivel(data.saldoDinheiro || 0)
+        setValorInicialCaixa(data.valorInicial || 0)
+      }
+    } catch (error) {
+      console.error('Erro ao buscar saldo em dinheiro:', error)
+      setSaldoDinheiroDisponivel(0)
+      setValorInicialCaixa(0)
+    }
+  }
+
+  const abrirModalPagamento = async (fornecedor: Fornecedor) => {
+    // Buscar saldo disponível em dinheiro
+    await buscarSaldoDinheiroDisponivel()
+
     setPagamentoData({
       fornecedor_id: fornecedor.id,
       valor_total: '',
@@ -322,12 +343,7 @@ export default function FornecedoresPage() {
     }
   }
 
-  const salvarPagamento = async () => {
-    if (!pagamentoData.valor_total || parseFloat(pagamentoData.valor_total) <= 0) {
-      showMessageCard('error', 'Erro', 'Valor do pagamento é obrigatório')
-      return
-    }
-
+  const executarPagamento = async () => {
     setShowPagamentoLoadingModal(true)
 
     try {
@@ -351,7 +367,35 @@ export default function FornecedoresPage() {
       showMessageCard('error', 'Erro', 'Erro interno do servidor')
     } finally {
       setShowPagamentoLoadingModal(false)
+      setShowConfirmacaoConsumoInicial(false)
     }
+  }
+
+  const salvarPagamento = async () => {
+    if (!pagamentoData.valor_total || parseFloat(pagamentoData.valor_total) <= 0) {
+      showMessageCard('error', 'Erro', 'Valor do pagamento é obrigatório')
+      return
+    }
+
+    // Validar saldo disponível quando usar dinheiro do caixa
+    if (pagamentoData.afeta_caixa) {
+      const valorPagamento = parseFloat(pagamentoData.valor_total)
+      if (valorPagamento > saldoDinheiroDisponivel) {
+        showMessageCard('error', 'Saldo Insuficiente',
+          `O valor do pagamento (R$ ${valorPagamento.toFixed(2)}) é superior ao saldo disponível em dinheiro (R$ ${saldoDinheiroDisponivel.toFixed(2)}). 
+          Saldo disponível: R$ ${saldoDinheiroDisponivel.toFixed(2)}`)
+        return
+      }
+
+      // Verificar se a operação consumirá do valor inicial
+      const saldoAposOperacao = saldoDinheiroDisponivel - valorPagamento
+      if (saldoAposOperacao < valorInicialCaixa && !showConfirmacaoConsumoInicial) {
+        setShowConfirmacaoConsumoInicial(true)
+        return
+      }
+    }
+
+    await executarPagamento()
   }
 
   const [showValidationCard, setShowValidationCard] = useState(false)
@@ -753,6 +797,40 @@ export default function FornecedoresPage() {
                   />
                 </div>
 
+                <div className="form-group checkbox-group">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={pagamentoData.afeta_caixa}
+                      onChange={(e) => {
+                        const checked = e.target.checked
+                        setPagamentoData({
+                          ...pagamentoData,
+                          afeta_caixa: checked,
+                          forma_pagamento: checked ? 'dinheiro' : pagamentoData.forma_pagamento
+                        })
+                      }}
+                      className="checkbox-input"
+                    />
+                    <span className="checkbox-text">Usar dinheiro do caixa (sangria)</span>
+                  </label>
+                  {pagamentoData.afeta_caixa && (
+                    <div className="saldo-info" style={{
+                      marginTop: '8px',
+                      padding: '8px',
+                      backgroundColor: '#f0f9ff',
+                      border: '1px solid #0ea5e9',
+                      borderRadius: '4px',
+                      fontSize: '14px'
+                    }}>
+                      <strong>Saldo disponível em dinheiro:</strong> R$ {saldoDinheiroDisponivel.toFixed(2)}
+                    </div>
+                  )}
+                  <small className="checkbox-help">
+                    Quando marcado, o pagamento será registrado como sangria no caixa, afetando o saldo disponível em dinheiro. A forma de pagamento será automaticamente definida como dinheiro.
+                  </small>
+                </div>
+
                 <div className="form-group">
                   <label className="form-label">Forma de Pagamento *</label>
                   <select
@@ -769,7 +847,7 @@ export default function FornecedoresPage() {
                     <option value="cheque">Cheque</option>
                   </select>
                   {pagamentoData.afeta_caixa && (
-                    <small className="form-help">Quando registrado como sangria, a forma de pagamento é automaticamente definida como dinheiro.</small>
+                    <small className="form-help">Quando usar dinheiro do caixa, a forma de pagamento é automaticamente definida como dinheiro.</small>
                   )}
                 </div>
 
@@ -782,21 +860,6 @@ export default function FornecedoresPage() {
                     placeholder="Descrição do pagamento (ex: Compra de 10 unidades de produto X)"
                     rows={3}
                   />
-                </div>
-
-                <div className="form-group checkbox-group">
-                  <label className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={pagamentoData.afeta_caixa}
-                      onChange={(e) => setPagamentoData({ ...pagamentoData, afeta_caixa: e.target.checked })}
-                      className="checkbox-input"
-                    />
-                    <span className="checkbox-text">Registrar como sangria (descontar do caixa)</span>
-                  </label>
-                  <small className="checkbox-help">
-                    Quando marcado, o pagamento será registrado como uma sangria no fluxo de caixa, afetando o saldo disponível. Caso contrário, será registrado apenas no histórico de pagamentos.
-                  </small>
                 </div>
               </div>
             </div>
@@ -817,6 +880,81 @@ export default function FornecedoresPage() {
                 >
                   <Receipt size={16} />
                   Registrar Pagamento
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação de Consumo do Valor Inicial */}
+      {showConfirmacaoConsumoInicial && (
+        <div className="modal-overlay modal-fade-in" onClick={() => setShowConfirmacaoConsumoInicial(false)}>
+          <div className="modal-content-f small" onClick={e => e.stopPropagation()}>
+            <div className="modal-header-1">
+              <div className="modal-header-content">
+                <div className="modal-title-info-1">
+                  <h2>⚠️ Atenção</h2>
+                  <p>Confirmação necessária</p>
+                </div>
+              </div>
+              <button
+                className="modal-close-btn"
+                onClick={() => setShowConfirmacaoConsumoInicial(false)}
+                title="Fechar"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="modal-body-1">
+              <div className="confirmation-content">
+                <AlertCircle size={48} className="confirmation-icon warning" />
+                <h3>A operação atual consumirá do valor inicial do caixa</h3>
+                <p>
+                  O saldo após esta operação ficará abaixo do valor inicial (fundo de caixa).
+                  Isso significa que parte do dinheiro usado será do valor inicial configurado para o caixa.
+                </p>
+                <div className="confirmation-details">
+                  <div className="detail-item">
+                    <span className="detail-label">Valor do pagamento:</span>
+                    <span className="detail-value">R$ {parseFloat(pagamentoData.valor_total).toFixed(2)}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Saldo atual:</span>
+                    <span className="detail-value">R$ {saldoDinheiroDisponivel.toFixed(2)}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Valor inicial:</span>
+                    <span className="detail-value">R$ {valorInicialCaixa.toFixed(2)}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Saldo após operação:</span>
+                    <span className="detail-value warning">
+                      R$ {(saldoDinheiroDisponivel - parseFloat(pagamentoData.valor_total)).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+                <p className="confirmation-question">
+                  Deseja continuar mesmo assim?
+                </p>
+              </div>
+            </div>
+
+            <div className="modal-footer-1">
+              <div className="footer-actions">
+                <button
+                  className="btn btn-outline"
+                  onClick={() => setShowConfirmacaoConsumoInicial(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  className="btn btn-warning"
+                  onClick={() => executarPagamento()}
+                >
+                  <AlertCircle size={16} />
+                  Confirmar e Continuar
                 </button>
               </div>
             </div>

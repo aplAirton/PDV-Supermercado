@@ -6,8 +6,6 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const { id } = await params
     const pagamentoId = id
 
-    console.log('[API Comprovante Pagamento] Iniciando geração para ID:', pagamentoId)
-
     const { searchParams } = new URL(request.url)
     const fornecedorNome = searchParams.get('fornecedor_nome') || 'Fornecedor'
     const fornecedorCnpj = searchParams.get('fornecedor_cnpj') || ''
@@ -16,13 +14,6 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const descricao = searchParams.get('descricao') || ''
     const afetaCaixa = searchParams.get('afeta_caixa') === 'true'
     const dataPagamento = searchParams.get('data_pagamento') || new Date().toISOString()
-
-    console.log('[API Comprovante Pagamento] Parâmetros recebidos:', {
-      pagamentoId,
-      fornecedorNome,
-      valor,
-      formaPagamento
-    })
 
     const formatarValor = (valor: number) => {
       return valor.toLocaleString('pt-BR', {
@@ -56,8 +47,6 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       telefone: '(11) 1234-5678',
       cnpj: '12.345.678/0001-90'
     }
-
-    console.log('[API Comprovante Pagamento] Gerando HTML...')
 
     const conteudo = `
       <div class="documento-titulo">COMPROVANTE DE PAGAMENTO</div>
@@ -115,8 +104,6 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     `
 
     const htmlCompleto = gerarHtmlDocumento('Comprovante de Pagamento', conteudo, empresaDefault)
-
-    console.log('[API Comprovante Pagamento] HTML gerado com sucesso, tamanho:', htmlCompleto.length)
 
     return new NextResponse(htmlCompleto, {
       status: 200,

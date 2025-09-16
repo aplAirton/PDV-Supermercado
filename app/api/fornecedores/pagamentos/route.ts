@@ -62,9 +62,9 @@ export async function POST(request: NextRequest) {
       // Inserir pagamento
       const result = await executeQuery(
         `INSERT INTO pagamentos_fornecedor
-         (fornecedor_id, caixa_id, valor_pagamento, forma_pagamento, observacoes, data_pagamento, status)
-         VALUES (?, ?, ?, ?, ?, NOW(), 'pago')`,
-        [fornecedor_id, caixaId, parseFloat(valor_total), forma_pagamento, descricao?.trim() || null]
+         (fornecedor_id, caixa_id, valor_pagamento, forma_pagamento, observacoes, afeta_caixa, data_pagamento, status)
+         VALUES (?, ?, ?, ?, ?, ?, NOW(), 'pago')`,
+        [fornecedor_id, caixaId, parseFloat(valor_total), forma_pagamento, descricao?.trim() || null, afeta_caixa]
       )
 
       // Registrar na tabela geral de movimentações financeiras

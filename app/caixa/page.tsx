@@ -85,6 +85,9 @@ export default function CaixaPage() {
   })
   const [processandoPagamento, setProcessandoPagamento] = useState(false)
   const [validacaoSenhaForm, setValidacaoSenhaForm] = useState({ senha: '' })
+  const [saldoDinheiroDisponivel, setSaldoDinheiroDisponivel] = useState(0)
+  const [valorInicialCaixa, setValorInicialCaixa] = useState(0)
+  const [showConfirmacaoConsumoInicial, setShowConfirmacaoConsumoInicial] = useState(false)
   const [tipoMovimentoSelecionado, setTipoMovimentoSelecionado] = useState<'sangria' | 'suprimento' | 'pagamento' | null>(null)
   const [movimentoForm, setMovimentoForm] = useState({ valor: '', descricao: '' })
   const [processandoMovimento, setProcessandoMovimento] = useState(false)
@@ -763,11 +766,28 @@ export default function CaixaPage() {
     }
   }
 
-  const selecionarTipoMovimento = (tipo: 'sangria' | 'suprimento' | 'pagamento') => {
+  const buscarSaldoDinheiroDisponivel = async () => {
+    try {
+      const response = await fetch('/api/caixa/saldo-dinheiro')
+      if (response.ok) {
+        const data = await response.json()
+        setSaldoDinheiroDisponivel(data.saldoDinheiro || 0)
+        setValorInicialCaixa(data.valorInicial || 0)
+      }
+    } catch (error) {
+      console.error('Erro ao buscar saldo em dinheiro:', error)
+      setSaldoDinheiroDisponivel(0)
+      setValorInicialCaixa(0)
+    }
+  }
+
+  const selecionarTipoMovimento = async (tipo: 'sangria' | 'suprimento' | 'pagamento') => {
     setTipoMovimentoSelecionado(tipo)
     setShowTipoMovimentoModal(false)
 
     if (tipo === 'pagamento') {
+      // Buscar saldo disponível em dinheiro para validação
+      await buscarSaldoDinheiroDisponivel()
       setShowPagamentoModal(true)
       setPagamentoEtapa('fornecedor')
       buscarFornecedores()
@@ -815,6 +835,36 @@ export default function CaixaPage() {
   }
 
   const avancarParaPagamento = () => {
+    // Validações básicas
+    if (!pagamentoForm.valor || parseFloat(pagamentoForm.valor) <= 0) {
+      toast({
+        title: 'Erro',
+        description: 'Valor do pagamento é obrigatório e deve ser maior que zero',
+        variant: 'destructive'
+      })
+      return
+    }
+
+    // Validar saldo disponível quando usar dinheiro do caixa
+    if (pagamentoForm.afeta_caixa) {
+      const valorPagamento = parseFloat(pagamentoForm.valor)
+      if (valorPagamento > saldoDinheiroDisponivel) {
+        toast({
+          title: 'Saldo Insuficiente',
+          description: `O valor do pagamento (R$ ${valorPagamento.toFixed(2)}) é superior ao saldo disponível em dinheiro (R$ ${saldoDinheiroDisponivel.toFixed(2)}). Saldo disponível: R$ ${saldoDinheiroDisponivel.toFixed(2)}`,
+          variant: 'destructive'
+        })
+        return
+      }
+
+      // Verificar se a operação consumirá do valor inicial
+      const saldoAposOperacao = saldoDinheiroDisponivel - valorPagamento
+      if (saldoAposOperacao < valorInicialCaixa && !showConfirmacaoConsumoInicial) {
+        setShowConfirmacaoConsumoInicial(true)
+        return
+      }
+    }
+
     if (pagamentoForm.afeta_caixa) {
       setPagamentoEtapa('senha')
     } else {
@@ -900,6 +950,7 @@ export default function CaixaPage() {
       toast({ title: 'Erro', description: 'Erro ao realizar pagamento', variant: 'destructive' })
     } finally {
       setProcessandoPagamento(false)
+      setShowConfirmacaoConsumoInicial(false)
     }
   }
 
@@ -2169,6 +2220,88 @@ export default function CaixaPage() {
         size="medium"
       />
 
+      {/* Modal de Confirmação de Consumo do Valor Inicial */}
+      {showConfirmacaoConsumoInicial && (
+        <div className="modal-overlay modal-fade-in" onClick={() => setShowConfirmacaoConsumoInicial(false)}>
+          <div className="modal-content-f small" onClick={e => e.stopPropagation()}>
+            <div className="modal-header-1">
+              <div className="modal-header-content">
+                <div className="modal-title-info-1">
+                  <h2>⚠️ Atenção</h2>
+                  <p>Confirmação necessária</p>
+                </div>
+              </div>
+              <button
+                className="modal-close-btn"
+                onClick={() => setShowConfirmacaoConsumoInicial(false)}
+                title="Fechar"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="modal-body-1">
+              <div className="confirmation-content">
+                <AlertCircle size={48} className="confirmation-icon warning" />
+                <h3>A operação atual consumirá do valor inicial do caixa</h3>
+                <p>
+                  O saldo após esta operação ficará abaixo do valor inicial (fundo de caixa).
+                  Isso significa que parte do dinheiro usado será do valor inicial configurado para o caixa.
+                </p>
+                <div className="confirmation-details">
+                  <div className="detail-item">
+                    <span className="detail-label">Valor do pagamento:</span>
+                    <span className="detail-value">R$ {parseFloat(pagamentoForm.valor).toFixed(2)}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Saldo atual:</span>
+                    <span className="detail-value">R$ {saldoDinheiroDisponivel.toFixed(2)}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Valor inicial:</span>
+                    <span className="detail-value">R$ {valorInicialCaixa.toFixed(2)}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Saldo após operação:</span>
+                    <span className="detail-value warning">
+                      R$ {(saldoDinheiroDisponivel - parseFloat(pagamentoForm.valor)).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+                <p className="confirmation-question">
+                  Deseja continuar mesmo assim?
+                </p>
+              </div>
+            </div>
+
+            <div className="modal-footer-1">
+              <div className="footer-actions">
+                <button
+                  className="btn btn-outline"
+                  onClick={() => setShowConfirmacaoConsumoInicial(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  className="btn btn-warning"
+                  onClick={() => {
+                    setShowConfirmacaoConsumoInicial(false)
+                    if (pagamentoForm.afeta_caixa) {
+                      setPagamentoEtapa('senha')
+                    } else {
+                      confirmarPagamento()
+                    }
+                  }}
+                >
+                  <AlertCircle size={16} />
+                  Confirmar e Continuar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal Resumo */}
       {showResumoModal && resumoFechamento && (
         <div className="modal-overlay">
@@ -2836,18 +2969,56 @@ export default function CaixaPage() {
                     </div>
 
                     <div>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={pagamentoForm.afeta_caixa}
+                          onChange={(e) => {
+                            const checked = e.target.checked
+                            setPagamentoForm({
+                              ...pagamentoForm,
+                              afeta_caixa: checked,
+                              forma_pagamento: checked ? 'dinheiro' : pagamentoForm.forma_pagamento
+                            })
+                          }}
+                        />
+                        <span style={{ fontSize: '14px' }}>
+                          Usar dinheiro do caixa (sangria)
+                        </span>
+                      </label>
+                      {pagamentoForm.afeta_caixa && (
+                        <div style={{
+                          marginTop: '8px',
+                          padding: '8px',
+                          backgroundColor: '#f0f9ff',
+                          border: '1px solid #0ea5e9',
+                          borderRadius: '4px',
+                          fontSize: '14px'
+                        }}>
+                          <strong>Saldo disponível em dinheiro:</strong> R$ {saldoDinheiroDisponivel.toFixed(2)}
+                        </div>
+                      )}
+                      <small style={{ display: 'block', marginTop: '4px', color: '#6b7280' }}>
+                        Quando marcado, o pagamento será registrado como sangria no caixa, afetando o saldo disponível em dinheiro. A forma de pagamento será automaticamente definida como dinheiro.
+                      </small>
+                    </div>
+
+                    <div>
                       <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
                         Forma de Pagamento *
                       </label>
                       <select
                         value={pagamentoForm.forma_pagamento}
                         onChange={(e) => setPagamentoForm({ ...pagamentoForm, forma_pagamento: e.target.value })}
+                        disabled={pagamentoForm.afeta_caixa}
                         style={{
                           width: '100%',
                           padding: '10px',
                           border: '1px solid #d1d5db',
                           borderRadius: '6px',
-                          fontSize: '16px'
+                          fontSize: '16px',
+                          backgroundColor: pagamentoForm.afeta_caixa ? '#f9fafb' : 'white',
+                          cursor: pagamentoForm.afeta_caixa ? 'not-allowed' : 'pointer'
                         }}
                       >
                         <option value="dinheiro">Dinheiro</option>
@@ -2857,6 +3028,11 @@ export default function CaixaPage() {
                         <option value="transferencia">Transferência</option>
                         <option value="cheque">Cheque</option>
                       </select>
+                      {pagamentoForm.afeta_caixa && (
+                        <small style={{ display: 'block', marginTop: '4px', color: '#6b7280' }}>
+                          Quando usar dinheiro do caixa, a forma de pagamento é automaticamente definida como dinheiro.
+                        </small>
+                      )}
                     </div>
 
                     <div>
@@ -2877,19 +3053,6 @@ export default function CaixaPage() {
                           resize: 'vertical'
                         }}
                       />
-                    </div>
-
-                    <div>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                        <input
-                          type="checkbox"
-                          checked={pagamentoForm.afeta_caixa}
-                          onChange={(e) => setPagamentoForm({ ...pagamentoForm, afeta_caixa: e.target.checked })}
-                        />
-                        <span style={{ fontSize: '14px' }}>
-                          Este pagamento afeta o caixa (retira dinheiro físico)
-                        </span>
-                      </label>
                     </div>
                   </div>
                 </div>

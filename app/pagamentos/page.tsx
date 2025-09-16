@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Ban, Calendar, ArrowDownUp, DollarSign, Banknote, TrendingUp, TrendingDown, Filter, Eye, Search, Download, Printer, CreditCard, Smartphone, Layers, Settings, FileText, LucideFileQuestion, LucideCheckCircle, Loader2, Menu, ChevronUp, ChevronDown } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
+import LoadingModal from '../../components/loading-modal'
 import '../../styles/pagamentos-new.css'
 
 interface MovimentoCaixa {
@@ -53,6 +54,7 @@ export default function PagamentosPage() {
   const [showFilters, setShowFilters] = useState(false)
   const [loading, setLoading] = useState(true)
   const [showExtratosModal, setShowExtratosModal] = useState(false)
+  const [loadingComprovante, setLoadingComprovante] = useState(false)
 
   useEffect(() => {
     carregarDados()
@@ -390,6 +392,43 @@ const renderFormasPagamento = (movimento: MovimentoCaixa) => {
 
   const imprimirRecibo = async (movimento: MovimentoCaixa) => {
     try {
+      setLoadingComprovante(true)
+
+      // Verificar se é um movimento de venda
+      const isVenda = movimento.categoria?.startsWith('venda_') ||
+                     movimento.descricao?.toLowerCase().includes('venda #') ||
+                     movimento.referencia?.toLowerCase().includes('venda #')
+
+      if (isVenda) {
+        // Para vendas, usar API genérica que agora trata vendas
+        const url = `/api/pagamentos/${movimento.id}/recibo`
+        const newWindow = window.open(url, '_blank', 'width=400,height=600')
+
+        if (!newWindow) {
+          toast({
+            title: "Erro ao imprimir",
+            description: "Não foi possível abrir a janela de impressão. Verifique o bloqueador de pop-ups.",
+            variant: "destructive"
+          })
+          return
+        }
+
+        // Aguardar carregar e tentar imprimir automaticamente
+        setTimeout(() => {
+          try {
+            newWindow.print()
+          } catch (e) {
+            console.log('Print automático não disponível')
+          }
+        }, 1000)
+
+        toast({
+          title: "Recibo aberto",
+          description: "Impressão automática iniciada"
+        })
+        return
+      }
+
       // Verificar se é um movimento de pagamento a fornecedor
       const isPagamentoFornecedor = movimento.categoria === 'pagamento_fornecedor' ||
                                    movimento.descricao?.toLowerCase().includes('fornecedor') ||
@@ -401,9 +440,8 @@ const renderFormasPagamento = (movimento: MovimentoCaixa) => {
         if (response.ok) {
           const dadosFornecedor = await response.json()
 
-          // Determinar se afetou o caixa baseado na categoria do movimento
-          // Sangria significa que retirou dinheiro do caixa
-          const afetaCaixa = movimento.categoria === 'sangria' ? 'true' : 'false'
+          // Determinar se afetou o caixa baseado no campo afeta_caixa do pagamento
+          const afetaCaixa = dadosFornecedor.afeta_caixa ? 'true' : 'false'
 
           // Criar URL com parâmetros EXATAMENTE como no caixa
           const params = new URLSearchParams({
@@ -466,12 +504,14 @@ const renderFormasPagamento = (movimento: MovimentoCaixa) => {
         description: "Impressão automática iniciada"
       })
     } catch (error) {
-      console.error('Erro:', error)
+      console.error('Erro ao imprimir recibo:', error)
       toast({
         title: "Erro ao gerar recibo",
         description: "Não foi possível gerar o recibo para impressão",
         variant: "destructive"
       })
+    } finally {
+      setLoadingComprovante(false)
     }
   }
 
@@ -813,6 +853,13 @@ const renderFormasPagamento = (movimento: MovimentoCaixa) => {
           </div>
         </div>
       )}
+      
+      <LoadingModal
+        isOpen={loadingComprovante}
+        title="Gerando Comprovante"
+        message="Aguarde enquanto o comprovante de pagamento é gerado..."
+        size="small"
+      />
     </div>
   )
 }

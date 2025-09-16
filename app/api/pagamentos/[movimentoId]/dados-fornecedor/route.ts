@@ -10,8 +10,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'ID de movimento inválido' }, { status: 400 })
     }
 
-    console.log('[API Dados Fornecedor] Buscando dados para movimento ID:', movimentoId)
-
     // O movimentoId pode ser um ID modificado (mf.id + 300000) da tabela movimentacoes_financeiras
     // Para pagamentos a fornecedores, precisamos encontrar o ID real na tabela pagamentos_fornecedor
     let pagamentoId = movimentoId
@@ -19,7 +17,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Se o ID for maior que 300000, provavelmente é um ID modificado da movimentacoes_financeiras
     if (movimentoId >= 300000) {
       const realId = movimentoId - 300000
-      console.log('[API Dados Fornecedor] ID modificado detectado, tentando ID real:', realId)
 
       // Verificar se existe um pagamento_fornecedor com esse ID
       const checkQuery = `SELECT id FROM pagamentos_fornecedor WHERE id = ?`
@@ -59,6 +56,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         pf.fornecedor_id,
         pf.valor_pagamento as valor,
         pf.forma_pagamento,
+        pf.afeta_caixa,
         pf.data_pagamento,
         pf.observacoes,
         f.nome as fornecedor_nome,
@@ -72,12 +70,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const result = await executeQuery(query, [pagamentoId]) as any[]
 
     if (result.length === 0) {
-      console.log('[API Dados Fornecedor] Pagamento fornecedor não encontrado para ID:', pagamentoId)
       return NextResponse.json({ error: 'Pagamento ao fornecedor não encontrado' }, { status: 404 })
     }
 
     const dados = result[0]
-    console.log('[API Dados Fornecedor] Dados encontrados:', dados)
 
     return NextResponse.json(dados)
 

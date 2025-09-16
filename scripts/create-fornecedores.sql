@@ -29,6 +29,7 @@ CREATE TABLE pagamentos_fornecedor (
     forma_pagamento ENUM('dinheiro', 'cartao_debito', 'cartao_credito', 'pix', 'transferencia', 'cheque') NOT NULL,
     numero_documento VARCHAR(100),
     observacoes TEXT,
+    afeta_caixa BOOLEAN DEFAULT FALSE,
     data_pagamento TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     data_vencimento DATE,
     status ENUM('pendente', 'pago', 'cancelado') DEFAULT 'pendente',
@@ -77,5 +78,16 @@ INSERT INTO fornecedores (nome, cnpj, telefone, email, endereco, contato_nome, c
 ('Distribuidora ABC Ltda', '12.345.678/0001-90', '(11) 99999-9999', 'contato@distribuidoraabc.com.br', 'Rua das Flores, 123 - Centro, São Paulo - SP', 'João Silva', '(11) 88888-8888', 30, 50000.00),
 ('Alimentos XYZ S.A.', '98.765.432/0001-10', '(21) 77777-7777', 'vendas@alimentosxyz.com.br', 'Av. Brasil, 456 - Rio de Janeiro - RJ', 'Maria Santos', '(21) 66666-6666', 45, 75000.00),
 ('Bebidas Premium Ltda', '55.444.333/0001-22', '(31) 55555-5555', 'comercial@bebidaspremium.com.br', 'Rua dos Vinhos, 789 - Belo Horizonte - MG', 'Pedro Oliveira', '(31) 44444-4444', 60, 100000.00);
+
+-- Adicionar coluna afeta_caixa na tabela pagamentos_fornecedor (se não existir)
+ALTER TABLE pagamentos_fornecedor ADD COLUMN IF NOT EXISTS afeta_caixa BOOLEAN DEFAULT FALSE;
+
+-- Atualizar registros existentes baseados na movimentacao_financeira correspondente
+UPDATE pagamentos_fornecedor pf
+JOIN movimentacoes_financeiras mf ON mf.entidade_id = pf.fornecedor_id 
+  AND mf.entidade_tipo = 'fornecedor' 
+  AND mf.referencia LIKE CONCAT('Pagamento fornecedor #', pf.id)
+SET pf.afeta_caixa = (mf.categoria = 'sangria')
+WHERE pf.afeta_caixa = FALSE OR pf.afeta_caixa IS NULL;
 
 SELECT 'Tabelas de fornecedores criadas com sucesso!' as status;
