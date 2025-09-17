@@ -42,6 +42,9 @@ export default function HistoricoPage() {
   // Estado para controlar a exibição do resumo mobile
   const [showMobileResumo, setShowMobileResumo] = useState(false)
 
+  // Estado para controlar a aba ativa do modal de detalhes da venda
+  const [activeTab, setActiveTab] = useState("basico")
+
   useEffect(() => {
     carregarVendas()
   }, [])
@@ -115,13 +118,6 @@ export default function HistoricoPage() {
   const verDetalhes = (venda: Venda) => {
     setVendaSelecionada(venda)
     setShowModal(true)
-    document.body.classList.add('modal-open')
-  }
-
-  const fecharModal = () => {
-    setShowModal(false)
-    setVendaSelecionada(null)
-    document.body.classList.remove('modal-open')
   }
 
   const imprimirCupomSegundaVia = (vendaId: number) => {
@@ -527,159 +523,307 @@ export default function HistoricoPage() {
 
       {/* Modal de Detalhes da Venda */}
       {showModal && vendaSelecionada && (
-        <div className="modal-overlay">
-          <div className="modal">
-            {/* Header do Modal - Estilo Produtos */}
-            <div className="sale-header">
-              <div className="sale-header-info">
-                <div className="sale-header-icon">
+        <div className="product-modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="product-modal" onClick={(e) => e.stopPropagation()}>
+            {/* Header do Modal */}
+            <div className="product-header">
+              <div className="product-header-info">
+                <div className="product-header-icon">
                   <Eye size={24} />
                 </div>
                 <div>
-                  <h2 className="sale-header-title">
+                  <h2 className="product-header-title">
                     Venda #{vendaSelecionada.id.toString().padStart(6, '0')}
                   </h2>
                 </div>
               </div>
               <button
                 className="modal-close-btn"
-                onClick={() => fecharModal()}
+                onClick={() => setShowModal(false)}
                 title="Fechar"
               >
                 <X size={20} />
               </button>
             </div>
 
-            {/* Conteúdo do Modal - Estilo Extrato Fiado */}
-            <div className="sale-modal-content">
-              {/* Seção: Informações da Venda */}
-              <div className="sale-info-card">
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <Calendar size={20} style={{ color: 'var(--text-muted)' }} />
-                    <span className="text-base font-medium" style={{ color: 'var(--text-muted)' }}>Data: {formatarData(vendaSelecionada.data_venda)}</span>
-                  </div>
-                </div>
+            {/* Navegação por Abas */}
+            <div className="modal-tabs">
+              <button
+                className={`tab-btn ${activeTab === "basico" ? "active" : ""}`}
+                onClick={() => setActiveTab("basico")}
+              >
+                <Calendar size={16} />
+                Básico
+              </button>
+              <button
+                className={`tab-btn ${activeTab === "itens" ? "active" : ""}`}
+                onClick={() => setActiveTab("itens")}
+              >
+                <Settings size={16} />
+                Itens
+              </button>
+              <button
+                className={`tab-btn ${activeTab === "pagamento" ? "active" : ""}`}
+                onClick={() => setActiveTab("pagamento")}
+              >
+                <Printer size={16} />
+                Pagamento
+              </button>
+            </div>
 
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div style={{
-                      width: '2.5rem',
-                      height: '2.5rem',
-                      borderRadius: '50%',
-                      background: vendaSelecionada.cliente_nome ? 'var(--success)' : 'var(--text-muted)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'white',
-                      fontWeight: 'bold',
-                      fontSize: '14px'
-                    }}>
-                      {vendaSelecionada.cliente_nome ?
-                        vendaSelecionada.cliente_nome.charAt(0).toUpperCase() :
-                        'A'
-                      }
-                    </div>
-                    <div>
-                      <div className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>
-                        {vendaSelecionada.cliente_nome || "Cliente Avulso"}
+            {/* Conteúdo do Modal */}
+            <div className="modal-body-1">
+              {/* Aba Básico */}
+              {activeTab === "basico" && (
+                <div className="form-section">
+                  <div className="form-grid-1">
+                    <div className="form-group-1">
+                      <label className="form-label">Data da Venda</label>
+                      <div className="input-with-icon">
+                        <Calendar size={16} className="input-icon" />
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={formatarData(vendaSelecionada.data_venda)}
+                          readOnly
+                        />
                       </div>
-                      <div className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                        {formatarFormaPagamento(vendaSelecionada.forma_pagamento)}
+                    </div>
+
+                    <div className="form-group-1">
+                      <label className="form-label">Cliente</label>
+                      <div className="input-with-icon">
+                        <div
+                          style={{
+                            width: '20px',
+                            height: '20px',
+                            borderRadius: '50%',
+                            background: vendaSelecionada.cliente_nome ? 'var(--success)' : 'var(--text-muted)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'white',
+                            fontWeight: 'bold',
+                            fontSize: '10px',
+                            marginRight: '8px'
+                          }}
+                        >
+                          {vendaSelecionada.cliente_nome ?
+                            vendaSelecionada.cliente_nome.charAt(0).toUpperCase() :
+                            'A'
+                          }
+                        </div>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={vendaSelecionada.cliente_nome || "Cliente Avulso"}
+                          readOnly
+                          style={{ paddingLeft: '36px' }}
+                        />
                       </div>
                     </div>
-                  </div>
 
-                  <div style={{ textAlign: 'right', fontSize: '14px', color: 'var(--text-muted)' }}>
-                    {vendaSelecionada.itens.length} produto{vendaSelecionada.itens.length !== 1 ? 's' : ''}
-                    <br />
-                    {vendaSelecionada.itens.reduce((sum, item) => sum + Number(item.quantidade || 0), 0)} iten{vendaSelecionada.itens.reduce((sum, item) => sum + Number(item.quantidade || 0), 0) !== 1 ? 's' : ''}
-                  </div>
-                </div>
-              </div>
-
-              {/* Seção: Desconto (se houver) */}
-              {vendaSelecionada.desconto_tipo && (Number(vendaSelecionada.desconto_valor) > 0 || Number(vendaSelecionada.desconto_percentual) > 0) && (
-                <div className="sale-discount-card">
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <span style={{ fontSize: '16px', fontWeight: '600', color: '#d97706' }}>
-                        Desconto Aplicado
-                      </span>
+                    <div className="form-group-1">
+                      <label className="form-label">Total da Venda</label>
+                      <div className="input-with-icon">
+                        <div style={{
+                          color: 'var(--success)',
+                          fontWeight: 'bold',
+                          fontSize: '16px',
+                          marginRight: '8px'
+                        }}>
+                          R$
+                        </div>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={Number(vendaSelecionada.total || 0).toFixed(2)}
+                          readOnly
+                          style={{
+                            paddingLeft: '36px',
+                            fontWeight: 'bold',
+                            color: 'var(--success)',
+                            fontSize: '16px'
+                          }}
+                        />
+                      </div>
                     </div>
-                    <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#d97706' }}>
-                      {vendaSelecionada.desconto_tipo === 'percent'
-                        ? `${Number(vendaSelecionada.desconto_percentual)}%`
-                        : 'Valor fixo'
-                      } (-R$ {Number(vendaSelecionada.desconto_valor || 0).toFixed(2)})
-                    </span>
+
+                    <div className="form-group-1">
+                      <label className="form-label">Status</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value="Concluída"
+                        readOnly
+                        style={{ background: 'var(--surface)', color: 'var(--success)' }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Resumo da Venda */}
+                  <div className="stock-summary">
+                    <h4>Resumo da Venda</h4>
+                    <div className="summary-grid">
+                      <div className="summary-item">
+                        <span className="summary-label">Produtos:</span>
+                        <span className="summary-value">
+                          {vendaSelecionada.itens.length} item{vendaSelecionada.itens.length !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      <div className="summary-item">
+                        <span className="summary-label">Quantidade Total:</span>
+                        <span className="summary-value">
+                          {vendaSelecionada.itens.reduce((sum, item) => sum + Number(item.quantidade || 0), 0)} unidade{vendaSelecionada.itens.reduce((sum, item) => sum + Number(item.quantidade || 0), 0) !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
 
-              {/* Seção: Itens da Venda */}
-              <div className="sale-items-section">
-                <h4 className="sale-items-header">
-                  Itens da Venda
-                </h4>
+              {/* Aba Itens */}
+              {activeTab === "itens" && (
+                <div className="form-section">
+                  <div className="section-header">
+                    <h3>Itens da Venda</h3>
+                  </div>
 
-                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                  {vendaSelecionada.itens.map((item, index) => (
-                    <div key={index} className="sale-item">
-                      <div className="sale-item-info">
-                        <div className="sale-item-name">
-                          {item.produto_nome}
-                        </div>
-                        <div className="sale-item-details">
-                          {item.quantidade}x R$ {item.preco_unitario.toFixed(2)}
+                  <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                    {vendaSelecionada.itens.map((item, index) => (
+                      <div key={index} className="form-group-1" style={{
+                        border: '1px solid var(--border-light)',
+                        borderRadius: '8px',
+                        padding: '16px',
+                        marginBottom: '12px',
+                        background: index % 2 === 0 ? 'var(--surface)' : 'transparent'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>
+                              {item.produto_nome}
+                            </div>
+                            <div style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
+                              {item.quantidade}x R$ {item.preco_unitario.toFixed(2)} cada
+                            </div>
+                          </div>
+                          <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--success)' }}>
+                            R$ {item.subtotal.toFixed(2)}
+                          </div>
                         </div>
                       </div>
-                      <div className="sale-item-price">
-                        R$ {item.subtotal.toFixed(2)}
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Aba Pagamento */}
+              {activeTab === "pagamento" && (
+                <div className="form-section">
+                  <div className="form-grid-1">
+                    <div className="form-group-1">
+                      <label className="form-label">Forma de Pagamento</label>
+                      <div className="input-with-icon">
+                        <Printer size={16} className="input-icon" />
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={formatarFormaPagamento(vendaSelecionada.forma_pagamento)}
+                          readOnly
+                        />
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
 
-              {/* Seção: Resumo e Ações */}
-              <div className="sale-summary">
-                <div className="sale-total-info">
-                  <div className="sale-total-label">
-                    Total Geral
-                  </div>
-                  <div className="sale-total-value">
-                    R$ {(Number(vendaSelecionada.total) || 0).toFixed(2)}
-                  </div>
-                </div>
+                    {vendaSelecionada.desconto_tipo && (Number(vendaSelecionada.desconto_valor) > 0 || Number(vendaSelecionada.desconto_percentual) > 0) && (
+                      <>
+                        <div className="form-group-1">
+                          <label className="form-label">Tipo de Desconto</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            value={vendaSelecionada.desconto_tipo === 'percent' ? 'Percentual' : 'Valor Fixo'}
+                            readOnly
+                          />
+                        </div>
 
-                <div className="sale-actions">
-                  <button
-                    className="btn btn-primary"
-                    onClick={() => imprimirCupom(vendaSelecionada)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      padding: '8px 16px',
-                      fontSize: '14px'
-                    }}
-                  >
-                    <Printer size={14} />
-                    Cupom
-                  </button>
-                  <button
-                    className="btn btn-outline"
-                    onClick={() => fecharModal()}
-                    style={{
-                      padding: '8px 16px',
-                      fontSize: '14px'
-                    }}
-                  >
-                    Fechar
-                  </button>
+                        <div className="form-group-1">
+                          <label className="form-label">Valor do Desconto</label>
+                          <div className="input-with-icon">
+                            <div style={{
+                              color: '#d97706',
+                              fontWeight: 'bold',
+                              marginRight: '8px'
+                            }}>
+                              -
+                            </div>
+                            <input
+                              type="text"
+                              className="form-input"
+                              value={vendaSelecionada.desconto_tipo === 'percent'
+                                ? `${Number(vendaSelecionada.desconto_percentual)}%`
+                                : `R$ ${Number(vendaSelecionada.desconto_valor || 0).toFixed(2)}`
+                              }
+                              readOnly
+                              style={{
+                                paddingLeft: '36px',
+                                color: '#d97706',
+                                fontWeight: 'bold'
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Resumo Financeiro */}
+                  <div className="financial-summary">
+                    <h4>Resumo Financeiro</h4>
+                    <div className="summary-grid">
+                      <div className="summary-item">
+                        <span className="summary-label">Valor Bruto:</span>
+                        <span className="summary-value">
+                          R$ {(Number(vendaSelecionada.total) + Number(vendaSelecionada.desconto_valor || 0)).toFixed(2)}
+                        </span>
+                      </div>
+                      {Number(vendaSelecionada.desconto_valor) > 0 && (
+                        <div className="summary-item">
+                          <span className="summary-label">Desconto:</span>
+                          <span className="summary-value warning">
+                            -R$ {Number(vendaSelecionada.desconto_valor || 0).toFixed(2)}
+                          </span>
+                        </div>
+                      )}
+                      <div className="summary-item">
+                        <span className="summary-label">Valor Final:</span>
+                        <span className="summary-value success">
+                          R$ {Number(vendaSelecionada.total || 0).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+              )}
+            </div>
+
+            {/* Footer do Modal */}
+            <div className="modal-footer-1">
+              <div className="footer-actions">
+                <button
+                  type="button"
+                  className="btn btn-outline btn-lg"
+                  onClick={() => setShowModal(false)}
+                >
+                  Fechar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-lg"
+                  onClick={() => imprimirCupom(vendaSelecionada)}
+                >
+                  <Printer size={18} />
+                  Imprimir Cupom
+                </button>
               </div>
             </div>
           </div>

@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ShoppingCart, Package, Users, History, CreditCard, Menu, X, DollarSign, Calculator, UserCog, Truck } from "lucide-react"
+import { ShoppingCart, Package, Users, History, CreditCard, Menu, X, DollarSign, Calculator, UserCog, Truck, Settings } from "lucide-react"
 
-type Page = "vendas" | "produtos" | "clientes" | "historico" | "fiados" | "pagamentos" | "caixa" | "funcionarios" | "fornecedores"
+type Page = "vendas" | "produtos" | "clientes" | "historico" | "fiados" | "pagamentos" | "caixa" | "funcionarios" | "fornecedores" | "configuracoes"
 
 const pageConfig = {
   vendas: {
@@ -50,6 +50,11 @@ const pageConfig = {
     title: "Fornecedores",
     subtitle: "Gerencie fornecedores e pagamentos",
     icon: Truck,
+  },
+  configuracoes: {
+    title: "Configurações",
+    subtitle: "Testes e configurações do sistema",
+    icon: Settings,
   },
 }
 
@@ -232,6 +237,13 @@ export default function Sidebar({ currentPage, onPageChange, isOpen: isOpenProp,
         {/* Rodapé do Sidebar */}
         <div className="sidebar-footer">
           <div className="footer-info">
+            <button
+              className="footer-settings-btn"
+              onClick={() => handlePageChange('configuracoes')}
+              title="Configurações do Sistema"
+            >
+              <Settings size={16} />
+            </button>
             <p className="footer-version">PDV Airton v1.0</p>
             <p className="footer-company">© 2025 Airton Lopes</p>
           </div>

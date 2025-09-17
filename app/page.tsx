@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { ShoppingCart, Package, Users, History, CreditCard, DollarSign, Calculator, UserCog, Menu, User, Truck } from "lucide-react"
+import { ShoppingCart, Package, Users, History, CreditCard, DollarSign, Calculator, UserCog, Menu, User, Truck, Settings } from "lucide-react"
 import VendasPage from "./vendas/page"
 import ProdutosPage from "./produtos/page"
 import ClientesPage from "./clientes/page"
@@ -11,11 +11,12 @@ import PagamentosPage from "./pagamentos/page"
 import CaixaPage from "./caixa/page"
 import FuncionariosPage from "./funcionarios/page"
 import FornecedoresPage from "./fornecedores/page"
+import ConfiguracoesPage from "./configuracoes/page"
 import Sidebar from "@/components/sidebar"
 import ConfirmationModal from '@/components/confirmation-modal'
 import '../styles/components.css'
 
-type Page = "vendas" | "produtos" | "clientes" | "historico" | "fiados" | "pagamentos" | "caixa" | "funcionarios" | "fornecedores"
+type Page = "vendas" | "produtos" | "clientes" | "historico" | "fiados" | "pagamentos" | "caixa" | "funcionarios" | "fornecedores" | "configuracoes"
 
 const pageConfig = {
   vendas: {
@@ -62,6 +63,11 @@ const pageConfig = {
     title: "Gerenciamento de Fornecedores",
     subtitle: "Gerencie fornecedores e pagamentos",
     icon: Truck,
+  },
+  configuracoes: {
+    title: "Configurações do Sistema",
+    subtitle: "Testes de conectividade e configurações gerais",
+    icon: Settings,
   },
 }
 
@@ -176,6 +182,8 @@ export default function HomePage() {
         return <FuncionariosPage />
       case "fornecedores":
         return <FornecedoresPage />
+      case "configuracoes":
+        return <ConfiguracoesPage />
       default:
         return <VendasPage />
     }

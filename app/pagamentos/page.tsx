@@ -435,46 +435,26 @@ const renderFormasPagamento = (movimento: MovimentoCaixa) => {
                                    movimento.referencia?.toLowerCase().includes('fornecedor')
 
       if (isPagamentoFornecedor) {
-        // Para pagamentos a fornecedores, usar EXATAMENTE a mesma API que funciona no caixa
-        const response = await fetch(`/api/pagamentos/${movimento.id}/dados-fornecedor`)
-        if (response.ok) {
-          const dadosFornecedor = await response.json()
+        // Para pagamentos a fornecedores, usar a mesma abordagem do caixa
+        // Abrir popup imediatamente para evitar bloqueio do navegador
+        const url = `/api/pagamentos/${movimento.id}/comprovante-fornecedor`
+        const newWindow = window.open(url, '_blank', 'width=400,height=600')
 
-          // Determinar se afetou o caixa baseado no campo afeta_caixa do pagamento
-          const afetaCaixa = dadosFornecedor.afeta_caixa ? 'true' : 'false'
-
-          // Criar URL com parâmetros EXATAMENTE como no caixa
-          const params = new URLSearchParams({
-            fornecedor_nome: dadosFornecedor.fornecedor_nome,
-            fornecedor_cnpj: dadosFornecedor.fornecedor_cpf_cnpj,
-            valor: dadosFornecedor.valor.toString(),
-            forma_pagamento: dadosFornecedor.forma_pagamento,
-            descricao: dadosFornecedor.observacoes || '',
-            afeta_caixa: afetaCaixa,
-            data_pagamento: dadosFornecedor.data_pagamento,
-            pagamento_id: dadosFornecedor.pagamento_id.toString()
-          })
-
-          const url = `/api/fornecedores/pagamentos/${dadosFornecedor.pagamento_id}/comprovante?${params.toString()}`
-
-          const newWindow = window.open(url, '_blank', 'width=400,height=600')
-
-          if (!newWindow) {
-            toast({
-              title: "Erro ao imprimir",
-              description: "Verifique o bloqueador de pop-ups",
-              variant: "destructive"
-            })
-            return
-          }
-
-          // Mesmo comportamento do caixa - sem print automático
+        if (!newWindow) {
           toast({
-            title: "Recibo aberto",
-            description: "Janela de impressão foi aberta"
+            title: "Erro ao imprimir",
+            description: "Verifique o bloqueador de pop-ups",
+            variant: "destructive"
           })
           return
         }
+
+        // Mesmo comportamento do caixa - sem print automático
+        toast({
+          title: "Recibo aberto",
+          description: "Janela de impressão foi aberta"
+        })
+        return
       }
 
       // Para outros tipos de movimento, usar API genérica
