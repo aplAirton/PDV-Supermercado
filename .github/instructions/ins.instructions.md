@@ -21,3 +21,5 @@ use apenas estilização em arquivo global css ou especifico quando solicitado, 
 
 QUANDO FOR NOMEAR ARQUIVOS DE ROTAS PELO AMOR DE DEU NOMEIE COM ALGO IDENTIFICAVEL exemplo "qrcode_route"
 PARE DE GERAR ARQUIVOS DE INSTRUÇÃO .MD
+
+NAO USE COMANDOS DE TERMIALL!!!!
