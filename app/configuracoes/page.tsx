@@ -14,6 +14,11 @@ export default function ConfiguracoesPage() {
   const [showDatabaseResultModal, setShowDatabaseResultModal] = useState(false)
   const [showDatabaseLoadingModal, setShowDatabaseLoadingModal] = useState(false)
   const [showDatabaseLogsModal, setShowDatabaseLogsModal] = useState(false)
+  const [showMasterPasswordModal, setShowMasterPasswordModal] = useState(false)
+  const [masterPassword, setMasterPassword] = useState('')
+  const [masterPasswordError, setMasterPasswordError] = useState('')
+  const [masterPasswordLoading, setMasterPasswordLoading] = useState(false)
+  const [pendingDatabaseChange, setPendingDatabaseChange] = useState<'remote' | 'local' | null>(null)
   const [databaseLogs, setDatabaseLogs] = useState<any[]>([])
   const [logsLoading, setLogsLoading] = useState(false)
 
@@ -244,8 +249,11 @@ export default function ConfiguracoesPage() {
   // Função para lidar com clique na opção de banco
   const handleDatabaseOptionClick = (type: 'remote' | 'local') => {
     if (type !== currentDatabase) {
-      setSelectedDatabaseType(type)
-      setShowDatabaseConfirmModal(true)
+      // Armazenar a alteração pendente e pedir senha mestra
+      setPendingDatabaseChange(type)
+      setShowMasterPasswordModal(true)
+      setMasterPassword('')
+      setMasterPasswordError('')
     }
   }
 
@@ -324,6 +332,63 @@ export default function ConfiguracoesPage() {
     } catch (error) {
       console.error('Erro ao limpar logs:', error)
     }
+  }
+
+  // Função para validar senha mestra
+  const validateMasterPassword = async (): Promise<boolean> => {
+    setMasterPasswordLoading(true)
+    setMasterPasswordError('')
+    
+    try {
+      const response = await fetch('/api/master-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password: masterPassword })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        console.log('[MASTER PASSWORD] Senha validada com sucesso')
+        return true
+      } else {
+        setMasterPasswordError(data.error || 'Senha mestra inválida')
+        return false
+      }
+    } catch (error) {
+      console.error('[MASTER PASSWORD] Erro ao validar senha:', error)
+      setMasterPasswordError('Erro ao validar senha mestra')
+      return false
+    } finally {
+      setMasterPasswordLoading(false)
+    }
+  }
+
+  // Função para processar alteração do banco após validação da senha
+  const processDatabaseChangeWithMasterPassword = async () => {
+    const isValidPassword = await validateMasterPassword()
+    
+    if (isValidPassword && pendingDatabaseChange) {
+      // Fechar modal da senha mestra
+      setShowMasterPasswordModal(false)
+      setMasterPassword('')
+      setMasterPasswordError('')
+      
+      // Prosseguir com a alteração
+      setSelectedDatabaseType(pendingDatabaseChange)
+      setShowDatabaseConfirmModal(true)
+      setPendingDatabaseChange(null)
+    }
+  }
+
+  // Função para cancelar alteração do banco
+  const cancelDatabaseChange = () => {
+    setShowMasterPasswordModal(false)
+    setMasterPassword('')
+    setMasterPasswordError('')
+    setPendingDatabaseChange(null)
   }
 
   return (
@@ -1784,6 +1849,97 @@ export default function ConfiguracoesPage() {
                         </div>
                       ))
                     )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Senha Mestra */}
+      {showMasterPasswordModal && (
+        <div className="modal-overlay">
+          <div className="modal-container modal-container-sm">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h3 className="modal-title">Autenticação Necessária</h3>
+                <button 
+                  onClick={cancelDatabaseChange}
+                  className="modal-close-btn"
+                  disabled={masterPasswordLoading}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="modal-body">
+                <div className="master-password-form">
+                  <div className="master-password-info">
+                    <div className="security-icon">
+                      🔐
+                    </div>
+                    <h4>Senha Mestra Requerida</h4>
+                    <p>
+                      Para alterar a configuração do banco de dados de <strong>{getCurrentDatabaseInfo().isRemote ? 'remoto' : 'local'}</strong> para <strong>{pendingDatabaseChange === 'remote' ? 'remoto' : 'local'}</strong>, é necessário fornecer a senha mestra.
+                    </p>
+                    <div className="password-hint">
+                      <small>💡 A senha é calculada baseada na hora atual (formato 24h)</small>
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="masterPassword">Senha Mestra (4 dígitos):</label>
+                    <input
+                      id="masterPassword"
+                      type="password"
+                      value={masterPassword}
+                      onChange={(e) => {
+                        setMasterPassword(e.target.value.slice(0, 4)) // Limitar a 4 dígitos
+                        setMasterPasswordError('') // Limpar erro ao digitar
+                      }}
+                      placeholder="0000"
+                      maxLength={4}
+                      className={`form-input ${masterPasswordError ? 'error' : ''}`}
+                      disabled={masterPasswordLoading}
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && masterPassword.length === 4) {
+                          processDatabaseChangeWithMasterPassword()
+                        }
+                      }}
+                    />
+                    {masterPasswordError && (
+                      <div className="error-message">
+                        {masterPasswordError}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="master-password-actions">
+                    <button
+                      onClick={cancelDatabaseChange}
+                      className="btn btn-outline"
+                      disabled={masterPasswordLoading}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={processDatabaseChangeWithMasterPassword}
+                      className="btn btn-primary"
+                      disabled={masterPasswordLoading || masterPassword.length !== 4}
+                    >
+                      {masterPasswordLoading ? (
+                        <>
+                          <Loader size={16} className="animate-spin" />
+                          Validando...
+                        </>
+                      ) : (
+                        <>
+                          🔓 Confirmar
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
               </div>
