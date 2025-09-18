@@ -50,23 +50,23 @@ const pageConfig = {
     icon: DollarSign,
   },
   caixa: {
-    title: "Gerenciamento de Caixa",
+    title: "Caixa",
     subtitle: "Gerenciamento de abertura e fechamento do caixa",
     icon: Calculator,
   },
   funcionarios: {
-    title: "Gerenciamento de Funcionários",
+    title: "Funcionários",
     subtitle: "Cadastre e gerencie funcionários",
     icon: UserCog,
   },
   fornecedores: {
-    title: "Gerenciamento de Fornecedores",
-    subtitle: "Gerencie fornecedores e pagamentos",
+    title: "Fornecedores",
+    subtitle: "Cadastre e gerencie fornecedores",
     icon: Truck,
   },
   configuracoes: {
-    title: "Configurações do Sistema",
-    subtitle: "Testes de conectividade e configurações gerais",
+    title: "Configurações",
+    subtitle: "Configurações gerais do sistema",
     icon: Settings,
   },
 }
@@ -74,7 +74,7 @@ const pageConfig = {
 export default function HomePage() {
   const [currentPage, setCurrentPage] = useState<Page>("vendas")
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  
+
   // Estados para controle de carrinho e confirmação de navegação
   const [hasCartItems, setHasCartItems] = useState(false)
   const [showConfirmNavigation, setShowConfirmNavigation] = useState(false)
@@ -83,7 +83,8 @@ export default function HomePage() {
     funcionario_nome: string
     funcionario_cargo: string
   } | null>(null)
-  
+  const [currentDatabase, setCurrentDatabase] = useState<'remote' | 'local'>('remote')
+
   const vendasPageRef = useRef<any>(null)
 
   // Effect para verificar dados do localStorage
@@ -92,7 +93,7 @@ export default function HomePage() {
       // Verificar se há itens no carrinho
       const cartItems = localStorage.getItem('vendas_carrinho')
       setHasCartItems(cartItems ? JSON.parse(cartItems).length > 0 : false)
-      
+
       // Verificar dados do operador
       const operatorData = localStorage.getItem('vendas_operador')
       setDadosOperador(operatorData ? JSON.parse(operatorData) : null)
@@ -122,6 +123,38 @@ export default function HomePage() {
     }
   }, [])
 
+  // Effect para carregar configuração do banco de dados
+  useEffect(() => {
+    const loadDatabaseConfig = () => {
+      // Carregar configuração do servidor
+      fetch('/api/database/reload-config')
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            setCurrentDatabase(data.currentType)
+          }
+        })
+        .catch(error => {
+          console.error('Erro ao carregar configuração do banco:', error)
+        })
+    }
+
+    loadDatabaseConfig()
+
+    // Listener para mudanças na configuração do banco
+    const handleDatabaseChange = (e: StorageEvent) => {
+      if (e.key === 'database_config') {
+        const newConfig = e.newValue as 'remote' | 'local'
+        if (newConfig) {
+          setCurrentDatabase(newConfig)
+        }
+      }
+    }
+
+    window.addEventListener('storage', handleDatabaseChange)
+    return () => window.removeEventListener('storage', handleDatabaseChange)
+  }, [])
+
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen)
   }
@@ -147,7 +180,7 @@ export default function HomePage() {
     setSidebarOpen(false)
     // Resetar estado do carrinho
     setHasCartItems(false)
-    
+
     // Limpar dados do localStorage
     if (typeof window !== 'undefined') {
       localStorage.removeItem('vendas_carrinho')
@@ -199,13 +232,12 @@ export default function HomePage() {
         onPageChange={handlePageChange}
         isOpen={sidebarOpen}
         onToggle={setSidebarOpen}
-      />
-
-      <main className="main-content">
+        currentDatabase={currentDatabase}
+      />      <main className="main-content">
         <header className="content-header">
           <div className="header-left">
-            <button 
-              className="mobile-menu-btn-header" 
+            <button
+              className="mobile-menu-btn-header"
               onClick={toggleSidebar}
               aria-label="Toggle menu"
             >
@@ -216,7 +248,7 @@ export default function HomePage() {
               <IconComponent size={24} />
             </div>
           </div>
-          
+
           {/* Informações do operador no canto direito - apenas na tela de carrinho */}
           <div className="header-right">
             {currentPage === "vendas" && dadosOperador && (
@@ -231,7 +263,7 @@ export default function HomePage() {
           {renderPage()}
         </div>
       </main>
-      
+
       {/* Modal de confirmação de navegação */}
       {showConfirmNavigation && (
         <ConfirmationModal

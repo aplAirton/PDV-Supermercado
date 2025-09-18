@@ -1,4 +1,48 @@
 import mysql from "mysql2/promise"
+import { getCurrentDatabaseType, updateDatabaseConfig, getCurrentDatabaseConfig as getPersistentConfig } from "./database-config"
+
+// Re-exportar funções do módulo de configuração
+export { getCurrentDatabaseType, getPersistentConfig as getCurrentDatabaseConfig }
+
+// Sistema de logs para banco de dados
+interface DatabaseLog {
+  timestamp: Date
+  operation: string
+  configType: 'remote' | 'local'
+  details?: string
+  error?: string
+}
+
+let databaseLogs: DatabaseLog[] = []
+const MAX_LOGS = 100
+
+function addDatabaseLog(operation: string, configType: 'remote' | 'local', details?: string, error?: string) {
+  const log: DatabaseLog = {
+    timestamp: new Date(),
+    operation,
+    configType,
+    details,
+    error
+  }
+
+  databaseLogs.unshift(log) // Adiciona no início
+
+  // Mantém apenas os logs mais recentes
+  if (databaseLogs.length > MAX_LOGS) {
+    databaseLogs = databaseLogs.slice(0, MAX_LOGS)
+  }
+
+  // Log no console para desenvolvimento
+  console.log(`[DATABASE ${configType.toUpperCase()}] ${operation}${details ? ` - ${details}` : ''}${error ? ` - ERROR: ${error}` : ''}`)
+}
+
+export function getDatabaseLogs(): DatabaseLog[] {
+  return [...databaseLogs]
+}
+
+export function clearDatabaseLogs() {
+  databaseLogs = []
+}
 
 // Configurações de banco de dados
 const dbConfigs = {
@@ -24,41 +68,54 @@ const dbConfigs = {
   }
 }
 
+// Estado global da configuração atual
+let currentDatabaseType: 'remote' | 'local' = 'remote' // Valor padrão seguro
+
+// Inicializar com valor do arquivo se disponível
+try {
+  currentDatabaseType = getCurrentDatabaseType()
+} catch (error) {
+  console.warn('[DATABASE] Erro ao carregar configuração inicial, usando padrão:', error)
+}
+
 // Função para obter configuração específica
 export function getDbConfig(type: 'remote' | 'local' = 'remote') {
   return dbConfigs[type]
 }
 
-// Função para obter a configuração atual
-function getCurrentDbConfig() {
-  // Em ambiente de servidor, verificar se há uma configuração forçada
-  // Caso contrário, usar remoto como padrão
-  if (typeof window !== 'undefined') {
-    // No navegador, verificar localStorage
-    const savedConfig = localStorage.getItem('database_config') as 'remote' | 'local'
-    return dbConfigs[savedConfig || 'remote']
-  }
-
-  // No servidor, sempre usar remoto (pode ser alterado via variáveis de ambiente)
-  return dbConfigs.remote
+// Função para definir o tipo atual de banco (para compatibilidade)
+export function setCurrentDatabaseType(type: 'remote' | 'local') {
+  updateDatabaseConfig(type)
+  currentDatabaseType = type
 }
 
-// Configuração atual do banco
-let dbConfig = getCurrentDbConfig()
+// Função para obter a configuração atual
+function getCurrentDbConfig() {
+  return dbConfigs[currentDatabaseType]
+}
 
 // Função para recarregar a configuração (usada quando o usuário altera a configuração)
-export function reloadDatabaseConfig() {
-  dbConfig = getCurrentDbConfig()
+export function reloadDatabaseConfig(newType?: 'remote' | 'local') {
+  if (newType) {
+    updateDatabaseConfig(newType)
+    currentDatabaseType = newType
+  } else {
+    // Recarregar do arquivo
+    currentDatabaseType = getCurrentDatabaseType()
+  }
+
+  addDatabaseLog('CONFIG_RELOAD', currentDatabaseType, 'Configuração recarregada')
 }
 
 export async function getConnection() {
   try {
-    // Recarregar configuração antes de cada conexão (para capturar mudanças)
-    reloadDatabaseConfig()
-    const connection = await mysql.createConnection(dbConfig)
+    const config = getCurrentDbConfig()
+    addDatabaseLog('CONNECTION_CREATE', currentDatabaseType, `Conectando a ${config.host}:${config.port}`)
+    const connection = await mysql.createConnection(config)
+    addDatabaseLog('CONNECTION_SUCCESS', currentDatabaseType, 'Conexão estabelecida com sucesso')
     return connection
   } catch (error) {
-  console.error("Erro ao conectar com o banco:", error)
+    addDatabaseLog('CONNECTION_ERROR', currentDatabaseType, 'Falha ao conectar', error instanceof Error ? error.message : 'Erro desconhecido')
     throw error
   }
 }
@@ -66,10 +123,12 @@ export async function getConnection() {
 export async function getConnectionWithConfig(type: 'remote' | 'local' = 'remote') {
   try {
     const config = getDbConfig(type)
+    addDatabaseLog('CONNECTION_CREATE_CONFIG', type, `Conectando a ${config.host}:${config.port}`)
     const connection = await mysql.createConnection(config)
+    addDatabaseLog('CONNECTION_SUCCESS_CONFIG', type, 'Conexão estabelecida com sucesso')
     return connection
   } catch (error) {
-    console.error(`Erro ao conectar com o banco ${type}:`, error)
+    addDatabaseLog('CONNECTION_ERROR_CONFIG', type, 'Falha ao conectar', error instanceof Error ? error.message : 'Erro desconhecido')
     throw error
   }
 }
@@ -77,8 +136,13 @@ export async function getConnectionWithConfig(type: 'remote' | 'local' = 'remote
 export async function executeQuery(query: string, params: any[] = []) {
   const connection = await getConnection()
   try {
+    addDatabaseLog('QUERY_EXECUTE', currentDatabaseType, `Executando query: ${query.substring(0, 100)}${query.length > 100 ? '...' : ''}`)
     const [results] = await connection.execute(query, params)
+    addDatabaseLog('QUERY_SUCCESS', currentDatabaseType, `Query executada com sucesso - ${Array.isArray(results) ? results.length : 1} resultado(s)`)
     return results
+  } catch (error) {
+    addDatabaseLog('QUERY_ERROR', currentDatabaseType, `Erro na query: ${query.substring(0, 50)}...`, error instanceof Error ? error.message : 'Erro desconhecido')
+    throw error
   } finally {
     await connection.end()
   }
@@ -87,8 +151,13 @@ export async function executeQuery(query: string, params: any[] = []) {
 export async function executeQueryWithConfig(query: string, params: any[] = [], configType: 'remote' | 'local' = 'remote') {
   const connection = await getConnectionWithConfig(configType)
   try {
+    addDatabaseLog('QUERY_EXECUTE_CONFIG', configType, `Executando query: ${query.substring(0, 100)}${query.length > 100 ? '...' : ''}`)
     const [results] = await connection.execute(query, params)
+    addDatabaseLog('QUERY_SUCCESS_CONFIG', configType, `Query executada com sucesso - ${Array.isArray(results) ? results.length : 1} resultado(s)`)
     return results
+  } catch (error) {
+    addDatabaseLog('QUERY_ERROR_CONFIG', configType, `Erro na query: ${query.substring(0, 50)}...`, error instanceof Error ? error.message : 'Erro desconhecido')
+    throw error
   } finally {
     await connection.end()
   }

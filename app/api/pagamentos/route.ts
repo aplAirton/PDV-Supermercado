@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import prisma from '@/lib/prisma'
+import { getCurrentPrismaInstance } from '@/lib/prisma'
 import type { Prisma } from '@prisma/client'
 
 // API para registrar pagamentos múltiplos de fiados para um cliente
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar fiados em aberto do cliente
-    const fiadosAbertos = await prisma.fiados.findMany({
+    const fiadosAbertos = await getCurrentPrismaInstance().fiados.findMany({
       where: { 
         cliente_id: Number(cliente_id),
         status: { in: ['aberto', 'parcial'] }
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Cliente não possui fiados em aberto' }, { status: 400 })
     }
 
-    const cliente = await prisma.clientes.findUnique({
+    const cliente = await getCurrentPrismaInstance().clientes.findUnique({
       where: { id: Number(cliente_id) }
     })
 
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        result = await getCurrentPrismaInstance().$transaction(async (tx: Prisma.TransactionClient) => {
           const pagamentosRegistrados: any[] = []
           const movimentosRegistrados: any[] = []
           let valorRestante = totalPagamento

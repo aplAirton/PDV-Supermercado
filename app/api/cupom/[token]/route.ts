@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import prisma from '@/lib/prisma'
+import { getCurrentPrismaInstance } from '@/lib/prisma'
 import { isValidToken } from '@/lib/cupom-utils'
 
 export async function GET(
@@ -14,7 +14,7 @@ export async function GET(
     }
 
     // Buscar cupom_link pelo token
-    const cupomLink = await prisma.$queryRaw<any[]>`
+    const cupomLink = await getCurrentPrismaInstance().$queryRaw<any[]>`
       SELECT cl.*, v.*, c.conteudo_texto, cli.nome as cliente_nome
       FROM cupom_links cl
       JOIN vendas v ON cl.venda_id = v.id
@@ -31,7 +31,7 @@ export async function GET(
     const dados = cupomLink[0]
 
     // Buscar itens da venda
-    const itens = await prisma.$queryRaw<any[]>`
+    const itens = await getCurrentPrismaInstance().$queryRaw<any[]>`
       SELECT iv.*, p.nome as produto_nome
       FROM itens_venda iv
       JOIN produtos p ON iv.produto_id = p.id

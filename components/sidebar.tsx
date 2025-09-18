@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ShoppingCart, Package, Users, History, CreditCard, Menu, X, DollarSign, Calculator, UserCog, Truck, Settings } from "lucide-react"
+import { ShoppingCart, Package, Users, History, CreditCard, Menu, X, DollarSign, Calculator, UserCog, Truck, Settings, Globe, HardDrive } from "lucide-react"
 
 type Page = "vendas" | "produtos" | "clientes" | "historico" | "fiados" | "pagamentos" | "caixa" | "funcionarios" | "fornecedores" | "configuracoes"
 
@@ -63,9 +63,10 @@ interface SidebarProps {
   onPageChange: (page: Page) => void
   isOpen?: boolean
   onToggle?: (open: boolean) => void
+  currentDatabase?: 'remote' | 'local'
 }
 
-export default function Sidebar({ currentPage, onPageChange, isOpen: isOpenProp, onToggle }: SidebarProps) {
+export default function Sidebar({ currentPage, onPageChange, isOpen: isOpenProp, onToggle, currentDatabase = 'remote' }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(isOpenProp || false)
 
   // Sincronizar com prop externa
@@ -236,14 +237,26 @@ export default function Sidebar({ currentPage, onPageChange, isOpen: isOpenProp,
 
         {/* Rodapé do Sidebar */}
         <div className="sidebar-footer">
-          <div className="footer-info">
+          <div className="database-status-indicator">
             <button
-              className="footer-settings-btn"
+              className={`database-badge ${currentDatabase}`}
               onClick={() => handlePageChange('configuracoes')}
               title="Configurações do Sistema"
             >
-              <Settings size={16} />
+              {currentDatabase === 'remote' ? (
+                <>
+                  <Globe size={14} />
+                  Remoto
+                </>
+              ) : (
+                <>
+                  <HardDrive size={14} />
+                  Local
+                </>
+              )}
             </button>
+          </div>
+          <div className="footer-info">
             <p className="footer-version">PDV Airton v1.0</p>
             <p className="footer-company">© 2025 Airton Lopes</p>
           </div>

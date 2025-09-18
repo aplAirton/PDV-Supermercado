@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { executeQuery } from '@/lib/database'
-import prisma from '@/lib/prisma'
+import { getCurrentPrismaInstance } from '@/lib/prisma'
 import type { Prisma } from '@prisma/client'
 
 export async function GET(request: Request) {
@@ -46,7 +46,7 @@ export async function GET(request: Request) {
       }
     }
 
-    const vendas = await prisma.vendas.findMany({
+    const vendas = await getCurrentPrismaInstance().vendas.findMany({
       where,
       include: {
         cliente: true,
@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
 
   // Garantir que o cliente Prisma esteja conectado; se a conexão falhar, surface imediatamente
   try {
-    await prisma.$connect()
+    await getCurrentPrismaInstance().$connect()
   } catch (connectErr) {
     console.error(`[vendas][${requestId}] Falha ao conectar ao DB antes da transação:`, connectErr)
     throw connectErr
@@ -242,7 +242,7 @@ export async function POST(request: NextRequest) {
         valor_pix: valorPix,
         valor_fiado: valorFiado
       })
-      result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      result = await getCurrentPrismaInstance().$transaction(async (tx: Prisma.TransactionClient) => {
     // DEBUG: Verificar valores antes de salvar
       console.log(`[vendas][${requestId}] DEBUG - Valores finais:`, {
         valorDinheiroCorrigido,
@@ -398,7 +398,7 @@ export async function POST(request: NextRequest) {
 
     // Gerar cupom FORA da transação (não crítico para consistência)
     try {
-      const itensCriados = await prisma.itens_venda.findMany({ 
+      const itensCriados = await getCurrentPrismaInstance().itens_venda.findMany({ 
         where: { venda_id: result.vendaId }, 
         include: { produto: true } 
       })
@@ -431,7 +431,7 @@ export async function POST(request: NextRequest) {
       let clienteNomeForCupom = 'AVULSO'
       if (cliente_id) {
         try {
-          const clienteRec: any = await prisma.clientes.findUnique({ where: { id: Number(cliente_id) } })
+          const clienteRec: any = await getCurrentPrismaInstance().clientes.findUnique({ where: { id: Number(cliente_id) } })
           if (clienteRec && clienteRec.nome) clienteNomeForCupom = clienteRec.nome
         } catch (cliErr) {
           console.warn(`[vendas][${requestId}] Não foi possível buscar nome do cliente para cupom:`, cliErr)
@@ -481,7 +481,7 @@ export async function POST(request: NextRequest) {
 
       texto += linha + '\n' + pad('Obrigado pela preferência!', 40, 'center') + '\n' + pad('Volte sempre!', 40, 'center') + '\n' + linha
 
-      const cupomCriado = await prisma.cupons.create({ data: { venda_id: result.vendaId, conteudo_texto: texto } })
+      const cupomCriado = await getCurrentPrismaInstance().cupons.create({ data: { venda_id: result.vendaId, conteudo_texto: texto } })
       console.log(`[vendas][${requestId}] Cupom criado id=`, cupomCriado.id, 'venda_id=', cupomCriado.venda_id)
     } catch (cupomErr) {
       console.error(`[vendas][${requestId}] Erro ao criar cupom (não crítico):`, cupomErr)
@@ -490,7 +490,7 @@ export async function POST(request: NextRequest) {
     // Checar estoque final fora da transação para detectar alterações concorrentes
     for (const pidStr of Object.keys(aggByProduct)) {
       const pid = Number(pidStr)
-      const produtoFinal = await prisma.produtos.findUnique({ where: { id: pid } })
+      const produtoFinal = await getCurrentPrismaInstance().produtos.findUnique({ where: { id: pid } })
       console.log(`[vendas][${requestId}] Produto ${pid} - estoque final no DB:`, produtoFinal ? produtoFinal.estoque : null)
     }
 

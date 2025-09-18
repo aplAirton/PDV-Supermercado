@@ -1,10 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import prisma from '@/lib/prisma'
+import { getCurrentPrismaInstance } from '@/lib/prisma'
 
 export async function GET() {
   try {
     // Retorna registros de fiados (abertos/parciais) com informações do cliente e venda
-    const fiados = await prisma.fiados.findMany({
+    const fiados = await getCurrentPrismaInstance().fiados.findMany({
       where: {
         status: { in: ['aberto', 'parcial'] }
       },
