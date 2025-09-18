@@ -82,5 +82,22 @@ export function getConfigLastUpdated(): Date {
   return new Date(currentConfig.lastUpdated)
 }
 
+// Função de diagnóstico para debug
+export function debugConfig(): void {
+  console.log('[DATABASE_CONFIG] Estado atual:', currentConfig)
+  console.log('[DATABASE_CONFIG] Arquivo existe:', fs.existsSync(CONFIG_FILE_PATH))
+  console.log('[DATABASE_CONFIG] Caminho:', CONFIG_FILE_PATH)
+  if (fs.existsSync(CONFIG_FILE_PATH)) {
+    try {
+      const fileContent = fs.readFileSync(CONFIG_FILE_PATH, 'utf8')
+      console.log('[DATABASE_CONFIG] Conteúdo do arquivo:', fileContent)
+    } catch (error) {
+      console.log('[DATABASE_CONFIG] Erro ao ler arquivo:', error)
+    }
+  }
+}
+
 // Inicializar configuração na primeira carga
+console.log('[DATABASE_CONFIG] Inicializando sistema de configuração...')
 reloadDatabaseConfig()
+debugConfig()

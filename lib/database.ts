@@ -1,5 +1,6 @@
 import mysql from "mysql2/promise"
 import { getCurrentDatabaseType, updateDatabaseConfig, getCurrentDatabaseConfig as getPersistentConfig } from "./database-config"
+import './database-init' // Força inicialização da configuração
 
 // Re-exportar funções do módulo de configuração
 export { getCurrentDatabaseType, getPersistentConfig as getCurrentDatabaseConfig }
@@ -71,11 +72,26 @@ const dbConfigs = {
 // Estado global da configuração atual
 let currentDatabaseType: 'remote' | 'local' = 'remote' // Valor padrão seguro
 
+// Função para forçar recarregamento da configuração
+function ensureConfigUpdated() {
+  try {
+    const latestConfig = getCurrentDatabaseType()
+    if (latestConfig !== currentDatabaseType) {
+      console.log(`[DATABASE] Configuração atualizada de ${currentDatabaseType} para ${latestConfig}`)
+      currentDatabaseType = latestConfig
+    }
+  } catch (error) {
+    console.warn('[DATABASE] Erro ao recarregar configuração, mantendo atual:', error)
+  }
+}
+
 // Inicializar com valor do arquivo se disponível
 try {
   currentDatabaseType = getCurrentDatabaseType()
+  addDatabaseLog('INIT', currentDatabaseType, 'Configuração inicial carregada')
 } catch (error) {
   console.warn('[DATABASE] Erro ao carregar configuração inicial, usando padrão:', error)
+  addDatabaseLog('INIT_ERROR', currentDatabaseType, 'Erro ao carregar configuração, usando padrão')
 }
 
 // Função para obter configuração específica
@@ -91,6 +107,8 @@ export function setCurrentDatabaseType(type: 'remote' | 'local') {
 
 // Função para obter a configuração atual
 function getCurrentDbConfig() {
+  // Sempre verificar se a configuração mudou antes de usar
+  ensureConfigUpdated()
   return dbConfigs[currentDatabaseType]
 }
 
@@ -109,6 +127,9 @@ export function reloadDatabaseConfig(newType?: 'remote' | 'local') {
 
 export async function getConnection() {
   try {
+    // Garantir que a configuração está atualizada antes de conectar
+    ensureConfigUpdated()
+    
     const config = getCurrentDbConfig()
     addDatabaseLog('CONNECTION_CREATE', currentDatabaseType, `Conectando a ${config.host}:${config.port}`)
     const connection = await mysql.createConnection(config)
@@ -134,6 +155,9 @@ export async function getConnectionWithConfig(type: 'remote' | 'local' = 'remote
 }
 
 export async function executeQuery(query: string, params: any[] = []) {
+  // Garantir que sempre usamos a configuração mais atual
+  ensureConfigUpdated()
+  
   const connection = await getConnection()
   try {
     addDatabaseLog('QUERY_EXECUTE', currentDatabaseType, `Executando query: ${query.substring(0, 100)}${query.length > 100 ? '...' : ''}`)

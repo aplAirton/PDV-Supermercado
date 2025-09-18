@@ -653,7 +653,7 @@
 
 .progress-steps {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 1rem;
 }
 
@@ -672,9 +672,8 @@
 }
 
 .progress-step.active {
-  background: var(--primary);
+  background: #ffffff;
   color: var(--primary-foreground);
-  box-shadow: 0 0 20px rgba(25, 107, 230, 0.3);
 }
 
 .progress-step.completed {
