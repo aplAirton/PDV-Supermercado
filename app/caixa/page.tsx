@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Calculator, User, DollarSign, Shield, Clock, OctagonAlert, TrendingUp, Plus, Settings, AlertCircle, CheckCircle, Loader2, ArrowUp, ArrowDown, Lock, FileText, Printer, ArrowRightLeft, Check, X, Banknote, CreditCard, Smartphone, Receipt, Handshake, ShoppingCart, Wallet, ChevronDown, ChevronRight, ArrowLeft } from 'lucide-react'
 import LoadingModal from '../../components/loading-modal'
+import MasterPasswordConfirmation from '../../components/master-password-confirmation'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import '../../styles/caixa.css'
 
@@ -70,6 +71,8 @@ export default function CaixaPage() {
   const [showPagamentoModal, setShowPagamentoModal] = useState(false)
   const [pagamentoEtapa, setPagamentoEtapa] = useState<'fornecedor' | 'dados' | 'senha' | null>(null)
   const [fornecedores, setFornecedores] = useState<any[]>([])
+  const [loadingFornecedores, setLoadingFornecedores] = useState(false)
+  const [loadingFornecedoresInicial, setLoadingFornecedoresInicial] = useState(false)
   const [fornecedorSelecionado, setFornecedorSelecionado] = useState<any>(null)
   const [showCadastroFornecedor, setShowCadastroFornecedor] = useState(false)
   const [mostrarDescricaoPagamento, setMostrarDescricaoPagamento] = useState(false)
@@ -810,10 +813,13 @@ export default function CaixaPage() {
     setShowTipoMovimentoModal(false)
 
     if (tipo === 'pagamento') {
+      // Mostrar modal de loading inicial
+      setLoadingFornecedoresInicial(true)
+      
       // Buscar saldo disponível em dinheiro para validação
       await buscarSaldoDinheiroDisponivel()
-      setShowPagamentoModal(true)
-      setPagamentoEtapa('fornecedor')
+      
+      // Iniciar busca de fornecedores (o modal será fechado quando terminar)
       buscarFornecedores()
     } else {
       setShowTipoMovimentoModal(true)
@@ -832,6 +838,12 @@ export default function CaixaPage() {
     } catch (error) {
       console.error('Erro ao buscar fornecedores:', error)
       toast({ title: 'Erro', description: 'Erro ao buscar fornecedores', variant: 'destructive' })
+    } finally {
+      // Fechar modal de loading inicial e abrir modal de fornecedores
+      setLoadingFornecedoresInicial(false)
+      setShowPagamentoModal(true)
+      setPagamentoEtapa('fornecedor')
+      setLoadingFornecedores(false)
     }
   }
 
@@ -2165,24 +2177,24 @@ export default function CaixaPage() {
                 </div>
                 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '15px' }}>
-                  <div style={{ textAlign: 'center', padding: '15px', backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '5px' }}>Valor Inicial</div>
-                    <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#374151' }}>{formatarValor(resumoFechamento.valores.inicial)}</div>
+                  <div className="cartao-resumo">
+                    <div className="cartao-resumo-label">Valor Inicial</div>
+                    <div className="cartao-resumo-valor">{formatarValor(resumoFechamento.valores.inicial)}</div>
                   </div>
-                  <div style={{ textAlign: 'center', padding: '15px', backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '5px' }}>Total Vendas</div>
-                    <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#059669' }}>{formatarValor(resumoFechamento.valores.vendas)}</div>
+                  <div className="cartao-resumo">
+                    <div className="cartao-resumo-label">Total Vendas</div>
+                    <div className="cartao-resumo-valor positive">{formatarValor(resumoFechamento.valores.vendas)}</div>
                   </div>
                   {resumoFechamento.valores.suprimentos > 0 && (
-                    <div style={{ textAlign: 'center', padding: '15px', backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                      <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '5px' }}>Suprimentos</div>
-                      <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#059669' }}>+{formatarValor(resumoFechamento.valores.suprimentos)}</div>
+                    <div className="cartao-resumo">
+                      <div className="cartao-resumo-label">Suprimentos</div>
+                      <div className="cartao-resumo-valor positive">+{formatarValor(resumoFechamento.valores.suprimentos)}</div>
                     </div>
                   )}
                   {resumoFechamento.valores.sangrias > 0 && (
-                    <div style={{ textAlign: 'center', padding: '15px', backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                      <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '5px' }}>Sangrias</div>
-                      <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#dc2626' }}>-{formatarValor(resumoFechamento.valores.sangrias)}</div>
+                    <div className="cartao-resumo">
+                      <div className="cartao-resumo-label">Sangrias</div>
+                      <div className="cartao-resumo-valor negative">-{formatarValor(resumoFechamento.valores.sangrias)}</div>
                     </div>
                   )}
                 </div>
@@ -2586,12 +2598,12 @@ export default function CaixaPage() {
             </div>
 
             <div style={{ padding: '20px' }}>
-              <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#fef2f2', borderRadius: '8px', color: '#dc2626' }}>
-                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+              <div className="alerta-sangria">
+                <div className="alerta-sangria-header">
                   <AlertCircle size={20} style={{ marginRight: '8px' }} />
                   <strong>Atenção - Sangria do Caixa</strong>
                 </div>
-                <p style={{ margin: '0', fontSize: '14px' }}>
+                <p>
                   Esta operação irá retirar dinheiro do caixa. O valor será subtraído do total disponível.
                 </p>
               </div>
@@ -2756,7 +2768,7 @@ export default function CaixaPage() {
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '500px', width: '90%' }}>
             <div className="modal-header-caixa">
-              <h3>Selecionar Tipo de Movimentação</h3>
+              <h3>Selecione</h3>
               <button
                 onClick={cancelarMovimentacao}
                 className="modal-close"
@@ -2765,37 +2777,17 @@ export default function CaixaPage() {
               </button>
             </div>
 
-            <div style={{ padding: '30px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
+            <div style={{ padding: '1.5rem' }}>
+              <div className="tipo-movimento-grid">
                 {/* Card Suprimento */}
                 <button
                   onClick={() => selecionarTipoMovimento('suprimento')}
-                  style={{
-                    padding: '30px 20px',
-                    border: '2px solid #10b981',
-                    borderRadius: '12px',
-                    backgroundColor: '#f0fdf4',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    textAlign: 'center',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '12px'
-                  }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.backgroundColor = '#dcfce7'
-                    e.currentTarget.style.transform = 'translateY(-2px)'
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f0fdf4'
-                    e.currentTarget.style.transform = 'translateY(0)'
-                  }}
+                  className="tipo-movimento-card suprimento"
                 >
                   <ArrowUp size={32} color="#10b981" />
-                  <div>
-                    <h4 style={{ margin: '0 0 8px 0', color: '#10b981', fontSize: '18px' }}>Suprimento</h4>
-                    <p style={{ margin: '0', color: '#374151', fontSize: '14px' }}>
+                  <div className="tipo-movimento-content">
+                    <h4 className="tipo-movimento-title suprimento">Suprimento</h4>
+                    <p className="tipo-movimento-description">
                       Adicionar dinheiro ao caixa
                     </p>
                   </div>
@@ -2804,32 +2796,12 @@ export default function CaixaPage() {
                 {/* Card Pagamento */}
                 <button
                   onClick={() => selecionarTipoMovimento('pagamento')}
-                  style={{
-                    padding: '30px 20px',
-                    border: '2px solid #3b82f6',
-                    borderRadius: '12px',
-                    backgroundColor: '#eff6ff',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    textAlign: 'center',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '12px'
-                  }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.backgroundColor = '#dbeafe'
-                    e.currentTarget.style.transform = 'translateY(-2px)'
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.backgroundColor = '#eff6ff'
-                    e.currentTarget.style.transform = 'translateY(0)'
-                  }}
+                  className="tipo-movimento-card pagamento"
                 >
                   <Handshake size={32} color="#3b82f6" />
-                  <div>
-                    <h4 style={{ margin: '0 0 8px 0', color: '#3b82f6', fontSize: '18px' }}>Pagamento</h4>
-                    <p style={{ margin: '0', color: '#374151', fontSize: '14px' }}>
+                  <div className="tipo-movimento-content">
+                    <h4 className="tipo-movimento-title pagamento">Pagamento</h4>
+                    <p className="tipo-movimento-description">
                       Pagar fornecedor
                     </p>
                   </div>
@@ -2838,32 +2810,12 @@ export default function CaixaPage() {
                 {/* Card Sangria */}
                 <button
                   onClick={() => selecionarTipoMovimento('sangria')}
-                  style={{
-                    padding: '30px 20px',
-                    border: '2px solid #ef4444',
-                    borderRadius: '12px',
-                    backgroundColor: '#fef2f2',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    textAlign: 'center',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '12px'
-                  }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.backgroundColor = '#fee2e2'
-                    e.currentTarget.style.transform = 'translateY(-2px)'
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.backgroundColor = '#fef2f2'
-                    e.currentTarget.style.transform = 'translateY(0)'
-                  }}
+                  className="tipo-movimento-card sangria"
                 >
                   <ArrowDown size={32} color="#ef4444" />
-                  <div>
-                    <h4 style={{ margin: '0 0 8px 0', color: '#ef4444', fontSize: '18px' }}>Sangria</h4>
-                    <p style={{ margin: '0', color: '#374151', fontSize: '14px' }}>
+                  <div className="tipo-movimento-content">
+                    <h4 className="tipo-movimento-title sangria">Sangria</h4>
+                    <p className="tipo-movimento-description">
                       Retirar dinheiro do caixa
                     </p>
                   </div>
@@ -2927,7 +2879,12 @@ export default function CaixaPage() {
                   </div>
 
                   <div style={{ maxHeight: '300px', overflow: 'auto' }}>
-                    {fornecedores.length === 0 ? (
+                    {loadingFornecedores ? (
+                      <div className="loading-fornecedores">
+                        <Loader2 size={24} className="animate-spin" />
+                        Carregando lista de fornecedores, aguarde.
+                      </div>
+                    ) : fornecedores.length === 0 ? (
                       <p style={{ textAlign: 'center', color: '#6b7280', padding: '40px' }}>
                         Nenhum fornecedor cadastrado
                       </p>
@@ -2936,34 +2893,16 @@ export default function CaixaPage() {
                         <button
                           key={fornecedor.id}
                           onClick={() => selecionarFornecedor(fornecedor)}
-                          style={{
-                            width: '100%',
-                            padding: '15px',
-                            border: '1px solid #e5e7eb',
-                            borderRadius: '8px',
-                            backgroundColor: 'white',
-                            cursor: 'pointer',
-                            textAlign: 'left',
-                            marginBottom: '8px',
-                            transition: 'all 0.2s'
-                          }}
-                          onMouseOver={(e) => {
-                            e.currentTarget.style.backgroundColor = '#f9fafb'
-                            e.currentTarget.style.borderColor = '#3b82f6'
-                          }}
-                          onMouseOut={(e) => {
-                            e.currentTarget.style.backgroundColor = 'white'
-                            e.currentTarget.style.borderColor = '#e5e7eb'
-                          }}
+                          className="fornecedor-button"
                         >
-                          <div style={{ fontWeight: '600', color: '#111827' }}>
+                          <div className="fornecedor-nome">
                             {fornecedor.nome}
                           </div>
-                          <div style={{ fontSize: '14px', color: '#6b7280', marginTop: '4px' }}>
+                          <div className="fornecedor-info">
                             CNPJ: {fornecedor.cnpj} | Tel: {fornecedor.telefone}
                           </div>
                           {fornecedor.total_debito > 0 && (
-                            <div style={{ fontSize: '14px', color: '#ef4444', marginTop: '4px' }}>
+                            <div className="fornecedor-debito">
                               Débito: R$ {formatarValor(fornecedor.total_debito)}
                             </div>
                           )}
@@ -2977,28 +2916,15 @@ export default function CaixaPage() {
               {/* Etapa 2: Dados do Pagamento */}
               {pagamentoEtapa === 'dados' && fornecedorSelecionado && (
                 <div className="form-grid">
-                  <div className="form-group" style={{ 
-                    border: '2px solid #3b82f6', 
-                    borderRadius: '12px', 
-                    padding: '1rem !important', 
-                    backgroundColor: '#eff6ff',
-                    position: 'relative'
-                  }}>
-                    <label className="form-label" style={{ 
-                      fontSize: '16px', 
-                      fontWeight: '600', 
-                      color: '#1e40af',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px'
-                    }}>
+                  <div className="form-group-1 form-group-valor-total">
+                    <label className="form-label form-label-valor-total">
                       <DollarSign size={18} color="#1e40af" />
                       Valor Total *
                     </label>
                     <input
                       type="number"
                       step="0.01"
-                      className="form-input"
+                      className="form-input form-input-valor-total"
                       value={pagamentoForm.valor}
                       onChange={(e) => {
                         const novoValor = e.target.value
@@ -3007,30 +2933,10 @@ export default function CaixaPage() {
                         validarValorPagamentoCaixa(novoValor, pagamentoForm.afeta_caixa)
                       }}
                       placeholder="0,00"
-                      style={{
-                        fontSize: '18px',
-                        fontWeight: '500',
-                        padding: '12px',
-                        border: '2px solid #bfdbfe',
-                        borderRadius: '8px',
-                        backgroundColor: 'white'
-                      }}
                     />
                     {/* Mensagem de erro instantânea */}
                     {erroSaldoInsuficientePagamento && (
-                      <div className="erro-saldo-insuficiente" style={{
-                        marginTop: '8px',
-                        padding: '8px 12px',
-                        backgroundColor: '#fee2e2',
-                        border: '1px solid #fca5a5',
-                        borderRadius: '4px',
-                        color: '#dc2626',
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px'
-                      }}>
+                      <div className="erro-saldo-insuficiente">
                         <AlertCircle size={16} />
                         {erroSaldoInsuficientePagamento}
                       </div>
@@ -3161,34 +3067,13 @@ export default function CaixaPage() {
 
               {/* Etapa 3: Senha Masterkey (apenas se afeta_caixa) */}
               {pagamentoEtapa === 'senha' && (
-                <div>
-                  <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                    <AlertCircle size={48} color="#f59e0b" />
-                    <h4 style={{ margin: '10px 0', color: '#111827' }}>Confirmação Necessária</h4>
-                    <p style={{ color: '#6b7280' }}>
-                      Este pagamento afetará o caixa. Digite a senha masterkey para confirmar.
-                    </p>
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
-                      Senha Masterkey *
-                    </label>
-                    <input
-                      type="password"
-                      value={validacaoSenhaForm.senha}
-                      onChange={(e) => setValidacaoSenhaForm({ senha: e.target.value })}
-                      placeholder="Digite a senha masterkey"
-                      style={{
-                        width: '100%',
-                        padding: '10px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '16px'
-                      }}
-                    />
-                  </div>
-                </div>
+                <MasterPasswordConfirmation
+                  title="Confirmação de Pagamento"
+                  message="Este pagamento afetará o caixa. Digite a senha masterkey para confirmar a operação."
+                  value={validacaoSenhaForm.senha}
+                  onChange={(senha) => setValidacaoSenhaForm({ senha })}
+                  placeholder="Digite a senha masterkey"
+                />
               )}
             </div>
 
@@ -3263,7 +3148,7 @@ export default function CaixaPage() {
             <div style={{ padding: '20px' }}>
               <div style={{ display: 'grid', gap: '15px' }}>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                  <label className="form-label-inline">
                     Nome do Fornecedor *
                   </label>
                   <input
@@ -3282,7 +3167,7 @@ export default function CaixaPage() {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                  <label className="form-label-inline">
                     CNPJ *
                   </label>
                   <input
@@ -3301,7 +3186,7 @@ export default function CaixaPage() {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                  <label className="form-label-inline">
                     Telefone *
                   </label>
                   <input
@@ -3767,6 +3652,14 @@ export default function CaixaPage() {
         message="Buscando informações do sistema..."
         size="small"
         spinnerSize={40}
+      />
+
+      <LoadingModal
+        isOpen={loadingFornecedoresInicial}
+        title="Aguarde"
+        message="Carregando dados para pagamento de fornecedores..."
+        size="medium"
+        spinnerSize={48}
       />
     </div>
   )

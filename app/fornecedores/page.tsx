@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { User, Plus, Edit, Trash2, Eye, Filter, Search, UserCheck, UserX, Loader2, Menu, X, DollarSign, MapPin, Save, AlertCircle, OctagonAlert, Truck, CreditCard, Receipt, Lock } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
+import MasterPasswordConfirmation from '../../components/master-password-confirmation'
 import '../../styles/fornecedores.css'
 
 interface Fornecedor {
@@ -1242,25 +1243,13 @@ export default function FornecedoresPage() {
             </div>
 
             <div className="modal-body-1">
-              <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-                <AlertCircle size={48} color="#f59e0b" />
-                <h4 style={{ margin: '16px 0', color: '#111827' }}>Senha Master Requerida</h4>
-                <p style={{ color: '#6b7280' }}>
-                  Digite a senha master para autorizar este pagamento que afetará o saldo do caixa.
-                </p>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Senha Masterkey *</label>
-                <input
-                  type="password"
-                  className="form-input"
-                  value={validacaoSenhaForm.senha}
-                  onChange={(e) => setValidacaoSenhaForm({ senha: e.target.value })}
-                  placeholder="Digite a senha masterkey"
-                  autoFocus
-                />
-              </div>
+              <MasterPasswordConfirmation
+                title="Autorização Masterkey"
+                message="Este pagamento afetará o saldo do caixa. Digite a senha masterkey para autorizar a operação."
+                value={validacaoSenhaForm.senha}
+                onChange={(senha) => setValidacaoSenhaForm({ senha })}
+                placeholder="Digite a senha masterkey"
+              />
             </div>
 
             <div className="modal-footer-1">
