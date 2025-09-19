@@ -23,3 +23,5 @@ QUANDO FOR NOMEAR ARQUIVOS DE ROTAS PELO AMOR DE DEU NOMEIE COM ALGO IDENTIFICAV
 PARE DE GERAR ARQUIVOS DE INSTRUÇÃO .MD
 
 NAO USE COMANDOS DE TERMIALL!!!!
+
+sempre use clases css proprias para cada ambiente ou page, de forma que sempre serão elementos com classes proprias nomeadas de acordo com o ambiente ou page.

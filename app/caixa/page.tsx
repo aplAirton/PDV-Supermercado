@@ -72,6 +72,7 @@ export default function CaixaPage() {
   const [fornecedores, setFornecedores] = useState<any[]>([])
   const [fornecedorSelecionado, setFornecedorSelecionado] = useState<any>(null)
   const [showCadastroFornecedor, setShowCadastroFornecedor] = useState(false)
+  const [mostrarDescricaoPagamento, setMostrarDescricaoPagamento] = useState(false)
   const [pagamentoForm, setPagamentoForm] = useState({
     valor: '',
     forma_pagamento: 'dinheiro',
@@ -88,6 +89,7 @@ export default function CaixaPage() {
   const [saldoDinheiroDisponivel, setSaldoDinheiroDisponivel] = useState(0)
   const [valorInicialCaixa, setValorInicialCaixa] = useState(0)
   const [showConfirmacaoConsumoInicial, setShowConfirmacaoConsumoInicial] = useState(false)
+  const [erroSaldoInsuficientePagamento, setErroSaldoInsuficientePagamento] = useState('') // Novo: erro de saldo no pagamento
   const [tipoMovimentoSelecionado, setTipoMovimentoSelecionado] = useState<'sangria' | 'suprimento' | 'pagamento' | null>(null)
   const [movimentoForm, setMovimentoForm] = useState({ valor: '', descricao: '' })
   const [processandoMovimento, setProcessandoMovimento] = useState(false)
@@ -771,13 +773,35 @@ export default function CaixaPage() {
       const response = await fetch('/api/caixa/saldo-dinheiro')
       if (response.ok) {
         const data = await response.json()
-        setSaldoDinheiroDisponivel(data.saldoDinheiro || 0)
+        // Corrigido: usar saldoCaixa em vez de saldoDinheiro
+        setSaldoDinheiroDisponivel(data.saldoCaixa || 0)
         setValorInicialCaixa(data.valorInicial || 0)
+        console.log('[CAIXA PAGE] Saldo atualizado:', data.saldoCaixa)
       }
     } catch (error) {
       console.error('Erro ao buscar saldo em dinheiro:', error)
       setSaldoDinheiroDisponivel(0)
       setValorInicialCaixa(0)
+    }
+  }
+
+  // Função para validar valor do pagamento em tempo real
+  const validarValorPagamentoCaixa = (valor: string, afetaCaixa: boolean = pagamentoForm.afeta_caixa) => {
+    if (!afetaCaixa) {
+      setErroSaldoInsuficientePagamento('')
+      return
+    }
+
+    const valorNumerico = parseFloat(valor)
+    if (isNaN(valorNumerico) || valorNumerico <= 0) {
+      setErroSaldoInsuficientePagamento('')
+      return
+    }
+
+    if (valorNumerico > saldoDinheiroDisponivel) {
+      setErroSaldoInsuficientePagamento(`Valor R$ ${valorNumerico.toFixed(2)} é superior ao saldo disponível R$ ${saldoDinheiroDisponivel.toFixed(2)}`)
+    } else {
+      setErroSaldoInsuficientePagamento('')
     }
   }
 
@@ -832,6 +856,7 @@ export default function CaixaPage() {
     setShowCadastroFornecedor(false)
     setPagamentoForm({ valor: '', forma_pagamento: 'dinheiro', descricao: '', afeta_caixa: true })
     setCadastroFornecedorForm({ nome: '', cnpj: '', telefone: '' })
+    setErroSaldoInsuficientePagamento('') // Limpar erro ao cancelar pagamento
   }
 
   const avancarParaPagamento = () => {
@@ -2227,7 +2252,10 @@ export default function CaixaPage() {
             <div className="modal-header-1">
               <div className="modal-header-content">
                 <div className="modal-title-info-1">
-                  <h2>⚠️ Atenção</h2>
+                  <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <AlertCircle size={20} color="#f59e0b" />
+                    Atenção
+                  </h2>
                   <p>Confirmação necessária</p>
                 </div>
               </div>
@@ -2857,23 +2885,33 @@ export default function CaixaPage() {
 
       {/* Modal Pagamento a Fornecedor */}
       {showPagamentoModal && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: '600px', width: '90%', maxHeight: '80vh', overflow: 'auto' }}>
-            <div className="modal-header-caixa">
-              <h3>
-                {pagamentoEtapa === 'fornecedor' && 'Selecionar Fornecedor'}
-                {pagamentoEtapa === 'dados' && 'Dados do Pagamento'}
-                {pagamentoEtapa === 'senha' && 'Confirmação de Pagamento'}
-              </h3>
+        <div className="modal-overlay modal-fade-in" onClick={() => cancelarPagamento()}>
+          <div className="modal-content-f large" onClick={e => e.stopPropagation()}>
+            <div className="modal-header-1">
+              <div className="modal-header-content">
+                <div className="modal-title-info-1">
+                  <h2>
+                    {pagamentoEtapa === 'fornecedor' && 'Selecionar Fornecedor'}
+                    {pagamentoEtapa === 'dados' && 'Registrar Pagamento'}
+                    {pagamentoEtapa === 'senha' && 'Confirmar Pagamento'}
+                  </h2>
+                  <p>
+                    {pagamentoEtapa === 'fornecedor' && 'Escolha o fornecedor para o pagamento'}
+                    {pagamentoEtapa === 'dados' && fornecedorSelecionado && `Pagamento para: ${fornecedorSelecionado.nome}`}
+                    {pagamentoEtapa === 'senha' && 'Confirme com sua senha master'}
+                  </p>
+                </div>
+              </div>
               <button
-                onClick={cancelarPagamento}
-                className="modal-close"
+                className="modal-close-btn"
+                onClick={() => cancelarPagamento()}
+                title="Fechar"
               >
-                ×
+                <X size={20} />
               </button>
             </div>
 
-            <div style={{ padding: '20px' }}>
+            <div className="modal-body-1">
               {/* Etapa 1: Seleção de Fornecedor */}
               {pagamentoEtapa === 'fornecedor' && (
                 <div>
@@ -2938,122 +2976,185 @@ export default function CaixaPage() {
 
               {/* Etapa 2: Dados do Pagamento */}
               {pagamentoEtapa === 'dados' && fornecedorSelecionado && (
-                <div>
-                  <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
-                    <h4 style={{ margin: '0 0 10px 0', color: '#111827' }}>Fornecedor Selecionado</h4>
-                    <div style={{ fontWeight: '600' }}>{fornecedorSelecionado.nome}</div>
-                    <div style={{ fontSize: '14px', color: '#6b7280' }}>
-                      CNPJ: {fornecedorSelecionado.cnpj}
-                    </div>
+                <div className="form-grid">
+                  <div className="form-group" style={{ 
+                    border: '2px solid #3b82f6', 
+                    borderRadius: '12px', 
+                    padding: '1rem !important', 
+                    backgroundColor: '#eff6ff',
+                    position: 'relative'
+                  }}>
+                    <label className="form-label" style={{ 
+                      fontSize: '16px', 
+                      fontWeight: '600', 
+                      color: '#1e40af',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}>
+                      <DollarSign size={18} color="#1e40af" />
+                      Valor Total *
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      className="form-input"
+                      value={pagamentoForm.valor}
+                      onChange={(e) => {
+                        const novoValor = e.target.value
+                        setPagamentoForm({ ...pagamentoForm, valor: novoValor })
+                        // Validar em tempo real
+                        validarValorPagamentoCaixa(novoValor, pagamentoForm.afeta_caixa)
+                      }}
+                      placeholder="0,00"
+                      style={{
+                        fontSize: '18px',
+                        fontWeight: '500',
+                        padding: '12px',
+                        border: '2px solid #bfdbfe',
+                        borderRadius: '8px',
+                        backgroundColor: 'white'
+                      }}
+                    />
+                    {/* Mensagem de erro instantânea */}
+                    {erroSaldoInsuficientePagamento && (
+                      <div className="erro-saldo-insuficiente" style={{
+                        marginTop: '8px',
+                        padding: '8px 12px',
+                        backgroundColor: '#fee2e2',
+                        border: '1px solid #fca5a5',
+                        borderRadius: '4px',
+                        color: '#dc2626',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}>
+                        <AlertCircle size={16} />
+                        {erroSaldoInsuficientePagamento}
+                      </div>
+                    )}
                   </div>
 
-                  <div style={{ display: 'grid', gap: '15px' }}>
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
-                        Valor do Pagamento *
-                      </label>
+                  <div className="form-group checkbox-group">
+                    <label className="checkbox-label">
                       <input
-                        type="number"
-                        step="0.01"
-                        value={pagamentoForm.valor}
-                        onChange={(e) => setPagamentoForm({ ...pagamentoForm, valor: e.target.value })}
-                        placeholder="0,00"
-                        style={{
-                          width: '100%',
-                          padding: '10px',
-                          border: '1px solid #d1d5db',
-                          borderRadius: '6px',
-                          fontSize: '16px'
+                        type="checkbox"
+                        checked={pagamentoForm.afeta_caixa}
+                        onChange={(e) => {
+                          const checked = e.target.checked
+                          setPagamentoForm({
+                            ...pagamentoForm,
+                            afeta_caixa: checked,
+                            forma_pagamento: checked ? 'dinheiro' : pagamentoForm.forma_pagamento
+                          })
+                          // Validar quando marcar/desmarcar o checkbox
+                          validarValorPagamentoCaixa(pagamentoForm.valor, checked)
                         }}
+                        className="checkbox-input"
                       />
-                    </div>
+                      <span className="checkbox-text">Usar dinheiro do caixa (sangria)</span>
+                    </label>
+                    {pagamentoForm.afeta_caixa && (
+                      <div className="saldo-info" style={{
+                        marginTop: '8px',
+                        padding: '8px',
+                        backgroundColor: '#f0f9ff',
+                        border: '1px solid #0ea5e9',
+                        borderRadius: '4px',
+                        fontSize: '14px'
+                      }}>
+                        <strong>Saldo disponível em dinheiro:</strong> R$ {saldoDinheiroDisponivel.toFixed(2)}
+                      </div>
+                    )}
+                    <small className="checkbox-help">
+                      Quando marcado, o pagamento será registrado como sangria no caixa, afetando o saldo disponível em dinheiro. A forma de pagamento será automaticamente definida como dinheiro.
+                    </small>
+                  </div>
 
-                    <div>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                        <input
-                          type="checkbox"
-                          checked={pagamentoForm.afeta_caixa}
-                          onChange={(e) => {
-                            const checked = e.target.checked
-                            setPagamentoForm({
-                              ...pagamentoForm,
-                              afeta_caixa: checked,
-                              forma_pagamento: checked ? 'dinheiro' : pagamentoForm.forma_pagamento
-                            })
-                          }}
-                        />
-                        <span style={{ fontSize: '14px' }}>
-                          Usar dinheiro do caixa (sangria)
-                        </span>
-                      </label>
-                      {pagamentoForm.afeta_caixa && (
-                        <div style={{
-                          marginTop: '8px',
-                          padding: '8px',
-                          backgroundColor: '#f0f9ff',
-                          border: '1px solid #0ea5e9',
-                          borderRadius: '4px',
-                          fontSize: '14px'
-                        }}>
-                          <strong>Saldo disponível em dinheiro:</strong> R$ {saldoDinheiroDisponivel.toFixed(2)}
-                        </div>
-                      )}
-                      <small style={{ display: 'block', marginTop: '4px', color: '#6b7280' }}>
-                        Quando marcado, o pagamento será registrado como sangria no caixa, afetando o saldo disponível em dinheiro. A forma de pagamento será automaticamente definida como dinheiro.
-                      </small>
-                    </div>
-
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
-                        Forma de Pagamento *
-                      </label>
+                  {!pagamentoForm.afeta_caixa && (
+                    <div className="form-group">
+                      <label className="form-label">Forma de Pagamento *</label>
                       <select
+                        className="form-select"
                         value={pagamentoForm.forma_pagamento}
                         onChange={(e) => setPagamentoForm({ ...pagamentoForm, forma_pagamento: e.target.value })}
-                        disabled={pagamentoForm.afeta_caixa}
-                        style={{
-                          width: '100%',
-                          padding: '10px',
-                          border: '1px solid #d1d5db',
-                          borderRadius: '6px',
-                          fontSize: '16px',
-                          backgroundColor: pagamentoForm.afeta_caixa ? '#f9fafb' : 'white',
-                          cursor: pagamentoForm.afeta_caixa ? 'not-allowed' : 'pointer'
-                        }}
                       >
                         <option value="dinheiro">Dinheiro</option>
-                        <option value="cartao_debito">Cartão de Débito</option>
-                        <option value="cartao_credito">Cartão de Crédito</option>
+                        <option value="cartao_debito">Cartão Débito</option>
+                        <option value="cartao_credito">Cartão Crédito</option>
                         <option value="pix">PIX</option>
                         <option value="transferencia">Transferência</option>
                         <option value="cheque">Cheque</option>
                       </select>
-                      {pagamentoForm.afeta_caixa && (
-                        <small style={{ display: 'block', marginTop: '4px', color: '#6b7280' }}>
-                          Quando usar dinheiro do caixa, a forma de pagamento é automaticamente definida como dinheiro.
-                        </small>
-                      )}
                     </div>
+                  )}
 
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
-                        Descrição/Motivo
-                      </label>
-                      <textarea
-                        value={pagamentoForm.descricao}
-                        onChange={(e) => setPagamentoForm({ ...pagamentoForm, descricao: e.target.value })}
-                        placeholder="Motivo do pagamento (opcional)"
-                        rows={3}
+                  <div className="form-group full-width">
+                    {!mostrarDescricaoPagamento ? (
+                      <button
+                        type="button"
+                        onClick={() => setMostrarDescricaoPagamento(true)}
                         style={{
                           width: '100%',
-                          padding: '10px',
-                          border: '1px solid #d1d5db',
-                          borderRadius: '6px',
-                          fontSize: '16px',
-                          resize: 'vertical'
+                          padding: '12px',
+                          border: '2px dashed #d1d5db',
+                          borderRadius: '8px',
+                          backgroundColor: 'transparent',
+                          color: '#6b7280',
+                          fontSize: '14px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px'
                         }}
-                      />
-                    </div>
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor = '#3b82f6'
+                          e.currentTarget.style.color = '#3b82f6'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderColor = '#d1d5db'
+                          e.currentTarget.style.color = '#6b7280'
+                        }}
+                      >
+                        <Plus size={16} />
+                        Adicionar descrição (opcional)
+                      </button>
+                    ) : (
+                      <div>
+                        <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          Descrição
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMostrarDescricaoPagamento(false)
+                              setPagamentoForm({ ...pagamentoForm, descricao: '' })
+                            }}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: '#6b7280',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              padding: '0'
+                            }}
+                          >
+                            <X size={16} />
+                          </button>
+                        </label>
+                        <textarea
+                          className="form-textarea"
+                          value={pagamentoForm.descricao}
+                          onChange={(e) => setPagamentoForm({ ...pagamentoForm, descricao: e.target.value })}
+                          placeholder="Descrição do pagamento (ex: Compra de 10 unidades de produto X)"
+                          rows={3}
+                          autoFocus
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -3091,51 +3192,55 @@ export default function CaixaPage() {
               )}
             </div>
 
-            <div className="modal-footer-caixa">
-              {pagamentoEtapa === 'fornecedor' && (
-                <button
-                  onClick={cancelarPagamento}
-                  className="btn btn-outline"
-                >
-                  Cancelar
-                </button>
-              )}
-
-              {pagamentoEtapa === 'dados' && (
-                <>
+            <div className="modal-footer-1">
+              <div className="footer-actions">
+                {pagamentoEtapa === 'fornecedor' && (
                   <button
-                    onClick={voltarParaFornecedor}
+                    onClick={cancelarPagamento}
                     className="btn btn-outline"
                   >
-                    Voltar
+                    Cancelar
                   </button>
-                  <button
-                    onClick={avancarParaPagamento}
-                    className="btn btn-primary"
-                    disabled={!pagamentoForm.valor || parseFloat(pagamentoForm.valor) <= 0}
-                  >
-                    Continuar
-                  </button>
-                </>
-              )}
+                )}
 
-              {pagamentoEtapa === 'senha' && (
-                <>
-                  <button
-                    onClick={() => setPagamentoEtapa('dados')}
-                    className="btn btn-outline"
-                  >
-                    Voltar
-                  </button>
-                  <button
-                    onClick={confirmarPagamentoComSenha}
-                    className="btn btn-primary"
-                    disabled={!validacaoSenhaForm.senha || processandoPagamento}
-                  >
-                    {processandoPagamento ? 'Processando...' : 'Confirmar Pagamento'}
-                  </button>
-                </>
-              )}
+                {pagamentoEtapa === 'dados' && (
+                  <>
+                    <button
+                      onClick={voltarParaFornecedor}
+                      className="btn btn-outline"
+                    >
+                      Voltar
+                    </button>
+                    <button
+                      onClick={avancarParaPagamento}
+                      className="btn btn-success"
+                      disabled={!pagamentoForm.valor || parseFloat(pagamentoForm.valor) <= 0 || erroSaldoInsuficientePagamento !== ''}
+                      title={erroSaldoInsuficientePagamento ? 'Corrija o valor do pagamento para continuar' : ''}
+                    >
+                      <Receipt size={16} />
+                      Registrar Pagamento
+                    </button>
+                  </>
+                )}
+
+                {pagamentoEtapa === 'senha' && (
+                  <>
+                    <button
+                      onClick={() => setPagamentoEtapa('dados')}
+                      className="btn btn-outline"
+                    >
+                      Voltar
+                    </button>
+                    <button
+                      onClick={confirmarPagamentoComSenha}
+                      className="btn btn-primary"
+                      disabled={!validacaoSenhaForm.senha || processandoPagamento}
+                    >
+                      {processandoPagamento ? 'Processando...' : 'Confirmar Pagamento'}
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -3362,77 +3467,126 @@ export default function CaixaPage() {
 
       {/* Modal Comprovante de Pagamento */}
       {showComprovantePagamento && dadosPagamentoComprovante && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: '500px', width: '90%' }}>
-            <div className="modal-header-caixa">
-              <h3>Pagamento Realizado com Sucesso!</h3>
+        <div className="modal-overlay modal-fade-in">
+          <div className="modal-content-f large">
+            <div className="modal-header-1">
+              <div className="modal-header-content">
+                <div className="modal-title-info-1">
+                  <h2>Pagamento Realizado com Sucesso!</h2>
+                  <p>Comprovante do pagamento efetuado</p>
+                </div>
+              </div>
               <button
+                className="modal-close-btn"
                 onClick={() => {
                   setShowComprovantePagamento(false)
                   setDadosPagamentoComprovante(null)
                 }}
-                className="modal-close"
+                title="Fechar"
               >
-                ×
+                <X size={20} />
               </button>
             </div>
 
-            <div style={{ padding: '20px', textAlign: 'center' }}>
-              <div className="success-icon" style={{
-                color: '#22c55e',
-                marginBottom: '20px',
-                display: 'flex',
-                justifyContent: 'center'
-              }}>
-                <CheckCircle size={48} />
-              </div>
+            <div className="modal-body-1">
+              <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  marginBottom: '16px'
+                }}>
+                  <CheckCircle size={48} color="#22c55e" />
+                </div>
 
-              <h4 style={{ color: '#22c55e', marginBottom: '20px' }}>
-                COMPROVANTE DE PAGAMENTO
-              </h4>
+                <h3 style={{ 
+                  color: '#22c55e', 
+                  marginBottom: '8px',
+                  fontSize: '24px',
+                  fontWeight: '600'
+                }}>
+                  COMPROVANTE DE PAGAMENTO
+                </h3>
+              </div>
 
               <div className="comprovante-detalhes" style={{
                 backgroundColor: '#f8fafc',
                 border: '1px solid #e2e8f0',
-                borderRadius: '8px',
-                padding: '20px',
-                margin: '20px 0',
-                textAlign: 'left'
+                borderRadius: '12px',
+                padding: '24px',
+                margin: '20px 0'
               }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
-                  <div><strong>Pagamento #:</strong> {dadosPagamentoComprovante.id}</div>
-                  <div><strong>Data:</strong> {new Date(dadosPagamentoComprovante.data_pagamento).toLocaleDateString('pt-BR')}</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FileText size={16} color="#6b7280" />
+                    <span><strong>Pagamento #:</strong> {dadosPagamentoComprovante.id}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Clock size={16} color="#6b7280" />
+                    <span><strong>Data:</strong> {new Date(dadosPagamentoComprovante.data_pagamento).toLocaleDateString('pt-BR')}</span>
+                  </div>
                 </div>
 
-                <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '15px', marginBottom: '15px' }}>
-                  <div style={{ marginBottom: '8px' }}><strong>Fornecedor:</strong> {dadosPagamentoComprovante.fornecedor.nome}</div>
-                  <div style={{ marginBottom: '8px' }}><strong>CNPJ:</strong> {dadosPagamentoComprovante.fornecedor.cnpj}</div>
-                  <div style={{ marginBottom: '8px' }}><strong>Forma de Pagamento:</strong> {dadosPagamentoComprovante.forma_pagamento}</div>
+                <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '20px', marginBottom: '20px' }}>
+                  <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <User size={16} color="#6b7280" />
+                    <span><strong>Fornecedor:</strong> {dadosPagamentoComprovante.fornecedor.nome}</span>
+                  </div>
+                  <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FileText size={16} color="#6b7280" />
+                    <span><strong>CNPJ:</strong> {dadosPagamentoComprovante.fornecedor.cnpj}</span>
+                  </div>
+                  <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <CreditCard size={16} color="#6b7280" />
+                    <span><strong>Forma de Pagamento:</strong> {dadosPagamentoComprovante.forma_pagamento}</span>
+                  </div>
                   {dadosPagamentoComprovante.afeta_caixa && (
-                    <div style={{ marginBottom: '8px', color: '#dc2626' }}>
-                      <strong>⚠️ Este pagamento afetou o caixa</strong>
+                    <div style={{ 
+                      marginBottom: '12px', 
+                      color: '#dc2626',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px',
+                      backgroundColor: '#fef2f2',
+                      borderRadius: '6px'
+                    }}>
+                      <AlertCircle size={16} color="#dc2626" />
+                      <strong>Este pagamento afetou o caixa (sangria)</strong>
                     </div>
                   )}
                 </div>
 
-                <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '15px' }}>
+                <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
                   <div style={{
-                    fontSize: '18px',
+                    fontSize: '24px',
                     color: '#1e40af',
-                    fontWeight: 'bold'
+                    fontWeight: 'bold',
+                    textAlign: 'center',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '12px',
+                    padding: '16px',
+                    backgroundColor: '#eff6ff',
+                    borderRadius: '8px'
                   }}>
-                    <strong>Valor Pago:</strong> {formatarValor(dadosPagamentoComprovante.valor)}
+                    <DollarSign size={24} color="#1e40af" />
+                    <span>Valor Pago: {formatarValor(dadosPagamentoComprovante.valor)}</span>
                   </div>
                 </div>
 
                 {dadosPagamentoComprovante.descricao && (
-                  <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '15px', marginTop: '15px' }}>
-                    <div style={{ marginBottom: '8px' }}><strong>Descrição:</strong></div>
+                  <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '20px', marginTop: '20px' }}>
+                    <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <FileText size={16} color="#6b7280" />
+                      <strong>Descrição:</strong>
+                    </div>
                     <div style={{
                       backgroundColor: '#f1f5f9',
-                      padding: '10px',
-                      borderRadius: '4px',
-                      fontStyle: 'italic'
+                      padding: '16px',
+                      borderRadius: '8px',
+                      fontStyle: 'italic',
+                      borderLeft: '4px solid #3b82f6'
                     }}>
                       {dadosPagamentoComprovante.descricao}
                     </div>
@@ -3443,33 +3597,41 @@ export default function CaixaPage() {
               <div style={{
                 backgroundColor: '#fef2f2',
                 border: '1px solid #fecaca',
-                borderRadius: '6px',
-                padding: '12px',
+                borderRadius: '8px',
+                padding: '16px',
                 marginBottom: '20px',
-                fontSize: '13px',
-                color: '#dc2626'
+                fontSize: '14px',
+                color: '#dc2626',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px'
               }}>
-                <strong>Importante:</strong> Guarde este comprovante como prova do pagamento realizado.
+                <AlertCircle size={16} color="#dc2626" />
+                <div>
+                  <strong>Importante:</strong> Guarde este comprovante como prova do pagamento realizado.
+                </div>
               </div>
             </div>
 
-            <div className="modal-footer-caixa">
-              <button
-                onClick={imprimirComprovantePagamento}
-                className="btn btn-primary"
-              >
-                <FileText size={16} style={{ marginRight: '6px' }} />
-                Imprimir Comprovante
-              </button>
-              <button
-                onClick={() => {
-                  setShowComprovantePagamento(false)
-                  setDadosPagamentoComprovante(null)
-                }}
-                className="btn btn-outline"
-              >
-                Fechar
-              </button>
+            <div className="modal-footer-1">
+              <div className="footer-actions">
+                <button
+                  onClick={() => {
+                    setShowComprovantePagamento(false)
+                    setDadosPagamentoComprovante(null)
+                  }}
+                  className="btn btn-outline"
+                >
+                  Fechar
+                </button>
+                <button
+                  onClick={imprimirComprovantePagamento}
+                  className="btn btn-primary"
+                >
+                  <Printer size={16} />
+                  Imprimir Comprovante
+                </button>
+              </div>
             </div>
           </div>
         </div>

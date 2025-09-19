@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { User, Plus, Edit, Trash2, Eye, Filter, Search, UserCheck, UserX, Loader2, Menu, X, DollarSign, MapPin, Save, AlertCircle, OctagonAlert, Truck, CreditCard, Receipt } from 'lucide-react'
+import { User, Plus, Edit, Trash2, Eye, Filter, Search, UserCheck, UserX, Loader2, Menu, X, DollarSign, MapPin, Save, AlertCircle, OctagonAlert, Truck, CreditCard, Receipt, Lock } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import '../../styles/fornecedores.css'
 
@@ -68,9 +68,22 @@ export default function FornecedoresPage() {
   const [showLoadingModal, setShowLoadingModal] = useState(false)
   const [loadingMessage, setLoadingMessage] = useState('')
   const [showPagamentoLoadingModal, setShowPagamentoLoadingModal] = useState(false)
+  const [mostrarDescricaoPagamento, setMostrarDescricaoPagamento] = useState(false)
+  const [showSenhaMasterModal, setShowSenhaMasterModal] = useState(false)
+  const [validacaoSenhaForm, setValidacaoSenhaForm] = useState({ senha: '' })
+  const [processandoPagamento, setProcessandoPagamento] = useState(false)
+  const [showPagamentoResultModal, setShowPagamentoResultModal] = useState(false)
+  const [pagamentoResult, setPagamentoResult] = useState<{
+    success: boolean
+    title: string
+    message: string
+    details?: string
+  }>({ success: false, title: '', message: '' })
   const [saldoDinheiroDisponivel, setSaldoDinheiroDisponivel] = useState(0)
   const [valorInicialCaixa, setValorInicialCaixa] = useState(0)
+  const [saldoCaixa, setSaldoCaixa] = useState(0) // Novo: saldo = total_dinheiro - valor_inicial
   const [showConfirmacaoConsumoInicial, setShowConfirmacaoConsumoInicial] = useState(false)
+  const [erroSaldoInsuficiente, setErroSaldoInsuficiente] = useState('')
 
   // Marcar animação como executada após carregamento inicial
   useEffect(() => {
@@ -177,13 +190,42 @@ export default function FornecedoresPage() {
       const response = await fetch('/api/caixa/saldo-dinheiro')
       if (response.ok) {
         const data = await response.json()
-        setSaldoDinheiroDisponivel(data.saldoDinheiro || 0)
+        // Simplificado: usar apenas saldoCaixa
+        setSaldoCaixa(data.saldoCaixa || 0)
         setValorInicialCaixa(data.valorInicial || 0)
+        setSaldoDinheiroDisponivel(data.saldoCaixa || 0) // Usar saldoCaixa para compatibilidade
+        
+        console.log('[SALDO CAIXA] Saldo calculado (total_dinheiro - valor_inicial):', data.saldoCaixa)
+      } else {
+        setSaldoCaixa(0)
+        setValorInicialCaixa(0)
+        setSaldoDinheiroDisponivel(0)
       }
     } catch (error) {
-      console.error('Erro ao buscar saldo em dinheiro:', error)
-      setSaldoDinheiroDisponivel(0)
+      console.error('Erro ao buscar saldo:', error)
+      setSaldoCaixa(0)
       setValorInicialCaixa(0)
+      setSaldoDinheiroDisponivel(0)
+    }
+  }
+
+  // Função para validar valor do pagamento em tempo real
+  const validarValorPagamento = (valor: string, afetaCaixa: boolean) => {
+    if (!afetaCaixa) {
+      setErroSaldoInsuficiente('')
+      return
+    }
+
+    const valorNumerico = parseFloat(valor)
+    if (isNaN(valorNumerico) || valorNumerico <= 0) {
+      setErroSaldoInsuficiente('')
+      return
+    }
+
+    if (valorNumerico > saldoCaixa) {
+      setErroSaldoInsuficiente(`Valor R$ ${valorNumerico.toFixed(2)} é superior ao saldo disponível R$ ${saldoCaixa.toFixed(2)}`)
+    } else {
+      setErroSaldoInsuficiente('')
     }
   }
 
@@ -227,6 +269,7 @@ export default function FornecedoresPage() {
       afeta_caixa: true,
       itens: []
     })
+    setErroSaldoInsuficiente('') // Limpar erro ao fechar modal
   }
 
   const limparForm = () => {
@@ -344,29 +387,77 @@ export default function FornecedoresPage() {
   }
 
   const executarPagamento = async () => {
+    console.log('[PAGAMENTO] Iniciando execução do pagamento...')
+    console.log('[PAGAMENTO] Dados:', { pagamentoData, fornecedorSelecionado: fornecedorSelecionado?.nome })
+    
     setShowPagamentoLoadingModal(true)
-
+    
     try {
       const { fornecedor_id, valor_total, forma_pagamento, descricao, afeta_caixa } = pagamentoData
+      console.log('[PAGAMENTO] Fazendo requisição para API...')
+      
       const response = await fetch('/api/fornecedores/pagamentos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fornecedor_id, valor_total, forma_pagamento, descricao, afeta_caixa })
       })
 
+      console.log('[PAGAMENTO] Response status:', response.status)
+      const responseData = await response.json()
+      console.log('[PAGAMENTO] Response data:', responseData)
+
       if (response.ok) {
-        showMessageCard('success', 'Pagamento registrado', 'Pagamento ao fornecedor registrado com sucesso!')
+        console.log('[PAGAMENTO] Pagamento realizado com sucesso!')
+        // Pagamento realizado com sucesso
+        setPagamentoResult({
+          success: true,
+          title: 'Pagamento Realizado com Sucesso! ✅',
+          message: `Pagamento de R$ ${parseFloat(valor_total).toFixed(2)} para ${fornecedorSelecionado?.nome} foi registrado com sucesso.`,
+          details: `
+            Fornecedor: ${fornecedorSelecionado?.nome}
+            Valor: R$ ${parseFloat(valor_total).toFixed(2)}
+            Forma: ${forma_pagamento}
+            ${afeta_caixa ? 'Afetou caixa: Sim' : 'Afetou caixa: Não'}
+            ${descricao ? `Descrição: ${descricao}` : ''}
+          `.trim()
+        })
+        
         fecharModalPagamento()
         carregarFornecedores()
+        // Atualizar saldo do caixa se afetou
+        if (afeta_caixa) {
+          await buscarSaldoDinheiroDisponivel()
+        }
       } else {
-        const errorData = await response.json()
-        showMessageCard('error', 'Erro', errorData.error || 'Erro ao registrar pagamento')
+        console.log('[PAGAMENTO] Erro no pagamento:', responseData.error)
+        // Erro no pagamento
+        setPagamentoResult({
+          success: false,
+          title: 'Erro no Pagamento ❌',
+          message: responseData.error || 'Não foi possível processar o pagamento.',
+          details: `
+            Fornecedor: ${fornecedorSelecionado?.nome}
+            Valor tentado: R$ ${parseFloat(valor_total).toFixed(2)}
+            Erro: ${responseData.error || 'Erro desconhecido'}
+          `.trim()
+        })
       }
     } catch (error) {
       console.error('Erro ao registrar pagamento:', error)
-      showMessageCard('error', 'Erro', 'Erro interno do servidor')
+      setPagamentoResult({
+        success: false,
+        title: 'Erro de Comunicação ❌',
+        message: 'Erro interno do servidor. Tente novamente.',
+        details: `
+          Fornecedor: ${fornecedorSelecionado?.nome}
+          Valor tentado: R$ ${parseFloat(pagamentoData.valor_total).toFixed(2)}
+          Erro: ${error instanceof Error ? error.message : 'Erro desconhecido'}
+        `.trim()
+      })
     } finally {
+      console.log('[PAGAMENTO] Finalizando processo...')
       setShowPagamentoLoadingModal(false)
+      setShowPagamentoResultModal(true)
       setShowConfirmacaoConsumoInicial(false)
     }
   }
@@ -380,22 +471,50 @@ export default function FornecedoresPage() {
     // Validar saldo disponível quando usar dinheiro do caixa
     if (pagamentoData.afeta_caixa) {
       const valorPagamento = parseFloat(pagamentoData.valor_total)
-      if (valorPagamento > saldoDinheiroDisponivel) {
+      if (valorPagamento > saldoCaixa) {
         showMessageCard('error', 'Saldo Insuficiente',
-          `O valor do pagamento (R$ ${valorPagamento.toFixed(2)}) é superior ao saldo disponível em dinheiro (R$ ${saldoDinheiroDisponivel.toFixed(2)}). 
-          Saldo disponível: R$ ${saldoDinheiroDisponivel.toFixed(2)}`)
+          `O valor do pagamento (R$ ${valorPagamento.toFixed(2)}) é superior ao saldo disponível em dinheiro (R$ ${saldoCaixa.toFixed(2)}). 
+          Saldo disponível: R$ ${saldoCaixa.toFixed(2)}`)
         return
       }
 
       // Verificar se a operação consumirá do valor inicial
-      const saldoAposOperacao = saldoDinheiroDisponivel - valorPagamento
-      if (saldoAposOperacao < valorInicialCaixa && !showConfirmacaoConsumoInicial) {
+      const saldoAposOperacao = saldoCaixa - valorPagamento
+      if (saldoAposOperacao < 0 && !showConfirmacaoConsumoInicial) {
         setShowConfirmacaoConsumoInicial(true)
         return
       }
-    }
 
-    await executarPagamento()
+      // Se afeta o caixa, solicitar senha master
+      setShowSenhaMasterModal(true)
+    } else {
+      // Se não afeta o caixa, executar diretamente
+      await executarPagamento()
+    }
+  }
+
+  const confirmarPagamentoComSenha = async () => {
+    if (!validacaoSenhaForm.senha) return
+
+    try {
+      const response = await fetch('/api/validar-senha-gerencial', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ senha: validacaoSenhaForm.senha })
+      })
+
+      if (response.ok) {
+        setShowSenhaMasterModal(false)
+        setValidacaoSenhaForm({ senha: '' })
+        await executarPagamento()
+      } else {
+        const error = await response.json()
+        showMessageCard('error', 'Erro', error.error || 'Senha incorreta')
+      }
+    } catch (error) {
+      console.error('Erro na validação da senha:', error)
+      showMessageCard('error', 'Erro', 'Erro na validação da senha')
+    }
   }
 
   const [showValidationCard, setShowValidationCard] = useState(false)
@@ -785,16 +904,64 @@ export default function FornecedoresPage() {
 
             <div className="modal-body-1">
               <div className="form-grid">
-                <div className="form-group">
-                  <label className="form-label">Valor Total *</label>
+                <div className="form-group" style={{ 
+                  border: '2px solid #3b82f6', 
+                  borderRadius: '12px', 
+                  padding: '16px', 
+                  backgroundColor: '#eff6ff',
+                  position: 'relative'
+                }}>
+                  <label className="form-label" style={{ 
+                    fontSize: '16px', 
+                    fontWeight: '600', 
+                    color: '#1e40af',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}>
+                    <DollarSign size={18} color="#1e40af" />
+                    Valor Total *
+                  </label>
                   <input
                     type="number"
                     step="0.01"
                     className="form-input"
                     value={pagamentoData.valor_total}
-                    onChange={(e) => setPagamentoData({ ...pagamentoData, valor_total: e.target.value })}
+                    onChange={(e) => {
+                      const novoValor = e.target.value
+                      setPagamentoData({ ...pagamentoData, valor_total: novoValor })
+                      // Validar em tempo real quando usar dinheiro do caixa
+                      validarValorPagamento(novoValor, pagamentoData.afeta_caixa)
+                    }}
                     placeholder="0,00"
+                    style={{
+                      fontSize: '18px',
+                      fontWeight: '500',
+                      padding: '12px',
+                      border: '2px solid #bfdbfe',
+                      borderRadius: '8px',
+                      backgroundColor: 'white'
+                    }}
                   />
+                  {/* Mensagem de erro instantânea */}
+                  {erroSaldoInsuficiente && (
+                    <div className="erro-saldo-insuficiente" style={{
+                      marginTop: '8px',
+                      padding: '8px 12px',
+                      backgroundColor: '#fee2e2',
+                      border: '1px solid #fca5a5',
+                      borderRadius: '4px',
+                      color: '#dc2626',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}>
+                      <AlertCircle size={16} />
+                      {erroSaldoInsuficiente}
+                    </div>
+                  )}
                 </div>
 
                 <div className="form-group checkbox-group">
@@ -809,6 +976,8 @@ export default function FornecedoresPage() {
                           afeta_caixa: checked,
                           forma_pagamento: checked ? 'dinheiro' : pagamentoData.forma_pagamento
                         })
+                        // Validar quando marcar/desmarcar o checkbox
+                        validarValorPagamento(pagamentoData.valor_total, checked)
                       }}
                       className="checkbox-input"
                     />
@@ -823,7 +992,7 @@ export default function FornecedoresPage() {
                       borderRadius: '4px',
                       fontSize: '14px'
                     }}>
-                      <strong>Saldo disponível em dinheiro:</strong> R$ {saldoDinheiroDisponivel.toFixed(2)}
+                      <strong>Saldo disponível em dinheiro:</strong> R$ {saldoCaixa.toFixed(2)}
                     </div>
                   )}
                   <small className="checkbox-help">
@@ -831,35 +1000,88 @@ export default function FornecedoresPage() {
                   </small>
                 </div>
 
-                <div className="form-group">
-                  <label className="form-label">Forma de Pagamento *</label>
-                  <select
-                    className="form-select"
-                    value={pagamentoData.forma_pagamento}
-                    onChange={(e) => setPagamentoData({ ...pagamentoData, forma_pagamento: e.target.value as any })}
-                    disabled={pagamentoData.afeta_caixa}
-                  >
-                    <option value="dinheiro">Dinheiro</option>
-                    <option value="cartao_debito">Cartão Débito</option>
-                    <option value="cartao_credito">Cartão Crédito</option>
-                    <option value="pix">PIX</option>
-                    <option value="transferencia">Transferência</option>
-                    <option value="cheque">Cheque</option>
-                  </select>
-                  {pagamentoData.afeta_caixa && (
-                    <small className="form-help">Quando usar dinheiro do caixa, a forma de pagamento é automaticamente definida como dinheiro.</small>
-                  )}
-                </div>
+                {!pagamentoData.afeta_caixa && (
+                  <div className="form-group">
+                    <label className="form-label">Forma de Pagamento *</label>
+                    <select
+                      className="form-select"
+                      value={pagamentoData.forma_pagamento}
+                      onChange={(e) => setPagamentoData({ ...pagamentoData, forma_pagamento: e.target.value as any })}
+                    >
+                      <option value="dinheiro">Dinheiro</option>
+                      <option value="cartao_debito">Cartão Débito</option>
+                      <option value="cartao_credito">Cartão Crédito</option>
+                      <option value="pix">PIX</option>
+                      <option value="transferencia">Transferência</option>
+                      <option value="cheque">Cheque</option>
+                    </select>
+                  </div>
+                )}
 
                 <div className="form-group full-width">
-                  <label className="form-label">Descrição</label>
-                  <textarea
-                    className="form-textarea"
-                    value={pagamentoData.descricao}
-                    onChange={(e) => setPagamentoData({ ...pagamentoData, descricao: e.target.value })}
-                    placeholder="Descrição do pagamento (ex: Compra de 10 unidades de produto X)"
-                    rows={3}
-                  />
+                  {!mostrarDescricaoPagamento ? (
+                    <button
+                      type="button"
+                      onClick={() => setMostrarDescricaoPagamento(true)}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '2px dashed #d1d5db',
+                        borderRadius: '8px',
+                        backgroundColor: 'transparent',
+                        color: '#6b7280',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = '#3b82f6'
+                        e.currentTarget.style.color = '#3b82f6'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = '#d1d5db'
+                        e.currentTarget.style.color = '#6b7280'
+                      }}
+                    >
+                      <Plus size={16} />
+                      Adicionar descrição (opcional)
+                    </button>
+                  ) : (
+                    <div>
+                      <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        Descrição
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMostrarDescricaoPagamento(false)
+                            setPagamentoData({ ...pagamentoData, descricao: '' })
+                          }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#6b7280',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            padding: '0'
+                          }}
+                        >
+                          <X size={16} />
+                        </button>
+                      </label>
+                      <textarea
+                        className="form-textarea"
+                        value={pagamentoData.descricao}
+                        onChange={(e) => setPagamentoData({ ...pagamentoData, descricao: e.target.value })}
+                        placeholder="Descrição do pagamento (ex: Compra de 10 unidades de produto X)"
+                        rows={3}
+                        autoFocus
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -876,7 +1098,8 @@ export default function FornecedoresPage() {
                 <button
                   className="btn btn-success"
                   onClick={() => salvarPagamento()}
-                  disabled={showPagamentoLoadingModal}
+                  disabled={showPagamentoLoadingModal || erroSaldoInsuficiente !== ''}
+                  title={erroSaldoInsuficiente ? 'Corrija o valor do pagamento para continuar' : ''}
                 >
                   <Receipt size={16} />
                   Registrar Pagamento
@@ -894,7 +1117,10 @@ export default function FornecedoresPage() {
             <div className="modal-header-1">
               <div className="modal-header-content">
                 <div className="modal-title-info-1">
-                  <h2>⚠️ Atenção</h2>
+                  <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <AlertCircle size={20} color="#f59e0b" />
+                    Atenção
+                  </h2>
                   <p>Confirmação necessária</p>
                 </div>
               </div>
@@ -922,7 +1148,7 @@ export default function FornecedoresPage() {
                   </div>
                   <div className="detail-item">
                     <span className="detail-label">Saldo atual:</span>
-                    <span className="detail-value">R$ {saldoDinheiroDisponivel.toFixed(2)}</span>
+                    <span className="detail-value">R$ {saldoCaixa.toFixed(2)}</span>
                   </div>
                   <div className="detail-item">
                     <span className="detail-label">Valor inicial:</span>
@@ -931,7 +1157,7 @@ export default function FornecedoresPage() {
                   <div className="detail-item">
                     <span className="detail-label">Saldo após operação:</span>
                     <span className="detail-value warning">
-                      R$ {(saldoDinheiroDisponivel - parseFloat(pagamentoData.valor_total)).toFixed(2)}
+                      R$ {(saldoCaixa - parseFloat(pagamentoData.valor_total)).toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -951,7 +1177,10 @@ export default function FornecedoresPage() {
                 </button>
                 <button
                   className="btn btn-warning"
-                  onClick={() => executarPagamento()}
+                  onClick={() => {
+                    console.log('[CONFIRMAÇÃO] Botão Confirmar clicado')
+                    executarPagamento()
+                  }}
                 >
                   <AlertCircle size={16} />
                   Confirmar e Continuar
@@ -987,6 +1216,106 @@ export default function FornecedoresPage() {
               </div>
               <h4>Registrando Pagamento</h4>
               <p>Aguarde enquanto processamos o pagamento do fornecedor...</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Senha Master */}
+      {showSenhaMasterModal && (
+        <div className="modal-overlay modal-fade-in" onClick={() => setShowSenhaMasterModal(false)}>
+          <div className="modal-content-f medium" onClick={e => e.stopPropagation()}>
+            <div className="modal-header-1">
+              <div className="modal-header-content">
+                <div className="modal-title-info-1">
+                  <h2>Confirmação Necessária</h2>
+                  <p>Este pagamento afetará o caixa. Digite a senha masterkey para confirmar.</p>
+                </div>
+              </div>
+              <button
+                className="modal-close-btn"
+                onClick={() => setShowSenhaMasterModal(false)}
+                title="Fechar"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="modal-body-1">
+              <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                <AlertCircle size={48} color="#f59e0b" />
+                <h4 style={{ margin: '16px 0', color: '#111827' }}>Senha Master Requerida</h4>
+                <p style={{ color: '#6b7280' }}>
+                  Digite a senha master para autorizar este pagamento que afetará o saldo do caixa.
+                </p>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Senha Masterkey *</label>
+                <input
+                  type="password"
+                  className="form-input"
+                  value={validacaoSenhaForm.senha}
+                  onChange={(e) => setValidacaoSenhaForm({ senha: e.target.value })}
+                  placeholder="Digite a senha masterkey"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div className="modal-footer-1">
+              <div className="footer-actions">
+                <button
+                  onClick={() => setShowSenhaMasterModal(false)}
+                  className="btn btn-outline"
+                  disabled={processandoPagamento}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmarPagamentoComSenha}
+                  className="btn btn-primary"
+                  disabled={!validacaoSenhaForm.senha || processandoPagamento}
+                >
+                  <Lock size={16} />
+                  {processandoPagamento ? 'Processando...' : 'Confirmar Pagamento'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Resultado do Pagamento */}
+      {showPagamentoResultModal && pagamentoResult && (
+        <div className="modal-overlay modal-fade-in">
+          <div className="modal-content-f medium">
+            <div className="modal-header">
+              <h3>{pagamentoResult.title}</h3>
+            </div>
+            <div className="modal-body">
+              <div className={`result-message ${pagamentoResult.success ? 'success' : 'error'}`}>
+                <div className="message-icon">
+                  {pagamentoResult.success ? '✅' : '❌'}
+                </div>
+                <p className="main-message">{pagamentoResult.message}</p>
+              </div>
+              <div className="result-details">
+                <h4>Detalhes:</h4>
+                <pre>{pagamentoResult.details}</pre>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPagamentoResultModal(false)
+                  setPagamentoResult({ success: false, title: '', message: '' })
+                }}
+                className="btn-primary"
+              >
+                OK
+              </button>
             </div>
           </div>
         </div>
