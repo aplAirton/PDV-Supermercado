@@ -8,6 +8,7 @@ interface MasterPasswordConfirmationProps {
   onChange: (value: string) => void
   placeholder?: string
   showIcon?: boolean
+  onKeyPress?: (e: React.KeyboardEvent<HTMLInputElement>) => void
 }
 
 export default function MasterPasswordConfirmation({
@@ -16,7 +17,8 @@ export default function MasterPasswordConfirmation({
   value,
   onChange,
   placeholder = "Digite a senha",
-  showIcon = true
+  showIcon = true,
+  onKeyPress
 }: MasterPasswordConfirmationProps) {
   return (
     <div className="confirm-content">
@@ -34,6 +36,7 @@ export default function MasterPasswordConfirmation({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="password-input"
+          onKeyPress={onKeyPress}
         />
       </div>
     </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { User, Plus, Edit, Trash2, Eye, Filter, Search, UserCheck, UserX, Loader2, Menu, X, DollarSign, MapPin, Save, AlertCircle, Shield, OctagonAlert, UserPlus } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
+import MasterPasswordConfirmation from '../../components/master-password-confirmation'
 import '../../styles/funcionarios.css'
 
 interface Funcionario {
@@ -1329,42 +1330,29 @@ export default function FuncionariosPage() {
               </button>
             </div>
             <div className="modal-body">
-              <div className="confirm-content">
-                <div className="confirm-icon">
-                  <OctagonAlert size={48} />
+              <MasterPasswordConfirmation
+                title={confirmAction === 'desativar'
+                  ? `Desativar Funcionário: ${funcionarioSelecionado?.nome}`
+                  : 'Cadastrar Novo Funcionário'
+                }
+                message={confirmAction === 'desativar'
+                  ? 'Esta ação irá alterar o status do funcionário. Para prosseguir, digite a senha gerencial:'
+                  : 'Esta ação irá abrir o formulário para cadastrar um novo funcionário. Para prosseguir, digite a senha gerencial:'
+                }
+                value={confirmPassword}
+                onChange={(value) => {
+                  setConfirmPassword(value)
+                  if (confirmError) setConfirmError('') // Limpar erro ao digitar
+                }}
+                placeholder="Digite a senha gerencial"
+                onKeyPress={(e) => e.key === 'Enter' && confirmarAcao()}
+              />
+              {confirmError && (
+                <div className="error-message">
+                  <OctagonAlert size={14} />
+                  {confirmError}
                 </div>
-                <h4>
-                  {confirmAction === 'desativar'
-                    ? `Desativar Funcionário: ${funcionarioSelecionado?.nome}`
-                    : 'Cadastrar Novo Funcionário'
-                  }
-                </h4>
-                <p>
-                  {confirmAction === 'desativar'
-                    ? 'Esta ação irá alterar o status do funcionário. Para prosseguir, digite a senha gerencial:'
-                    : 'Esta ação irá abrir o formulário para cadastrar um novo funcionário. Para prosseguir, digite a senha gerencial:'
-                  }
-                </p>
-                <div className="password-input-group">
-                  <input
-                    type="password"
-                    placeholder="Digite a senha gerencial"
-                    value={confirmPassword}
-                    onChange={(e) => {
-                    setConfirmPassword(e.target.value)
-                    if (confirmError) setConfirmError('') // Limpar erro ao digitar
-                  }}
-                    className={`password-input ${confirmError ? 'error' : ''}`}
-                    onKeyPress={(e) => e.key === 'Enter' && confirmarAcao()}
-                  />
-                  {confirmError && (
-                    <div className="error-message">
-                      <OctagonAlert size={14} />
-                      {confirmError}
-                    </div>
-                  )}
-                </div>
-              </div>
+              )}
             </div>
             <div className="modal-footer-confirm">
               <button
