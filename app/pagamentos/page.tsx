@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Ban, Calendar, ArrowDownUp, DollarSign, Banknote, TrendingUp, TrendingDown, Filter, Eye, Search, Download, Printer, CreditCard, Smartphone, Layers, Settings, FileText, LucideFileQuestion, LucideCheckCircle, Loader2, Menu, ChevronUp, ChevronDown } from 'lucide-react'
+import { Ban, Calendar, ArrowDownUp, DollarSign, Banknote, TrendingUp, TrendingDown, Filter, Eye, Search, Download, Printer, CreditCard, Smartphone, Layers, Settings, FileText, LucideFileQuestion, LucideCheckCircle, Loader2, Menu, ChevronUp, ChevronDown, BookOpen, NotebookPen } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import LoadingModal from '../../components/loading-modal'
 import '../../styles/pagamentos-new.css'
@@ -9,7 +9,7 @@ import '../../styles/pagamentos-new.css'
 interface MovimentoCaixa {
   id: number
   tipo: 'entrada' | 'saida'
-  categoria: 'venda_dinheiro' | 'venda_cartao' | 'venda_pix' | 'venda_multiplas' | 'pagamento_fiado' | 'pagamento_fornecedor' | 'ajuste' | 'outros'
+  categoria: 'venda_dinheiro' | 'venda_cartao' | 'venda_pix' | 'venda_fiado' | 'venda_multiplas' | 'pagamento_fiado' | 'pagamento_fornecedor' | 'ajuste' | 'outros'
   valor: number
   descricao: string
   referencia?: string
@@ -121,23 +121,31 @@ export default function PagamentosPage() {
       minute: '2-digit'
     })
   }
-
+const corVerde = "#019d6cff"
 const getIconeCategoria = (categoria: string) => {
     switch (categoria) {
         case 'venda_dinheiro':
-            return <DollarSign size={18} />
+            return <DollarSign size={18} color={corVerde} />
+        case 'venda_cartao_debito':
+        case 'venda_cartao_credito':
         case 'venda_cartao':
-            return <CreditCard size={18} />
+            return <CreditCard size={18} color={corVerde} />
         case 'venda_pix':
-            return <Smartphone size={18} />
+            return <Smartphone size={18} color={corVerde} />
+        case 'venda_fiado':
+            return <NotebookPen size={18} color={corVerde} />
         case 'venda_multiplas':
-            return <Layers size={18} />
+            return <Layers size={18} color={corVerde} />
         case 'pagamento_fiado':
-            return <LucideCheckCircle size={18} />
+            return <LucideCheckCircle size={18} color={corVerde} />
+        case 'pagamento_fornecedor':
+            return <DollarSign size={18} color="#ef4444" />
         case 'ajuste':
-            return <Settings size={18} />
+            return <Settings size={18} color="#6b7280" />
+        case 'fiado':
+            return <BookOpen size={18} color="#f59e0b" />
         default:
-            return <FileText size={18} />
+            return <FileText size={18} color={corVerde} />
     }
 }
 
@@ -571,8 +579,10 @@ const renderFormasPagamento = (movimento: MovimentoCaixa) => {
                   <option value="venda_dinheiro">Dinheiro</option>
                   <option value="venda_cartao">Cartão</option>
                   <option value="venda_pix">PIX</option>
+                  <option value="venda_fiado">Fiado</option>
                   <option value="venda_multiplas">Múltiplas Formas</option>
                   <option value="pagamento_fiado">Pagamento Fiado</option>
+                  <option value="pagamento_fornecedor">Pagamento Fornecedor</option>
                   <option value="ajuste">Ajustes</option>
                 </select>
               </div>

@@ -49,6 +49,7 @@ export async function GET(request: NextRequest) {
           v.id,
           'entrada' AS tipo,
           CASE
+            WHEN v.forma_pagamento_json IS NOT NULL AND JSON_SEARCH(v.forma_pagamento_json, 'one', 'fiado', NULL, '$[*].tipo') IS NOT NULL THEN 'venda_fiado'
             WHEN v.forma_pagamento_json IS NOT NULL AND JSON_LENGTH(v.forma_pagamento_json) > 1 THEN 'venda_multiplas'
             WHEN v.forma_pagamento_json IS NOT NULL AND JSON_UNQUOTE(JSON_EXTRACT(v.forma_pagamento_json, '$[0].tipo')) = 'dinheiro' THEN 'venda_dinheiro'
             WHEN v.forma_pagamento_json IS NOT NULL AND JSON_UNQUOTE(JSON_EXTRACT(v.forma_pagamento_json, '$[0].tipo')) = 'cartao_debito' THEN 'venda_cartao_debito'
@@ -65,6 +66,7 @@ export async function GET(request: NextRequest) {
             WHEN v.forma_pagamento_json IS NOT NULL AND JSON_UNQUOTE(JSON_EXTRACT(v.forma_pagamento_json, '$[0].tipo')) = 'cartao_debito' THEN 'Cartão Débito'
             WHEN v.forma_pagamento_json IS NOT NULL AND JSON_UNQUOTE(JSON_EXTRACT(v.forma_pagamento_json, '$[0].tipo')) = 'cartao_credito' THEN 'Cartão Crédito'
             WHEN v.forma_pagamento_json IS NOT NULL AND JSON_UNQUOTE(JSON_EXTRACT(v.forma_pagamento_json, '$[0].tipo')) = 'pix' THEN 'PIX'
+            WHEN v.forma_pagamento_json IS NOT NULL AND JSON_UNQUOTE(JSON_EXTRACT(v.forma_pagamento_json, '$[0].tipo')) = 'fiado' THEN 'Fiado'
             ELSE COALESCE(v.forma_pagamento, 'N/A')
           END AS forma_pagamento,
           v.forma_pagamento_json AS forma_pagamento_json,
@@ -107,10 +109,7 @@ export async function GET(request: NextRequest) {
         SELECT
           mf.id + 300000 AS id,
           'saida' AS tipo,
-          CASE
-            WHEN mf.categoria = 'sangria' AND mf.referencia LIKE 'Pagamento fornecedor%' THEN 'sangria'
-            ELSE 'pagamento_fornecedor'
-          END AS categoria,
+          'pagamento_fornecedor' AS categoria,
           mf.valor,
           COALESCE(mf.descricao, 'Pagamento a fornecedor') AS descricao,
           mf.referencia,

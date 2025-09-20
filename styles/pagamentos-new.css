@@ -381,13 +381,13 @@
 }
 
 .movement-icon.entrada {
-  background: linear-gradient(135deg, #dcfce7, #bbf7d0);
-  color: #15803d;
+  background: #dcfce7 !important;
+  color: #16a34a !important;
 }
 
 .movement-icon.saida {
-  background: linear-gradient(135deg, #fef2f2, #fecaca);
-  color: #dc2626;
+  background:#fed6d6 !important;
+  color: #dc2626 !important;
 }
 
 .movement-details {
@@ -520,33 +520,32 @@
 }
 
 .fp-dinheiro {
-  background: linear-gradient(90deg, #dcfce7, #f0fdf4);
+  background: #dcfce7;
   color: #166534;
   border-color: #bbf7d0;
 }
 
 .fp-cartao-debito {
-  background: linear-gradient(90deg, #dbeafe, #eff6ff);
+  background: #dbeafe;
+  color: #1e40af;
+  border-color: #bfdbfe;
+}
+.fp-cartao-credito {
+  background: #dbeafe;
   color: #1e40af;
   border-color: #bfdbfe;
 }
 
-.fp-cartao-credito {
-  background: linear-gradient(90deg, #fef3c7, #fffbeb);
-  color: #92400e;
-  border-color: #fed7aa;
-}
-
 .fp-pix {
-  background: linear-gradient(90deg, #cffafe, #f0fdfa);
-  color: #0f766e;
+  background: #e5fcf6;
+  color: #417e71;
   border-color: #99f6e4;
 }
 
 .fp-fiado {
-  background: linear-gradient(90deg, #fce7f3, #fdf2f8);
-  color: #be185d;
-  border: 1px dashed #f9a8d4;
+  background: #fcf8e7;
+  color: #be8918;
+  border: 1px dashed #f9f8a8;
 }
 
 /* === LAYOUT MOBILE (<768px) === */
