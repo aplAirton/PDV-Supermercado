@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
 
             // Registrar saída no caixa (sangria) associada ao caixa aberto
             await executeQuery(
-              "INSERT INTO caixa_movimentacoes_financeiras (caixa_id, tipo, valor, descricao, data_movimentacao) VALUES (?, ?, ?, ?, NOW())",
+              "INSERT INTO caixa_movimentacoes_financeiras (caixa_id, tipo, valor, descricao) VALUES (?, ?, ?, ?)",
               [caixaId, 'sangria', parseFloat(valor_total), `Pagamento fornecedor - ${fornecedorExistente[0]?.nome || 'Fornecedor'}`]
             )
 
@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
             console.warn('[PAGAMENTO API] Nenhum caixa aberto encontrado para registrar sangria de pagamento de fornecedor')
             // Registrar sem caixa_id para não perder a informação
             await executeQuery(
-              "INSERT INTO caixa_movimentacoes_financeiras (caixa_id, tipo, valor, descricao, data_movimentacao) VALUES (?, ?, ?, ?, NOW())",
+              "INSERT INTO caixa_movimentacoes_financeiras (caixa_id, tipo, valor, descricao) VALUES (?, ?, ?, ?)",
               [null, 'sangria', parseFloat(valor_total), `Pagamento fornecedor - ${fornecedorExistente[0]?.nome || 'Fornecedor'}`]
             )
           }

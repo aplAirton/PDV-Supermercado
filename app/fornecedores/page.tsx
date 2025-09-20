@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { User, Plus, Edit, Trash2, Eye, Filter, Search, UserCheck, UserX, Loader2, Menu, X, DollarSign, MapPin, Save, AlertCircle, OctagonAlert, Truck, CreditCard, Receipt, Lock } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import MasterPasswordConfirmation from '../../components/master-password-confirmation'
+import PaymentSuccessModal from '../../components/payment-success-modal'
 import '../../styles/fornecedores.css'
 
 interface Fornecedor {
@@ -75,11 +76,17 @@ export default function FornecedoresPage() {
   const [processandoPagamento, setProcessandoPagamento] = useState(false)
   const [showPagamentoResultModal, setShowPagamentoResultModal] = useState(false)
   const [pagamentoResult, setPagamentoResult] = useState<{
-    success: boolean
-    title: string
-    message: string
-    details?: string
-  }>({ success: false, title: '', message: '' })
+    id: number | string
+    valor: number
+    fornecedor: {
+      nome: string
+      cnpj: string
+    }
+    forma_pagamento: string
+    data_pagamento: string
+    descricao?: string
+    afeta_caixa: boolean
+  } | null>(null)
   const [saldoDinheiroDisponivel, setSaldoDinheiroDisponivel] = useState(0)
   const [valorInicialCaixa, setValorInicialCaixa] = useState(0)
   const [saldoCaixa, setSaldoCaixa] = useState(0) // Novo: saldo = total_dinheiro - valor_inicial
@@ -409,18 +416,19 @@ export default function FornecedoresPage() {
 
       if (response.ok) {
         console.log('[PAGAMENTO] Pagamento realizado com sucesso!')
-        // Pagamento realizado com sucesso
+        
+        // Configurar dados para o modal de sucesso
         setPagamentoResult({
-          success: true,
-          title: 'Pagamento Realizado com Sucesso! ✅',
-          message: `Pagamento de R$ ${parseFloat(valor_total).toFixed(2)} para ${fornecedorSelecionado?.nome} foi registrado com sucesso.`,
-          details: `
-            Fornecedor: ${fornecedorSelecionado?.nome}
-            Valor: R$ ${parseFloat(valor_total).toFixed(2)}
-            Forma: ${forma_pagamento}
-            ${afeta_caixa ? 'Afetou caixa: Sim' : 'Afetou caixa: Não'}
-            ${descricao ? `Descrição: ${descricao}` : ''}
-          `.trim()
+          id: responseData.id || 'N/A',
+          valor: parseFloat(valor_total),
+          fornecedor: {
+            nome: fornecedorSelecionado?.nome || '',
+            cnpj: fornecedorSelecionado?.cnpj || ''
+          },
+          forma_pagamento: forma_pagamento,
+          data_pagamento: new Date().toISOString(),
+          descricao: descricao || undefined,
+          afeta_caixa: afeta_caixa
         })
         
         fecharModalPagamento()
@@ -431,30 +439,12 @@ export default function FornecedoresPage() {
         }
       } else {
         console.log('[PAGAMENTO] Erro no pagamento:', responseData.error)
-        // Erro no pagamento
-        setPagamentoResult({
-          success: false,
-          title: 'Erro no Pagamento ❌',
-          message: responseData.error || 'Não foi possível processar o pagamento.',
-          details: `
-            Fornecedor: ${fornecedorSelecionado?.nome}
-            Valor tentado: R$ ${parseFloat(valor_total).toFixed(2)}
-            Erro: ${responseData.error || 'Erro desconhecido'}
-          `.trim()
-        })
+        // Para erro, não abrimos o modal de sucesso
+        showMessageCard('error', 'Erro no Pagamento', responseData.error || 'Não foi possível processar o pagamento.')
       }
     } catch (error) {
       console.error('Erro ao registrar pagamento:', error)
-      setPagamentoResult({
-        success: false,
-        title: 'Erro de Comunicação ❌',
-        message: 'Erro interno do servidor. Tente novamente.',
-        details: `
-          Fornecedor: ${fornecedorSelecionado?.nome}
-          Valor tentado: R$ ${parseFloat(pagamentoData.valor_total).toFixed(2)}
-          Erro: ${error instanceof Error ? error.message : 'Erro desconhecido'}
-        `.trim()
-      })
+      showMessageCard('error', 'Erro de Comunicação', 'Erro interno do servidor. Tente novamente.')
     } finally {
       console.log('[PAGAMENTO] Finalizando processo...')
       setShowPagamentoLoadingModal(false)
@@ -1275,40 +1265,19 @@ export default function FornecedoresPage() {
         </div>
       )}
 
-      {/* Modal de Resultado do Pagamento */}
-      {showPagamentoResultModal && pagamentoResult && (
-        <div className="modal-overlay modal-fade-in">
-          <div className="modal-content-f medium">
-            <div className="modal-header">
-              <h3>{pagamentoResult.title}</h3>
-            </div>
-            <div className="modal-body">
-              <div className={`result-message ${pagamentoResult.success ? 'success' : 'error'}`}>
-                <div className="message-icon">
-                  {pagamentoResult.success ? '✅' : '❌'}
-                </div>
-                <p className="main-message">{pagamentoResult.message}</p>
-              </div>
-              <div className="result-details">
-                <h4>Detalhes:</h4>
-                <pre>{pagamentoResult.details}</pre>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowPagamentoResultModal(false)
-                  setPagamentoResult({ success: false, title: '', message: '' })
-                }}
-                className="btn-primary"
-              >
-                OK
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modal de Sucesso do Pagamento */}
+      <PaymentSuccessModal
+        isOpen={showPagamentoResultModal}
+        onClose={() => {
+          setShowPagamentoResultModal(false)
+          setPagamentoResult(null)
+        }}
+        paymentData={pagamentoResult}
+        onPrint={() => {
+          // Implementar impressão se necessário
+          console.log('Imprimir comprovante')
+        }}
+      />
 
     </div>
   )
