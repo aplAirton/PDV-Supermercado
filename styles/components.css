@@ -2979,6 +2979,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  font-weight: 700;
 }
 
 .modal-footer-mobile {
@@ -3145,7 +3146,7 @@
 .produtos-table th,
 .produtos-table td {
   font-size: 1rem;
-  padding: 12px 8px;
+  padding: 4px 8px;
   text-align: left;
   border-bottom: 1px solid var(--border);
 }
@@ -3158,10 +3159,6 @@
 
 /* Ocultar coluna de estoque em mobile */
 @media (max-width: 767px) {
-  .estoque-column {
-    display: none !important;
-  }
-  
   /* Aumentar largura da coluna do produto em mobile */
   .produtos-table td:first-child {
     width: 62%;

@@ -268,8 +268,8 @@ export default function VendasPage() {
     }
   }, [produtos.length, clientes.length, animacaoExecutada])
 
-  // Nova função de busca de produtos mais robusta
-  const buscarProdutos = async (query: string, mode: 'search' | 'exact' = 'search', limit: number = 6) => {
+  // Nova função de busca de produtos mais robusta quantidade de produtos retornado na busca
+  const buscarProdutos = async (query: string, mode: 'search' | 'exact' = 'search', limit: number = 7) => {
     if (!query || query.trim().length < 2) {
       setProdutos([])
       return
@@ -1010,7 +1010,6 @@ export default function VendasPage() {
                     <tr>
                       <th>Produto</th>
                       <th>Preço</th>
-                      <th className="estoque-column">Estoque</th>
                       <th>Ação</th>
                     </tr>
                   </thead>
@@ -1024,11 +1023,6 @@ export default function VendasPage() {
                           </div>
                         </td>
                         <td>R$ {Number(produto.preco).toFixed(2)}</td>
-                        <td className="estoque-column">
-                          <span className={`estoque-badge ${produto.estoque === 0 ? 'sem-estoque' : produto.estoque < 10 ? 'baixo-estoque' : 'com-estoque'}`}>
-                            {produto.estoque}
-                          </span>
-                        </td>
                         <td>
                           <button
                             className={`btn btn-sm ${buttonFeedback[produto.id] ? 'btn-success' : 'btn-primary'} produto-add-btn`}
@@ -2001,7 +1995,6 @@ export default function VendasPage() {
                           <tr>
                             <th className="col-produto">Produto</th>
                             <th className="col-preco">Preço</th>
-                            <th className="col-estoque">Estoque</th>
                             <th className="col-acao">Ação</th>
                           </tr>
                         </thead>
@@ -2014,11 +2007,6 @@ export default function VendasPage() {
                               </td>
                               <td className="produto-preco">
                                 <span className="preco-valor">R$ {Number(produto.preco).toFixed(2)}</span>
-                              </td>
-                              <td className="produto-estoque">
-                                <span className={`estoque-badge ${produto.estoque === 0 ? 'sem-estoque' : produto.estoque < 10 ? 'baixo-estoque' : 'com-estoque'}`}>
-                                  {produto.estoque}
-                                </span>
                               </td>
                               <td className="produto-acao">
                                 <button
