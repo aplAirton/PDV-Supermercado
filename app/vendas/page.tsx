@@ -269,7 +269,7 @@ export default function VendasPage() {
   }, [produtos.length, clientes.length, animacaoExecutada])
 
   // Nova função de busca de produtos mais robusta
-  const buscarProdutos = async (query: string, mode: 'search' | 'exact' = 'search', limit: number = 3) => {
+  const buscarProdutos = async (query: string, mode: 'search' | 'exact' = 'search', limit: number = 6) => {
     if (!query || query.trim().length < 2) {
       setProdutos([])
       return
@@ -952,7 +952,7 @@ export default function VendasPage() {
       {/* Área de Produtos / Novo ciclo */}
       {!vendaConcluida ? (
         <div className={`card ${animacaoExecutada ? '' : 'fade-in'}`}>
-          <div className="card-header">
+          <div className="card-header-home">
             <h2 className="card-title">Adicionar Produtos</h2>
           </div>
 
@@ -1053,9 +1053,6 @@ export default function VendasPage() {
           {/* Rodapé da busca com botão Busca Avançada */}
           {codigoBusca.trim().length >= 2 && produtos.length > 0 && (
             <div className="busca-footer">
-              <div className="busca-info">
-                Mostrando {produtos.length} resultado{produtos.length !== 1 ? 's' : ''}
-              </div>
               <button 
                 className="btn btn-sm btn-outline busca-avancada-btn"
                 onClick={abrirBuscaAvancada}
@@ -1144,7 +1141,7 @@ export default function VendasPage() {
       {!isMobile && (
         <div className={`card ${animacaoExecutada ? '' : 'fade-in'}`}>
         {/* Header do Carrinho */}
-          <div className="card-header card-header-custom">
+          <div className="card-header-home card-header-custom">
           <div className="row row-between">
             <h2 className="card-title title-row card-title-large">
               <ShoppingCart size={20} />

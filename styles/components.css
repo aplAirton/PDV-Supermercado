@@ -726,18 +726,18 @@
 /* Cards */
 .card {
   background: var(--card-background);
-  border: 1px solid var(--border);
   border-radius: 0.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 1rem;
+  padding: 0.5rem !important;
   margin-bottom: 1rem;
-  height: 100%;
+  height: 88%;
 }
 
-.card-header {
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--border);
+.card-header-home {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  padding: 0.5rem;
 }
 
 .card-title {
@@ -1540,10 +1540,6 @@
   }
 
   /* Cards compactos */
-  .card {
-    padding: 0.75rem;
-    margin-bottom: 0.5rem;
-  }
 
   .card-header {
     padding-bottom: 0.25rem;
@@ -1551,7 +1547,6 @@
   }
 
   .card-title {
-    font-size: 1rem;
     flex-direction: column;
     align-items: flex-start;
     gap: 0.25rem;
@@ -1791,7 +1786,7 @@
   }
 
   .content-body {
-    padding: 1rem;
+    padding: 0 1rem 0 1rem;
   }
 
   /* Overlay para mobile */
@@ -2926,36 +2921,39 @@
 
 .cart-floating-btn {
   position: fixed;
-  bottom: 3rem;
-  right: 2rem;
+  bottom: 0;
+  left: 0;
+  right: 0;
   background: var(--primary-color);
   color: white;
   border: none;
-  border-radius: 50px;
-  padding: 1rem 1.2rem;
+  border-radius: 0;
+  padding: 1rem 1.5rem;
   display: flex;
   align-items: center;
-  gap: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  justify-content: center;
+  gap: 0.8rem;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
   cursor: pointer;
   transition: all 0.3s ease;
   z-index: 1000;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 16px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .cart-floating-btn:hover {
   background: var(--primary-color-hover);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .cart-badge {
   background: white;
   color: var(--primary-color);
   border-radius: 50%;
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2965,8 +2963,9 @@
 }
 
 .cart-total {
-  font-size: 12px;
-  opacity: 0.9;
+  font-size: 16px;
+  font-weight: 700;
+  opacity: 0.95;
 }
 
 /* ===========================================
@@ -3116,9 +3115,9 @@
 .pdv-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 1rempx;
   display: grid;
-  grid-template-columns: 1fr 400px;
+  grid-template-columns: 1fr 1fr;
   gap: 24px;
   min-height: calc(100vh - 80px);
 }
@@ -3127,7 +3126,48 @@
 @media (max-width: 767px) {
   .pdv-container {
     grid-template-columns: 1fr;
-    padding: 16px;
+    padding: 0px;
     gap: 16px;
+  }
+}
+
+/* ===========================================
+   TABELA DE PRODUTOS - RESPONSIVO
+   =========================================== */
+
+.produtos-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  box-sizing: border-box;
+}
+
+.produtos-table th,
+.produtos-table td {
+  font-size: 1rem;
+  padding: 12px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.produtos-table th {
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+/* Ocultar coluna de estoque em mobile */
+@media (max-width: 767px) {
+  .estoque-column {
+    display: none !important;
+  }
+  
+  /* Aumentar largura da coluna do produto em mobile */
+  .produtos-table td:first-child {
+    width: 62%;
+  }
+  
+  .produtos-table th:first-child {
+    width: 62%;
   }
 }
