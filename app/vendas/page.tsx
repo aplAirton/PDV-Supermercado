@@ -7,7 +7,7 @@ import VirtualKeyboard from '@/components/virtual-keyboard'
 import Loading from "@/components/loading"
 import SearchHint from "@/components/search-hint"
 import BarcodeScanner from "@/components/barcode-scanner-zxing"
-import { Search, Plus, Minus, Trash2, AlertTriangle, ShoppingCart, X, Settings, ChevronDown, ChevronUp, ChevronRight, Loader2, User, Receipt, Check, Camera, CameraOff } from "lucide-react"
+import { Search, Plus, Minus, Trash2, AlertTriangle, ShoppingCart, X, Settings, ChevronDown, ChevronUp, ChevronRight, Loader2, User, Receipt, Check, Camera, CameraOff, Printer } from "lucide-react"
 import '../../styles/components.css'
 
 interface Produto {
@@ -74,6 +74,9 @@ export default function VendasPage() {
   // Estado para controlar a exibição das opções de filtro/desconto
   const [showFilterOptions, setShowFilterOptions] = useState(false)
 
+  // Estado para aviso de valor já satisfeito ao tentar adicionar forma de pagamento
+  const [showPaymentValueWarning, setShowPaymentValueWarning] = useState(false)
+
   // Estados para controlar origem da mudança no campo
   const [isFromScanner, setIsFromScanner] = useState(false)
   const scannerTimeoutRef = useRef<number | null>(null)
@@ -137,6 +140,47 @@ export default function VendasPage() {
   function filterNumericInput(value: string): string {
     // Remove tudo exceto números, vírgula e ponto
     return value.replace(/[^0-9.,]/g, '')
+  }
+
+  // Opções disponíveis de formas de pagamento (filtradas por uso)
+  const getAvailablePaymentOptions = (currentIndex: number) => {
+    const allOptions = [
+      { value: "dinheiro", label: "💵 Dinheiro" },
+      { value: "cartao_debito", label: "💳 Cartão Débito" },
+      { value: "cartao_credito", label: "💳 Cartão Crédito" },
+      { value: "pix", label: "📱 PIX" },
+      { value: "fiado", label: "📋 Fiado" }
+    ] as const
+
+    // Forma atual (sempre disponível para edição)
+    const currentType = pagamentos[currentIndex]?.tipo
+
+    // Filtrar opções já usadas em outros pagamentos
+    return allOptions.filter(option => {
+      // Sempre incluir a opção atual
+      if (option.value === currentType) return true
+
+      // Verificar se já está sendo usada em outro pagamento
+      return !pagamentos.some((pagamento, idx) =>
+        idx !== currentIndex && pagamento.tipo === option.value
+      )
+    })
+  }
+
+  // Função para obter a próxima forma de pagamento disponível
+  const getNextAvailablePaymentType = (): "dinheiro" | "cartao_debito" | "cartao_credito" | "pix" | "fiado" => {
+    const allTypes: ("dinheiro" | "cartao_debito" | "cartao_credito" | "pix" | "fiado")[] =
+      ["dinheiro", "cartao_debito", "cartao_credito", "pix", "fiado"]
+
+    // Encontrar a primeira forma que ainda não foi usada
+    for (const type of allTypes) {
+      if (!pagamentos.some(p => p.tipo === type)) {
+        return type
+      }
+    }
+
+    // Fallback: se todas foram usadas, usar dinheiro (não deveria acontecer)
+    return "dinheiro"
   }
 
   // Função para remover desconto
@@ -814,7 +858,7 @@ export default function VendasPage() {
         cliente_id: clienteSelecionado?.id || null,
         total: totalRounded, // Total já com desconto
         total_original: totalOriginal, // Total antes do desconto
-        pagamentos: pagamentos.map((p) => ({
+        pagamentos: pagamentos.filter((p) => parseCurrency(p.valor) > 0).map((p) => ({
           tipo_pagamento: p.tipo,
           valor: parseCurrency(p.valor)
         })),
@@ -1395,6 +1439,39 @@ export default function VendasPage() {
         </button>
       )}
 
+      {/* Botão flutuante de imprimir cupom para mobile */}
+      {isMobile && vendaConcluida && vendaIdConcluida && (
+        <button
+          className="print-floating-btn"
+          onClick={() => {
+            // Abrir cupom HTML em nova janela
+            const cupomUrl = `/api/vendas/${vendaIdConcluida}/cupom`
+            const w = window.open(cupomUrl, '_blank', 'width=800,height=600,scrollbars=yes')
+            if (w) {
+              w.focus()
+              // Esperar carregar e tentar imprimir
+              setTimeout(() => {
+                try { 
+                  w.print() 
+                } catch (e) { 
+                  console.log('Print automático não disponível') 
+                }
+              }, 1000)
+            } else {
+              toast({ 
+                title: 'Cupom indisponível', 
+                description: 'Não foi possível abrir a janela do cupom', 
+                variant: 'destructive' 
+              })
+            }
+          }}
+          title="Imprimir Cupom"
+        >
+          <Printer size={20} />
+          <span className="print-text">Imprimir Cupom</span>
+        </button>
+      )}
+
       {/* Modal de Busca de Cliente */}
       {showClienteModal && (
   <div className="modal-backdrop" onClick={() => { setShowClienteModal(false); setBuscarClienteQuery(''); try { searchInputRef.current?.focus() } catch (e) { } }}>
@@ -1491,13 +1568,14 @@ export default function VendasPage() {
           <div className={`modal payment-modal ${showVirtualKeyboard ? 'with-keyboard' : ''}`}>
             <div className="payment-layout">
               <div className="payment-content">
-                <div className="modal-header-row">
+                <div className="modal-header-mobile">
                   <h3 className="modal-title-text">Finalizar Pagamento</h3>
-                  <button 
-                    className="btn btn-sm btn-outline modal-close-btn"
+                  <button
+                    className="payment-modal-close-btn"
                     onClick={() => fecharModalPagamento()}
+                    aria-label="Fechar modal"
                   >
-                    <X size={16} />
+                    <X size={18} />
                   </button>
                 </div>
 
@@ -1509,7 +1587,7 @@ export default function VendasPage() {
                   <div className="keyboard-toggle-section">
                     <button
                       type="button"
-                      className={`btn btn-xs ${showVirtualKeyboard ? 'btn-primary' : 'btn-outline'}`}
+                      className={`btn btn-xs keyboard-toggle-btn ${showVirtualKeyboard ? 'btn-primary' : 'btn-outline'}`}
                       onClick={() => setShowVirtualKeyboard(!showVirtualKeyboard)}
                       title={showVirtualKeyboard ? 'Ocultar teclado virtual' : 'Exibir teclado virtual'}
                     >
@@ -1534,11 +1612,11 @@ export default function VendasPage() {
                       }}
                     
                     >
-                      <option value="dinheiro">💵 Dinheiro</option>
-                      <option value="cartao_debito">💳 Cartão Débito</option>
-                      <option value="cartao_credito">💳 Cartão Crédito</option>
-                      <option value="pix">📱 PIX</option>
-                      <option value="fiado">📋 Fiado</option>
+                      {getAvailablePaymentOptions(idx).map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
                     </select>
 
                     <input
@@ -1547,8 +1625,62 @@ export default function VendasPage() {
                       className={`form-input ${activeInputIndex === idx ? 'keyboard-active' : ''} input-35`}
                       value={p.valor}
                       onChange={(e) => {
+                        let newValue = e.target.value
+                        
+                        // Limitar a no máximo duas casas decimais
+                        // Remover caracteres não numéricos exceto vírgula e ponto
+                        newValue = newValue.replace(/[^0-9.,]/g, '')
+                        
+                        // Substituir vírgula por ponto temporariamente para processamento
+                        const tempValue = newValue.replace(',', '.')
+                        
+                        // Verificar se há mais de um ponto decimal
+                        const parts = tempValue.split('.')
+                        if (parts.length > 2) {
+                          // Se há mais de um ponto, manter apenas o primeiro e limitar casas decimais
+                          const integerPart = parts[0]
+                          const decimalPart = parts.slice(1).join('').substring(0, 2)
+                          newValue = integerPart + ',' + decimalPart
+                        } else if (parts.length === 2) {
+                          // Se há exatamente um ponto, limitar a duas casas decimais
+                          const integerPart = parts[0]
+                          const decimalPart = parts[1].substring(0, 2)
+                          newValue = integerPart + ',' + decimalPart
+                        } else {
+                          // Sem ponto decimal, manter apenas números
+                          newValue = parts[0]
+                        }
+                        
+                        const parsedNewValue = parseCurrency(newValue)
+                        
+                        // Calcular soma dos outros pagamentos (excluindo o atual)
+                        const somaOutrosPagamentos = pagamentos.reduce((soma, pag, i) => {
+                          if (i !== idx) {
+                            return soma + parseCurrency(pag.valor)
+                          }
+                          return soma
+                        }, 0)
+                        
+                        // Se não é dinheiro e o total já está satisfeito pelos outros pagamentos, impedir alteração
+                        if (p.tipo !== 'dinheiro' && somaOutrosPagamentos >= totalRounded) {
+                          return // Não permitir alteração
+                        }
+                        
+                        // Se não é dinheiro e o novo valor faria o total exceder, limitar ao restante
+                        if (p.tipo !== 'dinheiro' && parsedNewValue > 0) {
+                          const restanteParaEstePagamento = Math.max(0, totalRounded - somaOutrosPagamentos)
+                          if (parsedNewValue > restanteParaEstePagamento) {
+                            // Limitar ao valor restante necessário
+                            const limitedValue = restanteParaEstePagamento.toFixed(2).replace('.', ',')
+                            const newPag = [...pagamentos]
+                            newPag[idx].valor = limitedValue
+                            setPagamentos(newPag)
+                            return
+                          }
+                        }
+                        
                         const newPag = [...pagamentos]
-                        newPag[idx].valor = e.target.value
+                        newPag[idx].valor = newValue
                         setPagamentos(newPag)
                       }}
                       onFocus={() => handleInputFocus(idx, `Pagamento ${idx + 1}`)}
@@ -1575,20 +1707,42 @@ export default function VendasPage() {
                   </div>
                 ))}
 
-                <div>
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-outline"
-                    onClick={() => {
-                      // Adicionar nova forma com o restante se houver, senão vazio
-                      const valorInicial = restante > 0 ? restante.toFixed(2) : ""
-                      setPagamentos([...pagamentos, { tipo: "dinheiro", valor: valorInicial }])
-                    }}
-                  >
-                    <Plus size={16} />
-                    Adicionar forma de pagamento
-                  </button>
-                </div>
+                {pagamentos.length < 5 && (
+                  <div>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline"
+                      onClick={() => {
+                        // Verificar se o valor já está satisfeito
+                        if (sumPagamentos >= totalRounded) {
+                          setShowPaymentValueWarning(true)
+                          // Esconder o aviso após 5 segundos
+                          setTimeout(() => setShowPaymentValueWarning(false), 5000)
+                          return
+                        }
+                        
+                        // Adicionar nova forma com o restante se houver, senão vazio
+                        const valorInicial = restante > 0 ? restante.toFixed(2) : ""
+                        const tipoDisponivel = getNextAvailablePaymentType()
+                        setPagamentos([...pagamentos, { tipo: tipoDisponivel, valor: valorInicial }])
+                      }}
+                    >
+                      <Plus size={16} />
+                      Adicionar forma de pagamento
+                    </button>
+                  </div>
+                )}
+
+                {showPaymentValueWarning && (
+                  <div className="alert alert-warning mt-2">
+                    <div className="alert-content">
+                      <div className="alert-title">Valor já satisfeito</div>
+                      <div className="alert-description">
+                        O valor total da venda já foi atingido pelos pagamentos atuais. Não é necessário adicionar mais formas de pagamento.
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
