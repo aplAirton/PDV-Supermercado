@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { User, Plus, Edit, Trash2, Eye, Filter, Search, UserCheck, UserX, Loader2, Menu, X, DollarSign, MapPin, Save, AlertCircle, OctagonAlert, Truck, CreditCard, Receipt, Lock } from 'lucide-react'
+import { User, Plus, Edit, Trash2, Eye, Filter, Search, UserCheck, UserX, Loader2, Menu, X, DollarSign, MapPin, Save, AlertCircle, OctagonAlert, Truck, CreditCard, Receipt, Lock, Printer } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import MasterPasswordConfirmation from '../../components/master-password-confirmation'
 import PaymentSuccessModal from '../../components/payment-success-modal'
@@ -92,6 +92,7 @@ export default function FornecedoresPage() {
   const [saldoCaixa, setSaldoCaixa] = useState(0) // Novo: saldo = total_dinheiro - valor_inicial
   const [showConfirmacaoConsumoInicial, setShowConfirmacaoConsumoInicial] = useState(false)
   const [erroSaldoInsuficiente, setErroSaldoInsuficiente] = useState('')
+  const [imprimindoComprovante, setImprimindoComprovante] = useState(false)
 
   // Marcar animação como executada após carregamento inicial
   useEffect(() => {
@@ -251,6 +252,54 @@ export default function FornecedoresPage() {
     })
     setFornecedorSelecionado(fornecedor)
     setShowPagamentoModal(true)
+  }
+
+  const imprimirComprovantePagamento = async () => {
+    if (imprimindoComprovante) return // Evitar cliques múltiplos
+    
+    setImprimindoComprovante(true)
+    
+    try {
+      if (!pagamentoResult) {
+        console.error('[IMPRESSÃO] Dados do comprovante não encontrados')
+        showMessageCard('error', 'Erro', 'Dados do comprovante não encontrados')
+        return
+      }
+
+      console.log('[IMPRESSÃO] Dados do comprovante:', pagamentoResult)
+
+      // Criar URL com parâmetros para o comprovante de pagamento
+      const params = new URLSearchParams({
+        fornecedor_nome: pagamentoResult.fornecedor.nome,
+        fornecedor_cnpj: pagamentoResult.fornecedor.cnpj,
+        valor: pagamentoResult.valor.toString(),
+        forma_pagamento: pagamentoResult.forma_pagamento,
+        descricao: pagamentoResult.descricao || '',
+        afeta_caixa: pagamentoResult.afeta_caixa.toString(),
+        data_pagamento: pagamentoResult.data_pagamento,
+        pagamento_id: pagamentoResult.id.toString(),
+      })
+
+      const url = `/api/fornecedores/pagamentos/${pagamentoResult.id}/comprovante?${params.toString()}`
+      console.log('[IMPRESSÃO] URL gerada:', url)
+
+      // Pequeno delay para mostrar o loading
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      const newWindow = window.open(url, '_blank', 'width=400,height=600')
+
+      if (!newWindow) {
+        showMessageCard('error', 'Erro ao imprimir', 'Verifique o bloqueador de pop-ups')
+        return
+      }
+
+      showMessageCard('success', 'Comprovante', 'Comprovante aberto para impressão')
+    } catch (error) {
+      console.error('Erro ao imprimir comprovante:', error)
+      showMessageCard('error', 'Erro ao imprimir', 'Não foi possível imprimir o comprovante')
+    } finally {
+      setImprimindoComprovante(false)
+    }
   }
 
   const fecharModal = () => {
@@ -1273,10 +1322,8 @@ export default function FornecedoresPage() {
           setPagamentoResult(null)
         }}
         paymentData={pagamentoResult}
-        onPrint={() => {
-          // Implementar impressão se necessário
-          console.log('Imprimir comprovante')
-        }}
+        onPrint={imprimirComprovantePagamento}
+        isLoadingPrint={imprimindoComprovante}
       />
 
     </div>

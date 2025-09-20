@@ -75,6 +75,36 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const dados = result[0]
 
+    // Buscar informações do operador responsável quando afeta o caixa
+    let operadorInfo = null
+    if (dados.afeta_caixa) {
+      try {
+        const operadorQuery = `
+          SELECT 
+            f.nome,
+            f.cpf,
+            c.id as caixa_id
+          FROM caixas c
+          JOIN funcionarios f ON c.funcionario_abertura_id = f.id
+          WHERE c.status = 'aberto'
+          ORDER BY c.data_abertura DESC
+          LIMIT 1
+        `
+        const operadorResult = await executeQuery(operadorQuery) as any[]
+        
+        if (operadorResult.length > 0) {
+          operadorInfo = {
+            nome: operadorResult[0].nome,
+            cpf: operadorResult[0].cpf,
+            caixaId: operadorResult[0].caixa_id
+          }
+          console.log('[COMPROVANTE MOVIMENTO] Operador encontrado:', operadorInfo.nome)
+        }
+      } catch (error) {
+        console.error('[COMPROVANTE MOVIMENTO] Erro ao buscar operador:', error)
+      }
+    }
+
     // Formatar data
     const dataFormatada = new Date(dados.data_pagamento).toLocaleDateString('pt-BR')
 
@@ -145,6 +175,17 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             font-size: 10px;
             color: #666;
         }
+        .assinatura {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 11px;
+        }
+        .linha-assinatura {
+            border-bottom: 1px solid #000;
+            width: 200px;
+            margin: 0 auto 5px auto;
+            height: 40px;
+        }
         @media print {
             body { margin: 0; }
         }
@@ -160,6 +201,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         <span class="label">Data:</span>
         <span class="value">${dataFormatada}</span>
     </div>
+
+    ${operadorInfo ? `
+    <div class="info-row">
+        <span class="label">Operador:</span>
+        <span class="value">${operadorInfo.nome}</span>
+    </div>
+    ` : ''}
 
     <div class="info-row">
         <span class="label">Fornecedor:</span>

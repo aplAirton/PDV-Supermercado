@@ -53,6 +53,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       <div class="info-header">
         <div><strong>CAIXA Nº:</strong> ${caixaId}</div>
         <div><strong>DATA/HORA:</strong> ${formatarData(dataAbertura)}</div>
+        ${funcionario ? `<div><strong>OPERADOR:</strong> ${funcionario}</div>` : ''}
       </div>
 
       <div class="documento-titulo">DADOS DO OPERADOR</div>
@@ -89,11 +90,6 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         </div>
       </div>
       ` : ''}
-
-      <div class="assinatura">
-        <div class="linha-assinatura"></div>
-        <div>Assinatura do Operador</div>
-      </div>
     `
 
     const htmlCompleto = gerarHtmlDocumento('Comprovante de Abertura', conteudo, empresaDefault)

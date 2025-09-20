@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { gerarHtmlDocumento } from '../../../../../../lib/recibo-utils'
+import { executeQuery } from '@/lib/database'
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -14,6 +15,36 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const descricao = searchParams.get('descricao') || ''
     const afetaCaixa = searchParams.get('afeta_caixa') === 'true'
     const dataPagamento = searchParams.get('data_pagamento') || new Date().toISOString()
+
+    // Buscar informações do operador responsável quando afeta o caixa
+    let operadorInfo = null
+    if (afetaCaixa) {
+      try {
+        const operadorQuery = `
+          SELECT 
+            f.nome,
+            f.cpf,
+            c.id as caixa_id
+          FROM caixas c
+          JOIN funcionarios f ON c.funcionario_abertura_id = f.id
+          WHERE c.status = 'aberto'
+          ORDER BY c.data_abertura DESC
+          LIMIT 1
+        `
+        const operadorResult = await executeQuery(operadorQuery) as any[]
+        
+        if (operadorResult.length > 0) {
+          operadorInfo = {
+            nome: operadorResult[0].nome,
+            cpf: operadorResult[0].cpf,
+            caixaId: operadorResult[0].caixa_id
+          }
+          console.log('[COMPROVANTE] Operador encontrado:', operadorInfo.nome)
+        }
+      } catch (error) {
+        console.error('[COMPROVANTE] Erro ao buscar operador:', error)
+      }
+    }
 
     const formatarValor = (valor: number) => {
       return valor.toLocaleString('pt-BR', {
@@ -54,6 +85,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       <div class="info-header">
         <div><strong>PAGAMENTO Nº:</strong> ${pagamentoId}</div>
         <div><strong>DATA/HORA:</strong> ${formatarData(dataPagamento)}</div>
+        ${operadorInfo ? `<div><strong>OPERADOR:</strong> ${operadorInfo.nome}</div>` : ''}
       </div>
 
       <div class="documento-titulo">DADOS DO FORNECEDOR</div>
@@ -97,10 +129,6 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       </div>
       ` : ''}
 
-      <div class="assinatura">
-        <div class="linha-assinatura"></div>
-        <div>Assinatura do Operador</div>
-      </div>
     `
 
     const htmlCompleto = gerarHtmlDocumento('Comprovante de Pagamento', conteudo, empresaDefault)

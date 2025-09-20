@@ -1,5 +1,5 @@
 import React from 'react'
-import { CheckCircle, X, DollarSign, FileText, Clock, User, CreditCard, AlertCircle } from 'lucide-react'
+import { CheckCircle, X, DollarSign, FileText, Clock, User, CreditCard, AlertCircle, Printer, Loader2 } from 'lucide-react'
 
 interface PaymentData {
   id: number | string
@@ -19,13 +19,15 @@ interface PaymentSuccessModalProps {
   onClose: () => void
   paymentData: PaymentData | null
   onPrint?: () => void
+  isLoadingPrint?: boolean
 }
 
 export default function PaymentSuccessModal({
   isOpen,
   onClose,
   paymentData,
-  onPrint
+  onPrint,
+  isLoadingPrint = false
 }: PaymentSuccessModalProps) {
   if (!isOpen || !paymentData) return null
 
@@ -277,8 +279,19 @@ export default function PaymentSuccessModal({
               <button
                 onClick={onPrint}
                 className="btn btn-primary"
+                disabled={isLoadingPrint}
               >
-                Imprimir Comprovante
+                {isLoadingPrint ? (
+                  <>
+                    <Loader2 size={16} className="loading-spinner" />
+                    Processando...
+                  </>
+                ) : (
+                  <>
+                    <Printer size={16} />
+                    Imprimir Comprovante
+                  </>
+                )}
               </button>
             )}
           </div>
