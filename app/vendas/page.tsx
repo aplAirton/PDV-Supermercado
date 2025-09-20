@@ -7,7 +7,7 @@ import VirtualKeyboard from '@/components/virtual-keyboard'
 import Loading from "@/components/loading"
 import SearchHint from "@/components/search-hint"
 import BarcodeScanner from "@/components/barcode-scanner-zxing"
-import { Search, Plus, Minus, Trash2, ShoppingCart, X, Settings, ChevronDown, ChevronUp, Loader2, User, Receipt, Check, Camera, CameraOff } from "lucide-react"
+import { Search, Plus, Minus, Trash2, AlertTriangle, ShoppingCart, X, Settings, ChevronDown, ChevronUp, ChevronRight, Loader2, User, Receipt, Check, Camera, CameraOff } from "lucide-react"
 import '../../styles/components.css'
 
 interface Produto {
@@ -113,6 +113,12 @@ export default function VendasPage() {
   }
   const total = Math.max(0, totalBeforeDiscount - discountAmount)
 
+  // Validação de desconto
+  const isDiscountInvalid = discountType !== "none" && (
+    (discountType === "percent" && parsedDiscount > 100) ||
+    (discountType === "valor" && parsedDiscount > totalBeforeDiscount)
+  )
+
   // Helper: arredonda para centavos (evita problemas de comparação float)
   function roundCents(n: number): number {
     return Math.round((n + Number.EPSILON) * 100) / 100
@@ -126,6 +132,13 @@ export default function VendasPage() {
     if (Number.isNaN(num)) return 0
     return roundCents(num)
   }
+
+  // Função para remover desconto
+  const removerDesconto = () => {
+    setDiscountType("none")
+    setDiscountValue("")
+  }
+
   const totalRounded = roundCents(total)
 
   // disponibilidade do cliente selecionado (limite - débito atual)
@@ -1250,70 +1263,24 @@ export default function VendasPage() {
                 </div>
               </div>
 
-              {/* Card resumo para mobile */}
-              <div className="cart-mobile-summary" onClick={() => setShowCarrinhoModal(true)}>
-                <div className="cart-summary-line">
-                  <span>{carrinho.length} {carrinho.length === 1 ? 'item' : 'itens'}</span>
-                  <span>R$ {totalBeforeDiscount.toFixed(2)}</span>
-                </div>
-                <div className="cart-summary-hint">
-                  Toque para ver detalhes
-                </div>
-              </div>
             </>
           )}
         </div>
 
-        {/* Seção de Opções Avançadas (Desconto) */}
+        {/* Visualização Avançada (Carrinho) */}
         {carrinho.length > 0 && (
           <div className="section-surface-1">
-            {/* Botão para mostrar/ocultar opções */}
             <button
               type="button"
-              className="btn-options-toggle mb-2"
-              onClick={() => setShowFilterOptions(!showFilterOptions)}
+              className="btn-visualizacao-avancada"
+              onClick={() => setShowCarrinhoModal(true)}
             >
-              <div className="btn-options-content">
-                <Settings size={16} />
-                <span>Opções Avançadas</span>
+              <div className="btn-visualizacao-content">
+                <ShoppingCart size={16} />
+                <span>Ver carrinho</span>
               </div>
-              {showFilterOptions ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              <ChevronRight size={16} />
             </button>
-
-            {/* Opções de desconto (visíveis apenas quando expandido) */}
-            <div className={`filter-options ${showFilterOptions ? 'expanded' : 'collapsed'}`}>
-              <div>
-                <div className="row row-gap-lg mb-2">
-                  <label className="font-semibold label-small">Desconto:</label>
-                  <select 
-                    className="form-select" 
-                    value={discountType} 
-                    onChange={(e) => setDiscountType(e.target.value as any)}
-                  >
-                    <option value="none">Sem desconto</option>
-                    <option value="valor">Valor (R$)</option>
-                    <option value="percent">Porcentagem (%)</option>
-                  </select>
-
-                  {discountType !== "none" && (
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="form-input input-width-7"
-                      value={discountValue}
-                      onChange={(e) => setDiscountValue(e.target.value)}
-                      placeholder={discountType === "percent" ? "0-100" : "0.00"}
-                    />
-                  )}
-                </div>
-
-                {discountAmount > 0 && (
-                  <div className="muted-small muted-warning fw-600">
-                    Desconto aplicado: -R$ {Number(discountAmount).toFixed(2)}
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
         )}
 
@@ -1348,14 +1315,25 @@ export default function VendasPage() {
                   <strong>Atenção:</strong> Não há caixa aberto. Abra um caixa antes de realizar vendas.
                 </div>
               )}
+              {isDiscountInvalid && (
+                <div className="discount-warning">
+                  <div className="warning-icon">⚠️</div>
+                  <div className="warning-text">
+                    {discountType === "percent" 
+                      ? "Desconto percentual não pode exceder 100%" 
+                      : "Desconto em dinheiro não pode exceder o valor da venda"
+                    }
+                  </div>
+                </div>
+              )}
               <button
                 className="btn btn-success btn-full"
                 onClick={abrirModalPagamento}
-                disabled={carrinho.length === 0 || caixaAberto === false}
+                disabled={carrinho.length === 0 || caixaAberto === false || isDiscountInvalid}
               >
                 <div className="center-justify">
                   <ShoppingCart size={20} />
-                  FINALIZAR VENDA - R$ {Number(total).toFixed(2)}
+                  FINALIZAR VENDA
                 </div>
               </button>
             </>
@@ -1900,8 +1878,17 @@ export default function VendasPage() {
                       </div>
 
                       {discountAmount > 0 && (
-                        <div className="muted-small muted-warning fw-600">
-                          Desconto aplicado: -R$ {Number(discountAmount).toFixed(2)}
+                        <div className="discount-display">
+                          <span className="muted-small muted-warning fw-600">
+                            Desconto aplicado: -R$ {Number(discountAmount).toFixed(2)}
+                          </span>
+                          <button
+                            className="btn-remove-discount"
+                            onClick={removerDesconto}
+                            title="Remover desconto"
+                          >
+                            <X size={16} />
+                          </button>
                         </div>
                       )}
                     </div>
@@ -1910,16 +1897,29 @@ export default function VendasPage() {
               )}
 
               <div className="cart-modal-total">
-                Total: R$ {totalBeforeDiscount.toFixed(2)}
+                Parcial: R$ {totalBeforeDiscount.toFixed(2)}
                 {discountAmount > 0 && (
                   <div className="cart-modal-discount">
                     Desconto: -R$ {Number(discountAmount).toFixed(2)}
                   </div>
                 )}
                 <div className="cart-modal-final-total">
-                  Total Final: R$ {Number(total).toFixed(2)}
+                  Total: R$ {Number(total).toFixed(2)}
                 </div>
               </div>
+                {isDiscountInvalid && (
+                <div className="discount-warning">
+                  <div className="warning-icon">
+                  <AlertTriangle size={16} />
+                  </div>
+                  <div className="warning-text">
+                  {discountType === "percent" 
+                    ? "Desconto percentual não pode exceder 100%" 
+                    : "Desconto em dinheiro não pode exceder o valor da venda"
+                  }
+                  </div>
+                </div>
+                )}
               <div className="cart-modal-actions">
                 <button 
                   className="btn btn-outline"
@@ -1933,7 +1933,7 @@ export default function VendasPage() {
                     setShowCarrinhoModal(false)
                     abrirModalPagamento()
                   }}
-                  disabled={carrinho.length === 0 || caixaAberto === false}
+                  disabled={carrinho.length === 0 || caixaAberto === false || isDiscountInvalid}
                 >
                   <ShoppingCart size={16} />
                   Finalizar Venda
@@ -1970,40 +1970,43 @@ export default function VendasPage() {
         <div className="modal-overlay">
           <div className="modal busca-avancada-modal">
             {/* Cabeçalho do Modal */}
-            <div className="busca-avancada-header">
-              <div className="busca-avancada-title">
-                <Search size={24} />
-                <h3>Busca Avançada de Produtos</h3>
+            <div className="modal-busca-header">
+              <div className="modal-busca-title-section">
+                <h3 className="modal-busca-title-text">Busca Avançada de Produtos</h3>
               </div>
-              <button 
-                className="btn btn-icon btn-ghost" 
-                onClick={() => setShowBuscaAvancadaModal(false)}
-                title="Fechar"
-              >
-                <X size={20} />
-              </button>
+              <div className="modal-busca-header-actions">
+                <button
+                  className="btn-modal-close"
+                  onClick={() => setShowBuscaAvancadaModal(false)}
+                  title="Fechar"
+                  aria-label="Fechar modal de busca avançada"
+                >
+                  <X size={18} />
+                </button>
+              </div>
             </div>
 
             {/* Campo de Busca */}
-            <div className="busca-avancada-search">
-              <div className="search-input-container">
-                <Search size={18} className="search-icon" />
+            <div className="modal-busca-search-section">
+              <div className="modal-busca-input-wrapper">
+                <Search size={18} className="modal-busca-input-icon" />
                 <input
                   type="text"
-                  className="search-input-avancada"
+                  className="modal-busca-input-field"
                   placeholder="Digite o nome ou código do produto..."
                   value={queryBuscaAvancada}
                   onChange={(e) => setQueryBuscaAvancada(e.target.value)}
                   autoFocus
                 />
                 {queryBuscaAvancada && (
-                  <button 
-                    className="btn btn-icon btn-ghost clear-search"
+                  <button
+                    className="modal-busca-clear-btn"
                     onClick={() => {
                       setQueryBuscaAvancada("")
                       setProdutosBuscaAvancada([])
                     }}
                     title="Limpar busca"
+                    aria-label="Limpar campo de busca"
                   >
                     <X size={16} />
                   </button>
@@ -2033,9 +2036,6 @@ export default function VendasPage() {
                       <div className="results-count">
                         <span className="count-badge">{produtosBuscaAvancada.length}</span>
                         produto{produtosBuscaAvancada.length !== 1 ? 's' : ''} encontrado{produtosBuscaAvancada.length !== 1 ? 's' : ''}
-                      </div>
-                      <div className="results-query">
-                        Resultados para: <strong>"{queryBuscaAvancada}"</strong>
                       </div>
                     </div>
 
@@ -2069,12 +2069,10 @@ export default function VendasPage() {
                                   {buttonFeedback[produto.id] ? (
                                     <>
                                       <Check size={16} />
-                                      <span>Adicionado</span>
                                     </>
                                   ) : (
                                     <>
                                       <Plus size={16} />
-                                      <span>Adicionar</span>
                                     </>
                                   )}
                                 </button>
@@ -2098,11 +2096,6 @@ export default function VendasPage() {
 
             {/* Rodapé do Modal */}
             <div className="busca-avancada-footer">
-              <div className="footer-info">
-                {queryBuscaAvancada.trim().length >= 2 && produtosBuscaAvancada.length > 0 && (
-                  <span>Busca completa sem limite de resultados</span>
-                )}
-              </div>
               <div className="footer-actions">
                 <button 
                   className="btn btn-outline btn-lg" 

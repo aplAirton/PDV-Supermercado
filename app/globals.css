@@ -671,7 +671,6 @@ body.sidebar-open {
 
 /* Utilitárias específicas para page de vendas (mover estilos inline para aqui) */
 .muted-small {
-  margin-top: 0.5rem;
   font-size: 0.85rem;
 }
 .danger-strong {
@@ -1279,8 +1278,7 @@ body.sidebar-open {
   border-bottom: 1px solid var(--border);
 }
 .section-surface-2 {
-  padding-left: 1rem;
-  padding-right: 1rem;
+  padding: 1rem;
   background: var(--surface);
   border-bottom: 2px solid var(--border);
 }
