@@ -1858,6 +1858,57 @@ export default function VendasPage() {
               ))}
             </div>
             <div className="modal-footer-mobile">
+              {/* Seção de Descontos (recolhível) */}
+              {carrinho.length > 0 && (
+                <div className="cart-modal-discount-section">
+                  <button
+                    type="button"
+                    className={`btn-options-toggle-mobile mb-2 ${discountAmount > 0 ? 'discount-active' : ''}`}
+                    onClick={() => setShowFilterOptions(!showFilterOptions)}
+                  >
+                    <div className="btn-options-content">
+                      <Settings size={16} />
+                      <span>Descontos</span>
+                    </div>
+                    {showFilterOptions ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  </button>
+
+                  {/* Opções de desconto (visíveis apenas quando expandido) */}
+                  <div className={`filter-options-mobile ${showFilterOptions ? 'expanded' : 'collapsed'}`}>
+                    <div>
+                      <div className="row row-gap-lg mb-2">
+                        <select
+                          className="form-select"
+                          value={discountType}
+                          onChange={(e) => setDiscountType(e.target.value as any)}
+                        >
+                          <option value="none">Sem desconto</option>
+                          <option value="valor">Valor (R$)</option>
+                          <option value="percent">Porcentagem (%)</option>
+                        </select>
+
+                        {discountType !== "none" && (
+                          <input
+                            type="number"
+                            step="0.01"
+                            className="form-input input-width-7"
+                            value={discountValue}
+                            onChange={(e) => setDiscountValue(e.target.value)}
+                            placeholder={discountType === "percent" ? "0-100" : "0.00"}
+                          />
+                        )}
+                      </div>
+
+                      {discountAmount > 0 && (
+                        <div className="muted-small muted-warning fw-600">
+                          Desconto aplicado: -R$ {Number(discountAmount).toFixed(2)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="cart-modal-total">
                 Total: R$ {totalBeforeDiscount.toFixed(2)}
                 {discountAmount > 0 && (

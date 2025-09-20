@@ -53,7 +53,6 @@ export default function RootLayout({
               -webkit-touch-action: manipulation;
             }
             input, textarea, select {
-              font-size: 16px !important;
               -webkit-appearance: none;
               -webkit-text-size-adjust: 100%;
               -webkit-transform: translateZ(0);
