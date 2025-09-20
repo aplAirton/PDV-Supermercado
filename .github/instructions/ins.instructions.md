@@ -25,3 +25,5 @@ PARE DE GERAR ARQUIVOS DE INSTRUÇÃO .MD
 NAO USE COMANDOS DE TERMIALL!!!!
 
 sempre use clases css proprias para cada ambiente ou page, de forma que sempre serão elementos com classes proprias nomeadas de acordo com o ambiente ou page.
+
+sempre use classes css novas e xclusivas quando da criação de novos elementos para avitar sobreposição de classes identicas em carquivos css diferentes

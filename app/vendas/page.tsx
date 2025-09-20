@@ -91,6 +91,9 @@ export default function VendasPage() {
   // Estado para controlar o modal do carrinho mobile
   const [showCarrinhoModal, setShowCarrinhoModal] = useState(false)
   
+  // Estado para detectar se estamos em mobile (< 768px)
+  const [isMobile, setIsMobile] = useState(false)
+  
   // Estados para câmera de código de barras
   const [showCameraModal, setShowCameraModal] = useState(false)
 
@@ -231,6 +234,18 @@ export default function VendasPage() {
     if (searchInputRef.current) {
       try { searchInputRef.current.focus() } catch (e) { /* ignore */ }
     }
+  }, [])
+
+  // Detectar se estamos em mobile (< 768px)
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    
+    checkIsMobile()
+    window.addEventListener('resize', checkIsMobile)
+    
+    return () => window.removeEventListener('resize', checkIsMobile)
   }, [])
 
   // Focar no primeiro input de pagamento quando o modal abrir
@@ -1125,8 +1140,9 @@ export default function VendasPage() {
         </div>
       )}
 
-      {/* Carrinho PDV */}
-      <div className={`card ${animacaoExecutada ? '' : 'fade-in'}`}>
+      {/* Carrinho PDV - Apenas para desktop (>= 768px) */}
+      {!isMobile && (
+        <div className={`card ${animacaoExecutada ? '' : 'fade-in'}`}>
         {/* Header do Carrinho */}
           <div className="card-header card-header-custom">
           <div className="row row-between">
@@ -1389,6 +1405,20 @@ export default function VendasPage() {
           )}
         </div>
       </div>
+      )}
+
+      {/* Botão flutuante do carrinho para mobile */}
+      {isMobile && carrinho.length > 0 && !vendaConcluida && (
+        <button
+          className="cart-floating-btn"
+          onClick={() => setShowCarrinhoModal(true)}
+          title="Ver carrinho"
+        >
+          <ShoppingCart size={20} />
+          <span className="cart-badge">{carrinho.length}</span>
+          <span className="cart-total">R$ {total.toFixed(2)}</span>
+        </button>
+      )}
 
       {/* Modal de Busca de Cliente */}
       {showClienteModal && (
@@ -1788,7 +1818,7 @@ export default function VendasPage() {
       {showCarrinhoModal && (
         <div className="modal-overlay" onClick={() => setShowCarrinhoModal(false)}>
           <div className="modal-content cart-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
+            <div className="modal-header-mobile">
               <h3>Itens do Carrinho</h3>
               <button className="modal-close" onClick={() => setShowCarrinhoModal(false)}>
                 <X size={20} />
@@ -1836,16 +1866,37 @@ export default function VendasPage() {
                 </div>
               ))}
             </div>
-            <div className="modal-footer">
+            <div className="modal-footer-mobile">
               <div className="cart-modal-total">
                 Total: R$ {totalBeforeDiscount.toFixed(2)}
+                {discountAmount > 0 && (
+                  <div className="cart-modal-discount">
+                    Desconto: -R$ {Number(discountAmount).toFixed(2)}
+                  </div>
+                )}
+                <div className="cart-modal-final-total">
+                  Total Final: R$ {Number(total).toFixed(2)}
+                </div>
               </div>
-              <button 
-                className="btn btn-primary"
-                onClick={() => setShowCarrinhoModal(false)}
-              >
-                Fechar
-              </button>
+              <div className="cart-modal-actions">
+                <button 
+                  className="btn btn-outline"
+                  onClick={() => setShowCarrinhoModal(false)}
+                >
+                  Continuar Comprando
+                </button>
+                <button 
+                  className="btn btn-primary"
+                  onClick={() => {
+                    setShowCarrinhoModal(false)
+                    abrirModalPagamento()
+                  }}
+                  disabled={carrinho.length === 0 || caixaAberto === false}
+                >
+                  <ShoppingCart size={16} />
+                  Finalizar Venda
+                </button>
+              </div>
             </div>
           </div>
         </div>
