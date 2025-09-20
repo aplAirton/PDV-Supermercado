@@ -34,7 +34,7 @@
   --primary-foreground: #ffffff;
   --secondary: #f59e0b; /* amber */
   --secondary-foreground: #0f172a;
-  --muted: #94a3b8;
+  --muted: #a4aab3;
   --muted-foreground: #475569;
   --accent: #06b6d4;
   --accent-foreground: #ffffff;
@@ -888,111 +888,6 @@
   font-style: italic;
 }
 
-/* Logs Modal Styles */
-.logs-modal-content {
-  max-width: 800px;
-  max-height: 600px;
-}
-
-.logs-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.current-status h4 {
-  margin: 0 0 0.5rem 0;
-  color: var(--foreground);
-  font-size: 16px;
-}
-
-.status-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.status-details {
-  font-size: 12px;
-  color: var(--muted-foreground);
-  font-family: monospace;
-}
-
-.logs-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.btn.small {
-  padding: 0.375rem 0.75rem;
-  font-size: 12px;
-}
-
-.logs-list {
-  max-height: 400px;
-  overflow-y: auto;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--card);
-}
-
-.log-item {
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  gap: 1rem;
-  align-items: flex-start;
-}
-
-.log-item:last-child {
-  border-bottom: none;
-}
-
-.log-item.remote {
-  border-left: 3px solid #3b82f6;
-}
-
-.log-item.local {
-  border-left: 3px solid #10b981;
-}
-
-.log-time {
-  font-size: 12px;
-  color: var(--muted-foreground);
-  font-family: monospace;
-  min-width: 140px;
-  flex-shrink: 0;
-}
-
-.log-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.log-operation {
-  font-weight: 600;
-  color: var(--foreground);
-}
-
-.log-details {
-  font-size: 13px;
-  color: var(--muted-foreground);
-  font-family: monospace;
-  word-break: break-word;
-}
-
-.log-error {
-  font-size: 13px;
-  color: #ef4444;
-  font-family: monospace;
-  word-break: break-word;
-}
-
 .no-logs-message {
   padding: 2rem;
   text-align: center;
@@ -1007,4 +902,561 @@
 .no-logs-message small {
   font-size: 13px;
   opacity: 0.8;
+}
+
+/* Confirmation Modal Styles */
+.confirmation-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(8px);
+}
+
+.confirmation-modal {
+  background: var(--card);
+  border-radius: 16px;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow: hidden;
+  animation: modalSlideIn 0.3s ease;
+}
+
+.confirmation-modal-header {
+  padding: 24px 24px 0 24px;
+  position: relative;
+}
+
+.confirmation-modal-header .header-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.confirmation-modal-header .header-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.confirmation-modal-header .header-text {
+  flex: 1;
+}
+
+.confirmation-modal-header .header-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: white;
+  margin: 0 0 4px 0;
+}
+
+.confirmation-modal-header .header-subtitle {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+}
+
+.confirmation-modal-header .header-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgb(255, 255, 255);
+  border: none;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.confirmation-modal-header .header-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.confirmation-modal-content {
+  padding: 24px;
+}
+
+.confirmation-modal-content .cart-warning-content {
+  text-align: center;
+}
+
+.confirmation-modal-content .warning-icon-large {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.confirmation-modal-content .warning-icon-large svg {
+  width: 64px;
+  height: 64px;
+}
+
+.confirmation-modal-content .warning-text h4 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--foreground);
+  margin: 0 0 12px 0;
+}
+
+.confirmation-modal-content .warning-text p {
+  color: var(--muted-foreground);
+  line-height: 1.6;
+  margin: 0 0 16px 0;
+}
+
+.confirmation-modal-content .warning-recommendation {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 16px;
+}
+
+.confirmation-modal-content .warning-recommendation strong {
+  color: #d97706;
+}
+
+.confirmation-modal-content .standard-content {
+  text-align: center;
+}
+
+.confirmation-modal-content .content-icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.confirmation-modal-content .content-message {
+  color: var(--muted-foreground);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.confirmation-modal-footer {
+  padding: 0 24px 24px 24px;
+}
+
+.confirmation-modal-footer .footer-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.confirmation-modal-footer .btn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  font-size: 14px;
+  min-width: 100px;
+}
+
+.confirmation-modal-footer .cancel-btn {
+  background-color: white !important;
+  color: var(--muted-foreground);
+}
+
+.confirmation-modal-footer .cancel-btn:hover {
+  background: red !important;
+  color: var(--muted);
+}
+
+.confirmation-modal-footer .confirm-btn {
+  background: var(--primary);
+  color: white;
+}
+
+.confirmation-modal-footer .confirm-btn:hover {
+  background: var(--primary-hover, var(--primary));
+  transform: translateY(-1px);
+}
+
+/* Background gradients for headers */
+.bg-success-gradient {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.bg-danger-gradient {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+
+/* Icon backgrounds */
+.bg-success-light {
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.bg-danger-light {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.bg-warning-light {
+  background: rgba(245, 158, 11, 0.1);
+}
+
+/* Text colors */
+.text-success-primary {
+  color: #10b981;
+}
+
+.text-danger-primary {
+  color: #ef4444;
+}
+
+.text-warning-primary {
+  color: #f59e0b;
+}
+
+/* Button styles */
+.btn-success {
+  background: #10b981;
+  color: white;
+}
+
+.btn-success:hover {
+  background: #059669;
+}
+
+.btn-danger {
+  background: #ef4444;
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #dc2626;
+}
+
+.btn-warning {
+  background: #f59e0b;
+  color: white;
+}
+
+.btn-warning:hover {
+  background: #d97706;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--foreground);
+}
+
+.btn-outline:hover {
+  background: var(--muted);
+}
+
+.btn-ghost {
+  background: transparent;
+  border: none;
+  color: var(--muted-foreground);
+}
+
+.btn-ghost:hover {
+  background: var(--muted);
+}
+
+/* Size variants */
+.btn-lg {
+  padding: 14px 28px;
+  font-size: 16px;
+}
+
+/* Animation */
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* === MODAL CONFIRM SAIR VENDAS - Estilos Específicos === */
+.modal-confirm-sair-vendas-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.modal-confirm-sair-vendas {
+  background: linear-gradient(145deg, #ffffff, #f8fafc);
+  border-radius: 20px;
+  box-shadow:
+    0 32px 64px rgba(0, 0, 0, 0.3),
+    0 16px 32px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  max-width: 520px;
+  width: 95%;
+  max-height: 90vh;
+  overflow: hidden;
+  animation: modalVendasSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+}
+
+.modal-confirm-sair-vendas::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  border-radius: 20px 20px 0 0;
+}
+
+.modal-confirm-sair-vendas-header {
+  padding: 28px 28px 0 28px;
+  position: relative;
+  border-radius: 20px 20px 0 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.modal-confirm-sair-vendas-header .header-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.modal-confirm-sair-vendas-header .header-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  border: 2px solid rgba(245, 158, 11, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: orange;
+}
+
+.modal-confirm-sair-vendas-header .header-text {
+  flex: 1;
+}
+
+.modal-confirm-sair-vendas-header .header-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #92400e;
+  margin: 0 0 6px 0;
+}
+
+.modal-confirm-sair-vendas-header .header-subtitle {
+  font-size: 16px;
+  color: rgba(146, 64, 14, 0.8);
+  margin: 0;
+  font-weight: 500;
+}
+
+.modal-confirm-sair-vendas-header .header-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #92400e;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 600;
+}
+
+.modal-confirm-sair-vendas-header .header-close:hover {
+  background: rgba(146, 64, 14, 0.2);
+  border-color: rgba(146, 64, 14, 0.4);
+  transform: scale(1.05);
+}
+
+.modal-confirm-sair-vendas-content {
+  padding: 32px 28px;
+  background: linear-gradient(145deg, #ffffff, #fefefe);
+}
+
+.modal-confirm-sair-vendas-content .cart-warning-content {
+  text-align: center;
+}
+
+.modal-confirm-sair-vendas-content .warning-icon-large {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.modal-confirm-sair-vendas-content .warning-icon-large svg {
+  width: 72px;
+  height: 72px;
+  color: #f59e0b;
+  filter: drop-shadow(0 4px 8px rgba(245, 158, 11, 0.3));
+}
+
+.modal-confirm-sair-vendas-content .warning-text h4 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 16px 0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.modal-confirm-sair-vendas-content .warning-text p {
+  color: #4b5563;
+  line-height: 1.7;
+  margin: 0 0 20px 0;
+  font-size: 16px;
+}
+
+.modal-confirm-sair-vendas-content .warning-text p strong {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.modal-confirm-sair-vendas-content .warning-recommendation {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border: 2px solid #f59e0b;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 20px;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+}
+
+.modal-confirm-sair-vendas-content .warning-recommendation strong {
+  color: #d97706;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.modal-confirm-sair-vendas-footer {
+  padding: 0 28px 28px 28px;
+  background: linear-gradient(145deg, #ffffff, #fefefe);
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.modal-confirm-sair-vendas-footer .footer-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.modal-confirm-sair-vendas-footer .btn {
+  padding: 14px 28px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  font-size: 15px;
+  min-width: 120px;
+  position: relative;
+  overflow: hidden;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.modal-confirm-sair-vendas-footer .btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.modal-confirm-sair-vendas-footer .btn:hover::before {
+  left: 100%;
+}
+
+.modal-confirm-sair-vendas-footer .cancel-btn {
+  background: white;
+  color: #505759;
+}
+
+.modal-confirm-sair-vendas-footer .cancel-btn:hover {
+  color: rgb(42, 39, 39) !important;
+  background: white !important;
+  border-color: red !important;
+}
+
+.modal-confirm-sair-vendas-footer .confirm-btn {
+  background: #d97706;
+  color: white;
+}
+
+.modal-confirm-sair-vendas-footer .confirm-btn:hover {
+  background: #763300;
+}
+
+/* Animação específica para modal de vendas */
+@keyframes modalVendasSlideIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.7) translateY(-50px) rotate(-2deg);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.02) translateY(10px) rotate(0.5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0) rotate(0deg);
+  }
+}
+
+/* Responsividade para modal de vendas */
+@media (max-width: 640px) {
+  .modal-confirm-sair-vendas {
+    width: 95%;
+    margin: 20px;
+    max-height: 95vh;
+  }
+
+  .modal-confirm-sair-vendas-header {
+    padding: 24px 20px 0 20px;
+  }
+
+  .modal-confirm-sair-vendas-content {
+    padding: 24px 20px;
+  }
+
+  .modal-confirm-sair-vendas-footer {
+    padding: 0 20px 24px 20px;
+  }
+
+  .modal-confirm-sair-vendas-footer .footer-actions {
+    flex-direction: column-reverse;
+    gap: 12px;
+  }
+
+  .modal-confirm-sair-vendas-footer .btn {
+    width: 100%;
+    min-width: unset;
+  }
 }

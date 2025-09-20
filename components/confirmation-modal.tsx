@@ -11,6 +11,7 @@ interface ConfirmationModalProps {
   type?: "warning" | "success" | "danger"
   confirmText?: string
   cancelText?: string
+  modalType?: "default" | "vendas"
 }
 
 export default function ConfirmationModal({
@@ -22,6 +23,7 @@ export default function ConfirmationModal({
   type = "warning",
   confirmText = "Confirmar",
   cancelText = "Cancelar",
+  modalType = "default",
 }: ConfirmationModalProps) {
   if (!isOpen) return null
 
@@ -61,25 +63,18 @@ export default function ConfirmationModal({
 
   const config = getTypeConfig()
 
-  // Detecta se é o modal do carrinho
-  const isCartModal = message.includes("itens no carrinho") || message.includes("dados do carrinho")
+  // Detecta se é o modal do carrinho/vendas
+  const isCartModal = message.includes("itens no carrinho") || message.includes("dados do carrinho") || modalType === "vendas"
+  const isVendasModal = modalType === "vendas" || isCartModal
 
   return (
-    <div className="confirmation-modal-overlay">
-      <div className="confirmation-modal">
+    <div className={`confirmation-modal-overlay ${isVendasModal ? 'modal-confirm-sair-vendas-overlay' : ''}`}>
+      <div className={`confirmation-modal ${isVendasModal ? 'modal-confirm-sair-vendas' : ''}`}>
         {/* Cabeçalho */}
-        <div className={`confirmation-modal-header ${config.headerBg}`}>
+        <div className={`confirmation-modal-header ${config.headerBg} ${isVendasModal ? 'modal-confirm-sair-vendas-header' : ''}`}>
           <div className="header-content">
-            <div className={`header-icon ${config.iconBg}`}>
-              {isCartModal ? <ShoppingCart size={28} /> : config.icon}
-            </div>
             <div className="header-text">
               <h3 className="header-title">{title}</h3>
-              <span className="header-subtitle">
-                {type === "success" ? "Operação bem-sucedida" : 
-                 type === "danger" ? "Ação irreversível" : 
-                 "Confirmação necessária"}
-              </span>
             </div>
           </div>
           <button 
@@ -92,7 +87,7 @@ export default function ConfirmationModal({
         </div>
 
         {/* Conteúdo */}
-        <div className="confirmation-modal-content">
+        <div className={`confirmation-modal-content ${isVendasModal ? 'modal-confirm-sair-vendas-content' : ''}`}>
           {isCartModal ? (
             <div className="cart-warning-content">
               <div className={`warning-icon-large ${config.iconBg}`}>
@@ -103,11 +98,8 @@ export default function ConfirmationModal({
                 <p>
                   Você possui itens adicionados ao carrinho de vendas. 
                   Ao navegar para outra seção, <strong>todos os dados serão perdidos</strong> 
-                  e você precisará adicionar os produtos novamente.
+                  &nbsp;e você precisará adicionar os produtos novamente.
                 </p>
-                <div className="warning-recommendation">
-                  <strong>Recomendação:</strong> Finalize a venda atual antes de continuar.
-                </div>
               </div>
             </div>
           ) : (
@@ -123,7 +115,7 @@ export default function ConfirmationModal({
         </div>
 
         {/* Rodapé com ações */}
-        <div className="confirmation-modal-footer">
+        <div className={`confirmation-modal-footer ${isVendasModal ? 'modal-confirm-sair-vendas-footer' : ''}`}>
           <div className="footer-actions">
             <button 
               onClick={onClose} 

@@ -275,6 +275,7 @@ export default function HomePage() {
           type="warning"
           confirmText="Sim, continuar"
           cancelText="Cancelar"
+          modalType="vendas"
         />
       )}
     </div>

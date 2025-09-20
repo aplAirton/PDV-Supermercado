@@ -1161,7 +1161,6 @@ export default function FornecedoresPage() {
                     <AlertCircle size={20} color="#f59e0b" />
                     Atenção
                   </h2>
-                  <p>Confirmação necessária</p>
                 </div>
               </div>
               <button
