@@ -7,7 +7,7 @@ import VirtualKeyboard from '@/components/virtual-keyboard'
 import Loading from "@/components/loading"
 import SearchHint from "@/components/search-hint"
 import BarcodeScanner from "@/components/barcode-scanner-zxing"
-import { Search, Plus, Minus, Trash2, AlertTriangle, ShoppingCart, X, Settings, ChevronDown, ChevronUp, ChevronRight, Loader2, User, Receipt, Check, Camera, CameraOff, Printer } from "lucide-react"
+import { Search, Plus, Minus, Trash2, AlertTriangle, ShoppingCart, X, Settings, ChevronDown, ChevronUp, ChevronRight, Loader2, User, Receipt, Check, Camera, CameraOff, Printer, CheckCircle, RotateCcw } from "lucide-react"
 import '../../styles/components.css'
 
 interface Produto {
@@ -76,6 +76,9 @@ export default function VendasPage() {
 
   // Estado para aviso de valor já satisfeito ao tentar adicionar forma de pagamento
   const [showPaymentValueWarning, setShowPaymentValueWarning] = useState(false)
+
+  // Estado para controlar expansão das formas de pagamento no resumo
+  const [showPaymentMethodsExpanded, setShowPaymentMethodsExpanded] = useState(false)
 
   // Estados para controlar origem da mudança no campo
   const [isFromScanner, setIsFromScanner] = useState(false)
@@ -1124,71 +1127,102 @@ export default function VendasPage() {
       ) : (
         <div className="card center-card">
           <div className="center-text">
-            <h3 className="font-bold">Venda Concluída</h3>
-            <p className="text-sm text-muted">A venda foi finalizada com sucesso.</p>
-            
-            {/* Resumo da Venda */}
-            <div className="sale-summary-card">
-              <div className="sale-summary-row">
-                <span className="summary-label">Quantidade:</span>
-                <span className="summary-value">
-                  {ultimaVenda ? ultimaVenda.itens?.length || 0 : 0} {(ultimaVenda?.itens?.length || 0) === 1 ? "item" : "itens"}
-                </span>
-              </div>
-              
-              <div className="sale-summary-row">
-                <span className="summary-label">Valor total:</span>
-                <span className="summary-value">R$ {ultimaVenda ? Number(ultimaVenda.total || 0).toFixed(2) : "0,00"}</span>
-              </div>
-              
-              <div className="sale-summary-row">
-                <span className="summary-label">Pagamento:</span>
-                <div className="summary-payments">
-                  {getFormasPagamentoUltimaVenda().length > 0 ? (
-                    getFormasPagamentoUltimaVenda().map((p: any, idx: number) => (
-                      <div key={idx} className="payment-item">
-                        <span className="payment-type">
-                          {(p.tipo || p.tipo_pagamento) === 'dinheiro' ? 'Dinheiro' : 
-                           (p.tipo || p.tipo_pagamento) === 'cartao_debito' ? 'Débito' :
-                           (p.tipo || p.tipo_pagamento) === 'cartao_credito' ? 'Crédito' :
-                           (p.tipo || p.tipo_pagamento) === 'pix' ? 'PIX' : 
-                           (p.tipo || p.tipo_pagamento) === 'fiado' ? 'Fiado' : 
-                           `❓ ${p.tipo || p.tipo_pagamento || 'Desconhecido'}`}
-                        </span>
-                        <span className="payment-value">R$ {Number(p.valor || 0).toFixed(2)}</span>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="payment-item">
-                      <span className="payment-type">Carregando...</span>
-                      <span className="payment-value">R$ 0,00</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              {ultimaVenda && Number(ultimaVenda.troco || 0) > 0 && (
-                <div className="sale-summary-row troco-highlight">
-                  <span className="summary-label">Troco:</span>
-                  <span className="summary-value troco-value">R$ {Number(ultimaVenda.troco || 0).toFixed(2)}</span>
-                </div>
-              )}
+            <div className="success-icon">
+              <CheckCircle size={64} />
             </div>
-            
-            <div className="center-actions">
-              <button className="btn btn-outline" onClick={() => {
-                // reiniciar estado para nova venda
-                setVendaConcluida(false)
-                setVendaIdConcluida(null)
-                setCarrinho([])
-                setClienteSelecionado(null)
-                setPagamentos([{ tipo: 'dinheiro', valor: '' }])
-                setCodigoBusca('')
-                setDiscountType('none')
-                setDiscountValue('')
-                setShowFilterOptions(false)
-                setUltimaVenda(null)
-              }}>Nova venda</button>
+            <h3 className="success-title">Venda Concluída</h3>
+            <p className="success-total">
+              Total: R$ {ultimaVenda ? Number(ultimaVenda.total || 0).toFixed(2) : "0,00"}
+            </p>
+
+            {/* Resumo Minimalista */}
+            <div className="success-summary">
+              <div className="summary-grid">
+                <div className="summary-item">
+                  <span className="summary-label">Itens</span>
+                  <span className="summary-value">
+                    {ultimaVenda ? ultimaVenda.itens?.length || 0 : 0}
+                  </span>
+                </div>
+                {ultimaVenda && Number(ultimaVenda.troco || 0) > 0 && (
+                  <div className="summary-item">
+                    <span className="summary-label">Troco</span>
+                    <span className="summary-value troco-value">
+                      R$ {Number(ultimaVenda.troco || 0).toFixed(2)}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Formas de Pagamento Simplificadas */}
+              {(() => {
+                const paymentMethods = getFormasPagamentoUltimaVenda();
+                const hasMultiplePayments = paymentMethods.length > 1;
+
+                return (
+                  <div className="payment-methods">
+                    <div
+                      className={`payment-methods-header ${hasMultiplePayments ? 'clickable' : ''}`}
+                      onClick={() => hasMultiplePayments && setShowPaymentMethodsExpanded(!showPaymentMethodsExpanded)}
+                    >
+                      <span className="payment-methods-title">
+                        Formas de pagamento {paymentMethods.length}
+                      </span>
+                      {hasMultiplePayments && (
+                        <ChevronDown
+                          size={16}
+                          className={`expand-icon ${showPaymentMethodsExpanded ? 'expanded' : ''}`}
+                        />
+                      )}
+                    </div>
+
+                    <div className={`payment-methods-content ${showPaymentMethodsExpanded || !hasMultiplePayments ? 'expanded' : ''}`}>
+                      {paymentMethods.length > 0 ? (
+                        paymentMethods.map((p: any, idx: number) => (
+                          <div key={idx} className="payment-method">
+                            <span className="payment-type">
+                              {(p.tipo || p.tipo_pagamento) === 'dinheiro' ? '💵 Dinheiro' :
+                               (p.tipo || p.tipo_pagamento) === 'cartao_debito' ? '💳 Débito' :
+                               (p.tipo || p.tipo_pagamento) === 'cartao_credito' ? '💳 Crédito' :
+                               (p.tipo || p.tipo_pagamento) === 'pix' ? '📱 PIX' :
+                               (p.tipo || p.tipo_pagamento) === 'fiado' ? '📝 Fiado' :
+                               `❓ ${p.tipo || p.tipo_pagamento || 'Desconhecido'}`}
+                            </span>
+                            <span className="payment-amount">R$ {Number(p.valor || 0).toFixed(2)}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="payment-method">
+                          <span className="payment-type">Carregando...</span>
+                          <span className="payment-amount">R$ 0,00</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            <div className="success-actions">
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  // reiniciar estado para nova venda
+                  setVendaConcluida(false)
+                  setVendaIdConcluida(null)
+                  setCarrinho([])
+                  setClienteSelecionado(null)
+                  setPagamentos([{ tipo: 'dinheiro', valor: '' }])
+                  setCodigoBusca('')
+                  setDiscountType('none')
+                  setDiscountValue('')
+                  setShowFilterOptions(false)
+                  setUltimaVenda(null)
+                }}
+              >
+                <RotateCcw size={18} />
+                Nova Venda
+              </button>
             </div>
           </div>
         </div>
