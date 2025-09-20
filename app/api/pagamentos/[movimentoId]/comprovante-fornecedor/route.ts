@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { executeQuery } from '@/lib/database'
+import { gerarComprovantePagamento, type ComprovantePagamentoData } from '@/lib/comprovante-pagamento-utils'
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ movimentoId: string }> }) {
   try {
@@ -105,151 +106,22 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       }
     }
 
-    // Formatar data
-    const dataFormatada = new Date(dados.data_pagamento).toLocaleDateString('pt-BR')
+    // Gerar comprovante usando template padronizado
+    const comprovanteData: ComprovantePagamentoData = {
+      pagamentoId: dados.pagamento_id,
+      fornecedorNome: dados.fornecedor_nome,
+      fornecedorCnpj: dados.fornecedor_cpf_cnpj || '',
+      valor: dados.valor.toString(),
+      formaPagamento: dados.forma_pagamento,
+      dataPagamento: dados.data_pagamento,
+      descricao: dados.observacoes,
+      afetaCaixa: dados.afeta_caixa,
+      operadorInfo: operadorInfo || undefined
+    }
 
-    // Formatar valor
-    const valorFormatado = new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(dados.valor)
+    const htmlCompleto = gerarComprovantePagamento(comprovanteData)
 
-    // Gerar HTML do comprovante
-    const html = `
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comprovante de Pagamento - Fornecedor</title>
-    <style>
-        body {
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            line-height: 1.4;
-            margin: 0;
-            padding: 20px;
-            background: white;
-            color: black;
-            max-width: 400px;
-            margin: 0 auto;
-        }
-        .header {
-            text-align: center;
-            border-bottom: 1px dashed #000;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
-        }
-        .title {
-            font-size: 14px;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            padding: 2px 0;
-        }
-        .label {
-            font-weight: bold;
-        }
-        .value {
-            text-align: right;
-        }
-        .divider {
-            border-top: 1px dashed #000;
-            margin: 15px 0;
-        }
-        .total {
-            font-size: 14px;
-            font-weight: bold;
-            text-align: center;
-            margin: 15px 0;
-            padding: 10px;
-            border: 1px solid #000;
-        }
-        .footer {
-            text-align: center;
-            margin-top: 20px;
-            font-size: 10px;
-            color: #666;
-        }
-        .assinatura {
-            text-align: center;
-            margin-top: 30px;
-            font-size: 11px;
-        }
-        .linha-assinatura {
-            border-bottom: 1px solid #000;
-            width: 200px;
-            margin: 0 auto 5px auto;
-            height: 40px;
-        }
-        @media print {
-            body { margin: 0; }
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <div class="title">COMPROVANTE DE PAGAMENTO</div>
-        <div>Fornecedor</div>
-    </div>
-
-    <div class="info-row">
-        <span class="label">Data:</span>
-        <span class="value">${dataFormatada}</span>
-    </div>
-
-    ${operadorInfo ? `
-    <div class="info-row">
-        <span class="label">Operador:</span>
-        <span class="value">${operadorInfo.nome}</span>
-    </div>
-    ` : ''}
-
-    <div class="info-row">
-        <span class="label">Fornecedor:</span>
-        <span class="value">${dados.fornecedor_nome}</span>
-    </div>
-
-    <div class="info-row">
-        <span class="label">CNPJ/CPF:</span>
-        <span class="value">${dados.fornecedor_cpf_cnpj || 'N/A'}</span>
-    </div>
-
-    <div class="info-row">
-        <span class="label">Forma de Pagamento:</span>
-        <span class="value">${dados.forma_pagamento}</span>
-    </div>
-
-    ${dados.observacoes ? `
-    <div class="info-row">
-        <span class="label">Observações:</span>
-        <span class="value">${dados.observacoes}</span>
-    </div>
-    ` : ''}
-
-    <div class="info-row">
-        <span class="label">Afeta Caixa:</span>
-        <span class="value">${dados.afeta_caixa ? 'Sim' : 'Não'}</span>
-    </div>
-
-    <div class="divider"></div>
-
-    <div class="total">
-        VALOR PAGO: ${valorFormatado}
-    </div>
-
-    <div class="footer">
-        <div>Comprovante gerado em ${new Date().toLocaleString('pt-BR')}</div>
-        <div>ID do Pagamento: ${dados.pagamento_id}</div>
-    </div>
-</body>
-</html>`
-
-    return new NextResponse(html, {
+    return new NextResponse(htmlCompleto, {
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
       },
