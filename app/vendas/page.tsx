@@ -133,6 +133,12 @@ export default function VendasPage() {
     return roundCents(num)
   }
 
+  // Helper: filtra entrada para aceitar apenas números, vírgula e ponto
+  function filterNumericInput(value: string): string {
+    // Remove tudo exceto números, vírgula e ponto
+    return value.replace(/[^0-9.,]/g, '')
+  }
+
   // Função para remover desconto
   const removerDesconto = () => {
     setDiscountType("none")
@@ -1867,11 +1873,11 @@ export default function VendasPage() {
 
                         {discountType !== "none" && (
                           <input
-                            type="number"
-                            step="0.01"
+                            type="text"
+                            inputMode="decimal"
                             className="form-input input-width-7"
                             value={discountValue}
-                            onChange={(e) => setDiscountValue(e.target.value)}
+                            onChange={(e) => setDiscountValue(filterNumericInput(e.target.value))}
                             placeholder={discountType === "percent" ? "0-100" : "0.00"}
                           />
                         )}

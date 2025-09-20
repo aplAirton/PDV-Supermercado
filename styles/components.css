@@ -3785,15 +3785,14 @@
   justify-content: center;
   width: 24px;
   height: 24px;
+  font-weight: 700;
   padding: 0;
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: white;
+  color: #ef4444;
   border: none;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
   flex-shrink: 0;
-  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
   position: relative;
   overflow: hidden;
 }
@@ -3813,6 +3812,7 @@
   background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
   transform: scale(1.05);
+  color: white;
 }
 
 .btn-remove-discount:hover::before {
