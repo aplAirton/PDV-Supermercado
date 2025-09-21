@@ -1,0 +1,214 @@
+/* Estilos personalizados para toasts */
+.toast-root {
+  position: relative;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  overflow: hidden;
+  border-radius: 8px;
+  padding: 1rem;
+  transition: all 0.2s ease-in-out;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  background-color: rgb(247, 213, 213);
+  color: rgb(70, 70, 70);
+  border-left: 4px solid;
+}
+
+/* Viewport dos toasts */
+.toast-viewport {
+  position: fixed;
+  top: 1rem;
+  z-index: 100;
+  display: flex;
+  max-height: 100vh;
+  width: 100%;
+  flex-direction: column-reverse;
+  padding: 1rem;
+}
+
+/* Responsividade para telas maiores que 768px */
+@media (min-width: 768px) {
+  .toast-viewport {
+    top: 1rem;
+    right: 1rem;
+    left: auto;
+    width: auto;
+    max-width: 500px;
+  }
+
+  .toast-root {
+    max-width: 500px;
+    width: auto;
+    margin-left: auto;
+    margin-right: 0;
+  }
+
+  /* Ajuste da animação para desktop */
+  .toast-root[data-state="open"] {
+    animation: slideInFromRight 0.3s ease-out;
+  }
+
+  .toast-root[data-state="closed"] {
+    animation: slideOutToRight 0.3s ease-in;
+  }
+
+  .toast-root[data-swipe="end"] {
+    animation: slideOutToRight 0.3s ease-in;
+  }
+}
+
+.toast-root[data-swipe="cancel"] {
+  transform: translateX(0);
+}
+
+.toast-root[data-swipe="end"] {
+  transform: translateX(var(--radix-toast-swipe-end-x));
+}
+
+.toast-root[data-swipe="move"] {
+  transform: translateX(var(--radix-toast-swipe-move-x));
+  transition: none;
+}
+
+.toast-root[data-state="open"] {
+  animation: slideInFromTop 0.3s ease-out;
+}
+
+.toast-root[data-state="closed"] {
+  animation: slideOutToRight 0.3s ease-in;
+  opacity: 0;
+}
+
+.toast-root[data-swipe="end"] {
+  animation: slideOutToRight 0.3s ease-in;
+}
+
+.toast-root[data-state="closed"] {
+  opacity: 0.8;
+}
+
+/* Variantes dos toasts */
+.toast-default {
+  border-color: #6b7280;
+}
+
+.toast-success {
+  border-color: #10b981;
+}
+
+.toast-warning {
+  border-color: #f59e0b;
+}
+
+.toast-destructive {
+  border-color: #ef4444;
+}
+
+/* Animações */
+@keyframes slideInFromTop {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutToRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* Botão de fechar */
+.toast-close {
+  position: absolute;
+  right: 0.5rem;
+  top: 0.5rem;
+  border-radius: 6px;
+  padding: 0.25rem;
+  color: rgba(0, 0, 0, 0.7);
+  opacity: 1;
+  transition: opacity 0.2s ease;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toast-close:hover {
+  color: white;
+}
+
+.toast-close:focus {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+}
+
+/* Título e descrição */
+.toast-title {
+  display: flex;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.toast-description {
+  font-size: 1rem;
+  opacity: 0.9;
+}
+
+/* Ação do toast */
+.toast-action {
+  display: inline-flex;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background-color: transparent;
+  padding: 0 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: white;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.toast-action:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.toast-action:focus {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+}
+
+.toast-action:disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}

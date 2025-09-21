@@ -9,6 +9,7 @@ import "../styles/funcionarios.css"
 import "../styles/produtos.css"
 import "../styles/clientes.css"
 import "../styles/configuracoes.css"
+import "../styles/toasts.css"
 
 export const metadata: Metadata = {
   title: "PDV Airton",

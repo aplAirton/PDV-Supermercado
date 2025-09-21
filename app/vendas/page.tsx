@@ -300,7 +300,7 @@ export default function VendasPage() {
       } else {
         setDadosCaixa(null)
         toast({
-          title: "Atenção",
+          title: "Atenção!",
           description: "Não há caixa aberto. As vendas estão bloqueadas.",
           variant: "destructive"
         })
@@ -580,8 +580,8 @@ export default function VendasPage() {
 
     if (caixaAberto === false) {
       toast({ 
-        title: 'Caixa fechado', 
-        description: 'Não é possível buscar produtos sem um caixa aberto!', 
+        title: 'Caixa fechado!', 
+        description: 'Não é possível buscar produtos sem um caixa aberto', 
         variant: 'destructive'
       })
       return
@@ -634,8 +634,8 @@ export default function VendasPage() {
 
     if (caixaAberto === false) {
       toast({ 
-        title: 'Caixa fechado', 
-        description: 'Não é possível buscar produtos sem um caixa aberto!', 
+        title: 'Caixa fechado!', 
+        description: 'Não é possível buscar produtos sem um caixa aberto', 
         variant: 'destructive'
       })
       return
@@ -666,8 +666,8 @@ export default function VendasPage() {
   const adicionarAoCarrinho = (produto: Produto) => {
     if (caixaAberto === false) {
       toast({ 
-        title: 'Caixa fechado', 
-        description: 'Não é possível adicionar produtos sem um caixa aberto!', 
+        title: 'Caixa fechado!', 
+        description: 'Não é possível adicionar produtos sem um caixa aberto', 
         variant: 'destructive'
       })
       return
@@ -833,7 +833,7 @@ export default function VendasPage() {
         const caixaStatus = await caixaResponse.json()
         if (!caixaStatus.aberto) {
           toast({ 
-            title: 'Caixa fechado', 
+            title: 'Caixa fechado!', 
             description: 'O caixa foi fechado durante a transação. Abra um caixa para finalizar a venda.', 
             variant: 'destructive' 
           })
