@@ -59,11 +59,6 @@ export default function RootLayout({
               -webkit-transform: translateZ(0);
               transform: translateZ(0);
             }
-            input:focus, textarea:focus, select:focus {
-              font-size: 16px !important;
-              -webkit-transform: translateZ(0);
-              transform: translateZ(0);
-            }
           `}
         </style>
         <script

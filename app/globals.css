@@ -529,7 +529,6 @@ body.sidebar-open {
   border: 2px solid var(--sidebar-border);
   border-radius: 0.5rem;
   font-size: 1rem;
-  transition: all 0.2s ease;
   background: var(--card);
   color: var(--foreground);
 }
