@@ -1963,43 +1963,46 @@ export default function CaixaPage() {
                       : "Confirme os dados antes de abrir o caixa"}
                   </p>
                 </div>
-                {/* Indicador de Etapa */}
-                <div className="step-indicator">
-                  <div
-                    className={`step ${
-                      etapaAbertura === "login" ? "active" : "completed"
-                    }`}
-                  >
-                    <div className="step-number">1</div>
-                    <span>Login</span>
-                  </div>
-                  <div className="step-line"></div>
-                  <div
-                    className={`step ${
-                      etapaAbertura === "configuracao"
-                        ? "active"
-                        : etapaAbertura === "confirmacao"
-                        ? "completed"
-                        : ""
-                    }`}
-                  >
-                    <div className="step-number">2</div>
-                    <span>Configuração</span>
-                  </div>
-                  <div className="step-line"></div>
-                  <div
-                    className={`step ${
-                      etapaAbertura === "confirmacao" ? "active" : ""
-                    }`}
-                  >
-                    <div className="step-number">3</div>
-                    <span>Confirmação</span>
-                  </div>
+              </div>
+            </div>
+
+            {/* Indicador de Etapa */}
+            <div className="step-indicator-container">
+              <div className="step-indicator">
+                <div
+                  className={`step ${
+                    etapaAbertura === "login" ? "active" : "completed"
+                  }`}
+                >
+                  <div className="step-number">1</div>
+                  <span>Login</span>
+                </div>
+                <div className="step-line"></div>
+                <div
+                  className={`step ${
+                    etapaAbertura === "configuracao"
+                      ? "active"
+                      : etapaAbertura === "confirmacao"
+                      ? "completed"
+                      : ""
+                  }`}
+                >
+                  <div className="step-number">2</div>
+                  <span>Configuração</span>
+                </div>
+                <div className="step-line"></div>
+                <div
+                  className={`step ${
+                    etapaAbertura === "confirmacao" ? "active" : ""
+                  }`}
+                >
+                  <div className="step-number">3</div>
+                  <span>Confirmação</span>
                 </div>
               </div>
             </div>
 
-            <form onSubmit={abrirCaixa}>
+            <form onSubmit={abrirCaixa} className="modal-form-transition">
               {/* Etapa 1: Login */}
               {etapaAbertura === "login" && (
                 <div className="tab-content">
@@ -2064,16 +2067,6 @@ export default function CaixaPage() {
               {/* Etapa 2: Configuração */}
               {etapaAbertura === "configuracao" && (
                 <div className="tab-content">
-                  <div className="form-section">
-                    <div className="form-section-header">
-                      <Settings size={18} />
-                      <h4>Configuração do Caixa</h4>
-                    </div>
-                    <p className="form-section-description">
-                      Defina o valor inicial e observações para abertura do
-                      caixa.
-                    </p>
-                  </div>
 
                   <div className="form-grid">
                     <div className="form-group">
@@ -2091,8 +2084,10 @@ export default function CaixaPage() {
                               valor_inicial: e.target.value,
                             })
                           }
-                          className="form-control"
+                          className="form-control entrada-numerica"
                           placeholder="0,00"
+                          inputMode="numeric"
+                          pattern="[0-9]*[.,]?[0-9]*"
                           required
                         />
                       </div>
@@ -2469,6 +2464,9 @@ export default function CaixaPage() {
                       valor_contado_dinheiro: e.target.value,
                     })
                   }
+                  className="entrada-numerica"
+                  inputMode="numeric"
+                  pattern="[0-9]*[.,]?[0-9]*"
                   style={{
                     width: "100%",
                     padding: "12px",
@@ -3417,6 +3415,9 @@ export default function CaixaPage() {
                   onChange={(e) =>
                     setSangriaForm({ ...sangriaForm, valor: e.target.value })
                   }
+                  className="entrada-numerica"
+                  inputMode="numeric"
+                  pattern="[0-9]*[.,]?[0-9]*"
                   style={{
                     width: "100%",
                     padding: "12px",
@@ -3777,8 +3778,10 @@ export default function CaixaPage() {
                     <input
                       type="number"
                       step="0.01"
-                      className="form-input form-input-valor-total"
+                      className="form-input form-input-valor-total entrada-numerica"
                       value={pagamentoForm.valor}
+                      inputMode="numeric"
+                      pattern="[0-9]*[.,]?[0-9]*"
                       onChange={(e) => {
                         const novoValor = e.target.value;
                         setPagamentoForm({
@@ -4229,6 +4232,9 @@ export default function CaixaPage() {
                         valor: e.target.value,
                       })
                     }
+                    className="entrada-numerica"
+                    inputMode="numeric"
+                    pattern="[0-9]*[.,]?[0-9]*"
                     style={{
                       width: "100%",
                       padding: "12px",
@@ -4765,13 +4771,9 @@ export default function CaixaPage() {
 
       {/* Modais de Loading */}
       <LoadingModal
-        isOpen={loadingAbrirCaixa}
+        isOpen={loadingAbrirCaixa && etapaAbertura !== "login"}
         title="Abrindo Caixa"
-        message={
-          etapaAbertura === "login"
-            ? "Validando credenciais..."
-            : "Criando novo caixa..."
-        }
+        message="Criando novo caixa..."
         size="medium"
       />
 

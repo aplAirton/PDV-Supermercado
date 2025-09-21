@@ -898,9 +898,9 @@
 /* === MODAL HEADER STYLES === */
 .modal-header-1 {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  padding: 20px 24px;
+  padding: 28px 24px 24px 24px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
   color: white;
   position: relative;
@@ -926,9 +926,11 @@
 .modal-header-content {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 16px;
   flex: 1;
   flex-direction: column;
+  text-align: center;
 }
 
 .modal-title-info-1 h2 {
@@ -939,14 +941,19 @@
   line-height: 1.2;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
 }
 
 .modal-title-info-1 p {
   color: white;
-  margin: 4px 0 0 0;
+  margin: 16px 0 0 0;
   opacity: 0.9;
   font-size: 14px;
+  text-align: center;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .modal-close-btn {
@@ -2216,32 +2223,144 @@ body.modal-open {
 
 /* === MODAL ABERTURA DE CAIXA - ESTILOS ADICIONAIS === */
 
+/* Transição suave entre etapas do modal */
+.modal-form-transition {
+  transition: all 0.3s ease-in-out;
+}
+
+.modal-form-transition > div {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Container dos Indicadores de Etapas */
+.step-indicator-container {
+  padding: 0 16px 0 16px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  text-align: center;
+  border-radius: 0;
+}
+
 /* Indicador de Etapas */
 .step-indicator {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-top: 20px;
+  justify-content: center;
+  margin: 0 auto;
+  max-width: 480px;
+  padding: 0 16px;
+}
+
+/* === FORÇAR VISIBILIDADE DOS STEPS === */
+/* Garantir que os steps sejam sempre visíveis independente de qualquer condição */
+.step-indicator,
+.step-indicator-container,
+.step {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  height: auto !important;
+  width: auto !important;
+  border-radius: 0 !important;
+}
+
+/* Especificamente para resoluções menores que 768px */
+@media (max-width: 767px) {
+  .step-indicator,
+  .step-indicator-container,
+  .step {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+    width: auto !important;
+    flex-direction: column;
+  }
+  
+  .step-indicator {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    padding: 0 12px;
+  }
+
+  .step {
+    min-width: 80px;
+    max-width: 100px;
+    gap: 6px;
+  }
+
+  .step-number {
+    width: 36px;
+    height: 36px;
+    font-size: 15px;
+  }
+
+  .step span {
+    font-size: 12px;
+    min-height: 28px;
+  }
+
+  .step-line {
+    width: 24px;
+    height: 2px;
+  }
+  
+  /* Esconder separadores em mobile */
+  .step-line {
+    display: none !important;
+  }
+  
+  /* Esconder separadores em mobile */
+  .step-line {
+    display: none !important;
+  }
+}
+
+/* Para qualquer resolução */
+@media screen {
+  .step-indicator,
+  .step-indicator-container,
+  .step {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
 }
 
 .step {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  min-width: 80px;
+  gap: 8px;
+  min-width: 100px;
+  flex: 1;
+  max-width: 120px;
 }
 
 .step-number {
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   transition: all 0.3s ease;
+  flex-shrink: 0;
 }
 
 .step.active .step-number {
@@ -2261,10 +2380,14 @@ body.modal-open {
 }
 
 .step span {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
   color: #6b7280;
   text-align: center;
+  line-height: 1.2;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
 }
 
 .step.active span {
@@ -2278,11 +2401,12 @@ body.modal-open {
 }
 
 .step-line {
-  width: 60px;
-  height: 2px;
+  width: 32px;
+  height: 3px;
   background: #e5e7eb;
-  border-radius: 1px;
+  border-radius: 2px;
   transition: background-color 0.3s ease;
+  flex-shrink: 0;
 }
 
 .step.completed + .step-line {
@@ -2609,22 +2733,43 @@ body.modal-open {
   font-weight: 500;
 }
 
-/* === ALERTA SANGRIA === */
-.alerta-sangria {
-  margin-bottom: 20px;
-  padding: 15px;
-  background-color: #fef2f2;
-  border-radius: 8px;
-  color: #dc2626;
+/* === ENTRADA NUMÉRICA === */
+/* Classe modular para campos que devem forçar teclado numérico em iOS e Android
+ * 
+ * Como usar:
+ * 1. Adicione a classe "entrada-numerica" no input
+ * 2. Adicione os atributos HTML: inputMode="numeric" pattern="[0-9]*[.,]?[0-9]*"
+ * 3. Use type="number" para campos monetários
+ * 
+ * Exemplo:
+ * <input 
+ *   type="number" 
+ *   className="entrada-numerica"
+ *   inputMode="numeric"
+ *   pattern="[0-9]*[.,]?[0-9]*"
+ * />
+ */
+/* Classe modular para campos que devem forçar teclado numérico em iOS e Android */
+.entrada-numerica {
+  /* Força aparência consistente */
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-text-size-adjust: 100%;
+  
+  /* Previne zoom em iOS */
+  font-size: 16px;
+  transform-origin: top left;
 }
 
-.alerta-sangria-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.alerta-sangria p {
+/* Remove setas do input number */
+.entrada-numerica::-webkit-outer-spin-button,
+.entrada-numerica::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
   margin: 0;
-  font-size: 14px;
+}
+
+.entrada-numerica[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
