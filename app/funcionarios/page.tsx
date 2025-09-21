@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { User, Plus, Edit, Trash2, Eye, Filter, Search, UserCheck, UserX, Loader2, Menu, X, DollarSign, MapPin, Save, AlertCircle, Shield, OctagonAlert, UserPlus } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import MasterPasswordConfirmation from '../../components/master-password-confirmation'
+import { CPFInput } from '@/components/cpf-input'
 import '../../styles/funcionarios.css'
 
 interface Funcionario {
@@ -127,37 +128,6 @@ export default function FuncionariosPage() {
     'Supervisor',
     'Auxiliar Administrativo'
   ]
-
-  // Máscara para CPF (apenas visual)
-  const formatarCPFInput = (value: string) => {
-    // Remove tudo que não é dígito
-    const digits = value.replace(/\D/g, "");
-    
-    // Limita a 11 dígitos
-    const limitedDigits = digits.slice(0, 11);
-    
-    // Aplica a máscara visual
-    if (limitedDigits.length <= 3) {
-      return limitedDigits;
-    } else if (limitedDigits.length <= 6) {
-      return `${limitedDigits.slice(0, 3)}.${limitedDigits.slice(3)}`;
-    } else if (limitedDigits.length <= 9) {
-      return `${limitedDigits.slice(0, 3)}.${limitedDigits.slice(3, 6)}.${limitedDigits.slice(6)}`;
-    } else {
-      return `${limitedDigits.slice(0, 3)}.${limitedDigits.slice(3, 6)}.${limitedDigits.slice(6, 9)}-${limitedDigits.slice(9)}`;
-    }
-  };
-
-  // Handler para CPF com máscara visual
-  const handleCPFChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formattedValue = formatarCPFInput(e.target.value);
-    setForm({ ...form, cpf: formattedValue });
-    // Limpar erros de validação quando usuário começa a editar
-    if (showValidationCard) {
-      setShowValidationCard(false);
-      setValidationErrors([]);
-    }
-  };
 
   useEffect(() => {
     carregarDados()
@@ -987,10 +957,16 @@ export default function FuncionariosPage() {
                     </div>
                     <div className="form-group">
                       <label>CPF *</label>
-                      <input
-                        type="text"
+                      <CPFInput
                         value={form.cpf}
-                        onChange={handleCPFChange}
+                        onChange={(value) => {
+                          setForm({...form, cpf: value})
+                          // Limpar erros de validação quando usuário começa a editar
+                          if (showValidationCard) {
+                            setShowValidationCard(false)
+                            setValidationErrors([])
+                          }
+                        }}
                         placeholder="000.000.000-00"
                         className="form-control"
                         readOnly={editMode}

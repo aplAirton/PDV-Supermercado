@@ -8,6 +8,7 @@ import { toast } from '@/hooks/use-toast'
 import ConfirmationModal from '@/components/confirmation-modal'
 import LoadingModal from '@/components/loading-modal'
 import { Plus, Edit, Trash2, Search, User, Loader2, X, DollarSign, MapPin, Save, OctagonAlert } from "lucide-react"
+import { CPFInput } from '@/components/cpf-input'
 
 interface Cliente {
   id: number
@@ -59,26 +60,6 @@ export default function ClientesPage() {
 
   const [showLoadingModal, setShowLoadingModal] = useState(false)
 
-  // Máscara para CPF (apenas visual)
-  const formatarCPFInput = (value: string) => {
-    // Remove tudo que não é dígito
-    const digits = value.replace(/\D/g, "");
-    
-    // Limita a 11 dígitos
-    const limitedDigits = digits.slice(0, 11);
-    
-    // Aplica a máscara visual
-    if (limitedDigits.length <= 3) {
-      return limitedDigits;
-    } else if (limitedDigits.length <= 6) {
-      return `${limitedDigits.slice(0, 3)}.${limitedDigits.slice(3)}`;
-    } else if (limitedDigits.length <= 9) {
-      return `${limitedDigits.slice(0, 3)}.${limitedDigits.slice(3, 6)}.${limitedDigits.slice(6)}`;
-    } else {
-      return `${limitedDigits.slice(0, 3)}.${limitedDigits.slice(3, 6)}.${limitedDigits.slice(6, 9)}-${limitedDigits.slice(9)}`;
-    }
-  };
-
   // Máscara para Telefone (apenas visual)
   const formatarTelefoneInput = (value: string) => {
     // Remove tudo que não é dígito
@@ -96,17 +77,6 @@ export default function ClientesPage() {
       return `(${limitedDigits.slice(0, 2)}) ${limitedDigits.slice(2, 6)}-${limitedDigits.slice(6)}`;
     } else {
       return `(${limitedDigits.slice(0, 2)}) ${limitedDigits.slice(2, 7)}-${limitedDigits.slice(7)}`;
-    }
-  };
-
-  // Handler para CPF com máscara visual
-  const handleCPFChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formattedValue = formatarCPFInput(e.target.value);
-    setFormData({ ...formData, cpf: formattedValue });
-    // Limpar erros de validação quando usuário começa a editar
-    if (showValidationCard) {
-      setShowValidationCard(false);
-      setValidationErrors([]);
     }
   };
 
@@ -752,11 +722,17 @@ export default function ClientesPage() {
 
                       <div className="form-group-1">
                         <label className="form-label">CPF *</label>
-                        <input
-                          type="text"
+                        <CPFInput
                           className="form-input"
                           value={formData.cpf}
-                          onChange={handleCPFChange}
+                          onChange={(value) => {
+                            setFormData({ ...formData, cpf: value });
+                            // Limpar erros de validação quando usuário começa a editar
+                            if (showValidationCard) {
+                              setShowValidationCard(false);
+                              setValidationErrors([]);
+                            }
+                          }}
                           placeholder="000.000.000-00"
                           required
                           readOnly={!!editingCliente}

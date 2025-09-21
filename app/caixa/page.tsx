@@ -36,6 +36,7 @@ import {
 import LoadingModal from "../../components/loading-modal";
 import MasterPasswordConfirmation from "../../components/master-password-confirmation";
 import PaymentSuccessModal from "../../components/payment-success-modal";
+import { CPFInput } from '@/components/cpf-input'
 import {
   Collapsible,
   CollapsibleContent,
@@ -2016,26 +2017,18 @@ export default function CaixaPage() {
                   <div className="form-grid">
                     <div className="form-group">
                       <label>CPF do Funcionário *</label>
-                      <input
-                        type="text"
+                      <CPFInput
                         value={loginForm.cpf}
-                        onChange={(e) => {
-                          const value = e.target.value
-                            .replace(/\D/g, "")
-                            .slice(0, 11);
+                        onChange={(value) => {
                           setLoginForm({ ...loginForm, cpf: value });
                           if (erroSenhaAbertura) setErroSenhaAbertura("");
                         }}
                         className={`form-control ${
                           erroSenhaAbertura ? "error" : ""
                         }`}
-                        placeholder="00000000000"
-                        maxLength={11}
+                        placeholder="000.000.000-00"
                         required
                       />
-                      <small className="form-hint">
-                        Digite apenas números (11 dígitos)
-                      </small>
                     </div>
 
                     <div className="form-group">
