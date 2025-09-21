@@ -99,6 +99,19 @@ export default function VendasPage() {
   
   // Estado para detectar se estamos em mobile (< 768px)
   const [isMobile, setIsMobile] = useState(false)
+
+  // Função para reproduzir som de venda concluída
+  const playCashSound = () => {
+    try {
+      const audio = new Audio('/sounds/cash.mp3')
+      audio.volume = 0.5 // Volume médio
+      audio.play().catch(err => {
+        console.log('Erro ao reproduzir som:', err)
+      })
+    } catch (error) {
+      console.log('Erro ao criar áudio:', error)
+    }
+  }
   
   // Estados para câmera de código de barras
   const [showCameraModal, setShowCameraModal] = useState(false)
@@ -108,6 +121,10 @@ export default function VendasPage() {
   const [produtosBuscaAvancada, setProdutosBuscaAvancada] = useState<Produto[]>([])
   const [loadingBuscaAvancada, setLoadingBuscaAvancada] = useState(false)
   const [queryBuscaAvancada, setQueryBuscaAvancada] = useState("")
+
+  // Estados para modais de confirmação de pagamento
+  const [showProcessingPayment, setShowProcessingPayment] = useState(false)
+  const [showSaleCompleted, setShowSaleCompleted] = useState(false)
 
   const totalBeforeDiscount = carrinho.reduce((sum, item) => sum + Number(item.subtotal), 0)
   const parsedDiscount = Math.max(0, parseCurrency(discountValue || "0")) || 0
@@ -148,11 +165,11 @@ export default function VendasPage() {
   // Opções disponíveis de formas de pagamento (filtradas por uso)
   const getAvailablePaymentOptions = (currentIndex: number) => {
     const allOptions = [
-      { value: "dinheiro", label: "💵 Dinheiro" },
-      { value: "cartao_debito", label: "💳 Cartão Débito" },
-      { value: "cartao_credito", label: "💳 Cartão Crédito" },
-      { value: "pix", label: "📱 PIX" },
-      { value: "fiado", label: "📋 Fiado" }
+      { value: "dinheiro", label: "Dinheiro" },
+      { value: "cartao_debito", label: "Cartão Débito" },
+      { value: "cartao_credito", label: "Cartão Crédito" },
+      { value: "pix", label: "PIX" },
+      { value: "fiado", label: "Fiado" }
     ] as const
 
     // Forma atual (sempre disponível para edição)
@@ -809,6 +826,34 @@ export default function VendasPage() {
       return
     }
     
+    // Verificar se o caixa ainda está aberto antes de processar
+    try {
+      const caixaResponse = await fetch('/api/caixa/status')
+      if (caixaResponse.ok) {
+        const caixaStatus = await caixaResponse.json()
+        if (!caixaStatus.aberto) {
+          toast({ 
+            title: 'Caixa fechado', 
+            description: 'O caixa foi fechado durante a transação. Abra um caixa para finalizar a venda.', 
+            variant: 'destructive' 
+          })
+          setCaixaAberto(false)
+          return
+        }
+        // Atualizar o status do caixa e dados
+        setCaixaAberto(true)
+        setDadosCaixa(caixaStatus.dados || null)
+      }
+    } catch (error) {
+      console.error('Erro ao verificar status do caixa:', error)
+      toast({ 
+        title: 'Erro', 
+        description: 'Não foi possível verificar o status do caixa. Tente novamente.', 
+        variant: 'destructive' 
+      })
+      return
+    }
+    
     // Se houver pagamento fiado, precisa ter cliente selecionado
     const totalFiado = pagamentos
       .filter((p) => p.tipo === "fiado")
@@ -837,6 +882,9 @@ export default function VendasPage() {
       return
     }
 
+    // Mostrar modal de processamento
+    setShowPagamentoModal(false)
+    setShowProcessingPayment(true)
     setLoading(true)
 
     try {
@@ -846,6 +894,7 @@ export default function VendasPage() {
         if (totalFiado > available) {
           const remaining = totalFiado - available
           // abrir modal de confirmação (assíncrono)
+          setShowProcessingPayment(false)
           setPendingSplit({ available, remaining })
           setShowConfirmSplit(true)
           setLoading(false)
@@ -901,39 +950,52 @@ export default function VendasPage() {
       })
 
       if (response.ok) {
-        toast({ title: 'Venda finalizada', description: 'Venda finalizada com sucesso!', variant: 'success' })
-        setCarrinho([])
-        setClienteSelecionado(null)
-        setPagamentos([{ tipo: "dinheiro", valor: "" }])
-        setDiscountType('none')
-        setDiscountValue('')
-        setShowPagamentoModal(false)
-        try { searchInputRef.current?.focus() } catch (e) { }
-        // Atualiza a listagem atual (caso haja uma busca ativa)
-        if (codigoBusca && codigoBusca.trim().length >= 2) {
-          buscarProdutos(codigoBusca, 'search')
-        }
-        carregarClientes() // Atualizar débitos
-
-        // Buscar ID da venda criada para exibir cupom
-        try {
-          const respJson = await response.json()
-          const vendaId = respJson.vendaId
-          if (vendaId) {
-            setVendaIdConcluida(vendaId)
-            setVendaConcluida(true)
-            // Buscar dados da última venda para exibir no resumo
-            await buscarUltimaVenda()
+        // Fechar modal de processamento e mostrar modal de venda concluída
+        setShowProcessingPayment(false)
+        setShowSaleCompleted(true)
+        
+        // Após 1.5s, ir para a tela de venda finalizada
+        setTimeout(async () => {
+          setShowSaleCompleted(false)
+          
+          toast({ title: 'Venda finalizada', description: 'Venda finalizada com sucesso!', variant: 'success' })
+          setCarrinho([])
+          setClienteSelecionado(null)
+          setPagamentos([{ tipo: "dinheiro", valor: "" }])
+          setDiscountType('none')
+          setDiscountValue('')
+          try { searchInputRef.current?.focus() } catch (e) { }
+          // Atualiza a listagem atual (caso haja uma busca ativa)
+          if (codigoBusca && codigoBusca.trim().length >= 2) {
+            buscarProdutos(codigoBusca, 'search')
           }
-        } catch (err) {
-          console.error('Erro ao processar resposta da venda:', err)
-        }
+          carregarClientes() // Atualizar débitos
+
+          // Buscar ID da venda criada para exibir cupom
+          try {
+            const respJson = await response.json()
+            const vendaId = respJson.vendaId
+            if (vendaId) {
+              setVendaIdConcluida(vendaId)
+              setVendaConcluida(true)
+              // Reproduzir som de venda concluída
+              playCashSound()
+              // Buscar dados da última venda para exibir no resumo
+              await buscarUltimaVenda()
+            }
+          } catch (err) {
+            console.error('Erro ao processar resposta da venda:', err)
+          }
+        }, 1500)
        } else {
+         setShowProcessingPayment(false)
          throw new Error("Erro ao finalizar venda")
        }
     } catch (error) {
       console.error("Erro ao finalizar venda:", error)
-      toast({ title: 'Erro', description: 'Erro ao finalizar venda!', variant: 'destructive' })
+      setShowProcessingPayment(false)
+      setShowSaleCompleted(false)
+      toast({ title: 'Erro', description: 'Erro ao finalizar a venda. Tente novamente.', variant: 'destructive' })
     } finally {
       setLoading(false)
     }
@@ -1137,7 +1199,7 @@ export default function VendasPage() {
 
             {/* Resumo Minimalista */}
             <div className="success-summary">
-              <div className="summary-grid">
+              <div className={`summary-grid ${ultimaVenda && Number(ultimaVenda.troco || 0) > 0 ? '' : 'single-item'}`}>
                 <div className="summary-item">
                   <span className="summary-label">Itens</span>
                   <span className="summary-value">
@@ -1166,7 +1228,7 @@ export default function VendasPage() {
                       onClick={() => hasMultiplePayments && setShowPaymentMethodsExpanded(!showPaymentMethodsExpanded)}
                     >
                       <span className="payment-methods-title">
-                        Formas de pagamento {paymentMethods.length}
+                        Formas de pagamento [ {paymentMethods.length} ]
                       </span>
                       {hasMultiplePayments && (
                         <ChevronDown
@@ -1181,11 +1243,11 @@ export default function VendasPage() {
                         paymentMethods.map((p: any, idx: number) => (
                           <div key={idx} className="payment-method">
                             <span className="payment-type">
-                              {(p.tipo || p.tipo_pagamento) === 'dinheiro' ? '💵 Dinheiro' :
-                               (p.tipo || p.tipo_pagamento) === 'cartao_debito' ? '💳 Débito' :
-                               (p.tipo || p.tipo_pagamento) === 'cartao_credito' ? '💳 Crédito' :
-                               (p.tipo || p.tipo_pagamento) === 'pix' ? '📱 PIX' :
-                               (p.tipo || p.tipo_pagamento) === 'fiado' ? '📝 Fiado' :
+                              {(p.tipo || p.tipo_pagamento) === 'dinheiro' ? 'Dinheiro' :
+                               (p.tipo || p.tipo_pagamento) === 'cartao_debito' ? 'Cartão Débito' :
+                               (p.tipo || p.tipo_pagamento) === 'cartao_credito' ? 'Cartão Crédito' :
+                               (p.tipo || p.tipo_pagamento) === 'pix' ? 'PIX' :
+                               (p.tipo || p.tipo_pagamento) === 'fiado' ? 'Fiado' :
                                `❓ ${p.tipo || p.tipo_pagamento || 'Desconhecido'}`}
                             </span>
                             <span className="payment-amount">R$ {Number(p.valor || 0).toFixed(2)}</span>
@@ -1637,7 +1699,7 @@ export default function VendasPage() {
                 {pagamentos.map((p, idx) => (
                   <div key={idx} className="row row-gap">
                     <select
-                      className="form-select select-45"
+                      className="form-select select-45 text-center"
                       value={p.tipo}
                       onChange={(e) => {
                         const newPag = [...pagamentos]
@@ -1656,6 +1718,7 @@ export default function VendasPage() {
                     <input
                       ref={idx === 0 ? paymentInputRef : undefined}
                       type="text"
+                      inputMode="decimal"
                       className={`form-input ${activeInputIndex === idx ? 'keyboard-active' : ''} input-35`}
                       value={p.valor}
                       onChange={(e) => {
@@ -1805,7 +1868,7 @@ export default function VendasPage() {
             {/* Aviso: Troco apenas em dinheiro */}
             {(excessoNaoDinheiro || (temMultiplasFormas && sumPagamentos > totalRounded && totalDinheiro === 0)) && (
               <div className="alert-danger">
-                <div className="alert-title">🚫 Valor superior não permitido</div>
+                <div className="alert-title">Valor superior não permitido</div>
                 <div className="alert-body">
                   {excessoNaoDinheiro ? (
                     <>
@@ -2299,6 +2362,36 @@ export default function VendasPage() {
                   Fechar
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Processamento de Pagamento */}
+      {showProcessingPayment && (
+        <div className="modal-overlay">
+          <div className="modal payment-processing-modal">
+            <div className="processing-content">
+              <div className="processing-icon">
+                <Loader2 className="animate-spin" size={48} />
+              </div>
+              <h3 className="processing-title">Confirmando Pagamento</h3>
+              <p className="processing-subtitle">Aguarde...</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Venda Concluída */}
+      {showSaleCompleted && (
+        <div className="modal-overlay">
+          <div className="modal sale-completed-modal">
+            <div className="completed-content">
+              <div className="completed-icon">
+                <CheckCircle size={48} className="success-icon-animation" />
+              </div>
+              <h3 className="completed-title">Venda Finalizada</h3>
+              <p className="completed-subtitle">Pagamento confirmado com sucesso!</p>
             </div>
           </div>
         </div>

@@ -2315,17 +2315,16 @@
   padding: 12px 16px;
   border: 2px solid #e5e7eb;
   border-radius: 8px;
-  font-size: 18px;
+  font-size: 20px;
   font-family: 'Courier New', monospace;
+  font-weight: 600;
   text-align: center;
-  letter-spacing: 0.5em;
   transition: all 0.2s ease;
 }
 
 .form-input:focus {
   outline: none;
   border-color: #196be6;
-  box-shadow: 0 0 0 3px rgba(25, 107, 230, 0.1);
 }
 
 .form-input.error {
