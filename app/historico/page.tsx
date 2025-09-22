@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Calendar, Filter, Eye, Printer, Settings, ChevronDown, ChevronUp, Loader2, X } from "lucide-react"
 import '../../styles/historico.css'
 import LoadingModal from '../../components/loading-modal'
+import Modal from '@/components/modal'
 
 interface Venda {
   id: number
@@ -56,10 +57,11 @@ export default function HistoricoPage() {
   const [showFilterLoading, setShowFilterLoading] = useState(false)
 
   // Estado para controlar qual card de atalho está ativo
-  const [atalhoAtivo, setAtalhoAtivo] = useState<string>("")
+  const [atalhoAtivo, setAtalhoAtivo] = useState<string>("0-dias")
 
   useEffect(() => {
-    carregarVendas()
+    // Carregar vendas do dia atual por padrão usando a mesma lógica do filtro "Hoje"
+    aplicarAtalhoPeriodo(0)
   }, [])
 
   const carregarVendas = async () => {
@@ -829,311 +831,269 @@ export default function HistoricoPage() {
 
       {/* Modal de Detalhes da Venda */}
       {showModal && vendaSelecionada && (
-        <div className="product-modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="product-modal" onClick={(e) => e.stopPropagation()}>
-            {/* Header do Modal */}
-            <div className="product-header">
-              <div className="product-header-info">
-                <div className="product-header-icon">
-                  <Eye size={24} />
-                </div>
-                <div>
-                  <h2 className="product-header-title">
-                    Venda #{vendaSelecionada.id.toString().padStart(6, '0')}
-                  </h2>
-                </div>
+        <Modal isOpen={showModal} onClose={() => setShowModal(false)}>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <Eye size={20} className="text-blue-600" />
               </div>
+              <h2 className="text-2xl font-bold text-gray-800">
+                Detalhes da Venda #{vendaSelecionada.id.toString().padStart(6, '0')}
+              </h2>
+            </div>
+            <div className="flex gap-2">
               <button
-                className="modal-close-btn"
-                onClick={() => setShowModal(false)}
-                title="Fechar"
+                className="btn btn-primary hover:bg-blue-600 transition-colors"
+                onClick={() => imprimirCupom(vendaSelecionada)}
               >
-                <X size={20} />
+                <Printer size={16} />
+                Imprimir Cupom
               </button>
             </div>
+          </div>
 
-            {/* Navegação por Abas */}
-            <div className="modal-tabs">
+          {/* Navegação por Abas */}
+          <div className="mb-6">
+            <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
               <button
-                className={`tab-btn ${activeTab === "basico" ? "active" : ""}`}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === "basico"
+                    ? "bg-white text-blue-600 shadow-sm"
+                    : "text-gray-600 hover:text-gray-800"
+                }`}
                 onClick={() => setActiveTab("basico")}
               >
-                <Calendar size={16} />
+                <Calendar size={16} className="inline mr-2" />
                 Básico
               </button>
               <button
-                className={`tab-btn ${activeTab === "itens" ? "active" : ""}`}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === "itens"
+                    ? "bg-white text-blue-600 shadow-sm"
+                    : "text-gray-600 hover:text-gray-800"
+                }`}
                 onClick={() => setActiveTab("itens")}
               >
-                <Settings size={16} />
+                <Settings size={16} className="inline mr-2" />
                 Itens
               </button>
               <button
-                className={`tab-btn ${activeTab === "pagamento" ? "active" : ""}`}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === "pagamento"
+                    ? "bg-white text-blue-600 shadow-sm"
+                    : "text-gray-600 hover:text-gray-800"
+                }`}
                 onClick={() => setActiveTab("pagamento")}
               >
-                <Printer size={16} />
+                <Printer size={16} className="inline mr-2" />
                 Pagamento
               </button>
             </div>
+          </div>
 
-            {/* Conteúdo do Modal */}
-            <div className="modal-body-1">
-              {/* Aba Básico */}
-              {activeTab === "basico" && (
-                <div className="form-section">
-                  <div className="form-grid-1">
-                    <div className="form-group-1">
-                      <label className="form-label">Data da Venda</label>
-                      <div className="input-with-icon">
-                        <Calendar size={16} className="input-icon" />
-                        <input
-                          type="text"
-                          className="form-input"
-                          value={formatarData(vendaSelecionada.data_venda)}
-                          readOnly
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group-1">
-                      <label className="form-label">Cliente</label>
-                      <div className="input-with-icon">
-                        <div
-                          style={{
-                            width: '20px',
-                            height: '20px',
-                            borderRadius: '50%',
-                            background: vendaSelecionada.cliente_nome ? 'var(--success)' : 'var(--text-muted)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'white',
-                            fontWeight: 'bold',
-                            fontSize: '10px',
-                            marginRight: '8px'
-                          }}
-                        >
-                          {vendaSelecionada.cliente_nome ?
-                            vendaSelecionada.cliente_nome.charAt(0).toUpperCase() :
-                            'A'
-                          }
-                        </div>
-                        <input
-                          type="text"
-                          className="form-input"
-                          value={vendaSelecionada.cliente_nome || "Cliente Avulso"}
-                          readOnly
-                          style={{ paddingLeft: '36px' }}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group-1">
-                      <label className="form-label">Total da Venda</label>
-                      <div className="input-with-icon">
-                        <div style={{
-                          color: 'var(--success)',
-                          fontWeight: 'bold',
-                          fontSize: '16px',
-                          marginRight: '8px'
-                        }}>
-                          R$
-                        </div>
-                        <input
-                          type="text"
-                          className="form-input"
-                          value={Number(vendaSelecionada.total || 0).toFixed(2)}
-                          readOnly
-                          style={{
-                            paddingLeft: '36px',
-                            fontWeight: 'bold',
-                            color: 'var(--success)',
-                            fontSize: '16px'
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group-1">
-                      <label className="form-label">Status</label>
+          {/* Conteúdo do Modal */}
+          <div className="space-y-6">
+            {/* Aba Básico */}
+            {activeTab === "basico" && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Data da Venda</label>
+                    <div className="relative">
+                      <Calendar size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                       <input
                         type="text"
-                        className="form-input"
-                        value="Concluída"
+                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-900"
+                        value={formatarData(vendaSelecionada.data_venda)}
                         readOnly
-                        style={{ background: 'var(--surface)', color: 'var(--success)' }}
                       />
                     </div>
                   </div>
 
-                  {/* Resumo da Venda */}
-                  <div className="stock-summary">
-                    <h4>Resumo da Venda</h4>
-                    <div className="summary-grid">
-                      <div className="summary-item">
-                        <span className="summary-label">Produtos:</span>
-                        <span className="summary-value">
-                          {vendaSelecionada.itens.length} item{vendaSelecionada.itens.length !== 1 ? 's' : ''}
-                        </span>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Cliente</label>
+                    <div className="relative">
+                      <div className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-white text-xs font-bold">
+                        {vendaSelecionada.cliente_nome ? vendaSelecionada.cliente_nome.charAt(0).toUpperCase() : 'A'}
                       </div>
-                      <div className="summary-item">
-                        <span className="summary-label">Quantidade Total:</span>
-                        <span className="summary-value">
-                          {vendaSelecionada.itens.reduce((sum, item) => sum + Number(item.quantidade || 0), 0)} unidade{vendaSelecionada.itens.reduce((sum, item) => sum + Number(item.quantidade || 0), 0) !== 1 ? 's' : ''}
-                        </span>
+                      <input
+                        type="text"
+                        className="w-full pl-12 pr-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-900"
+                        value={vendaSelecionada.cliente_nome || "Cliente Avulso"}
+                        readOnly
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Total da Venda</label>
+                    <div className="relative">
+                      <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-600 font-bold text-base">
+                        R$
                       </div>
+                      <input
+                        type="text"
+                        className="w-full pl-12 pr-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-green-600 font-bold text-base"
+                        value={Number(vendaSelecionada.total || 0).toFixed(2)}
+                        readOnly
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Status</label>
+                    <input
+                      type="text"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-green-50 text-green-700 font-medium"
+                      value="Concluída"
+                      readOnly
+                    />
+                  </div>
+                </div>
+
+                {/* Resumo da Venda */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="text-lg font-semibold text-gray-800 mb-3">Resumo da Venda</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Produtos:</span>
+                      <span className="font-medium text-gray-900">
+                        {vendaSelecionada.itens.length} item{vendaSelecionada.itens.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Quantidade Total:</span>
+                      <span className="font-medium text-gray-900">
+                        {vendaSelecionada.itens.reduce((sum, item) => sum + Number(item.quantidade || 0), 0)} unidade{vendaSelecionada.itens.reduce((sum, item) => sum + Number(item.quantidade || 0), 0) !== 1 ? 's' : ''}
+                      </span>
                     </div>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Aba Itens */}
-              {activeTab === "itens" && (
-                <div className="form-section">
-                  <div className="section-header">
-                    <h3>Itens da Venda</h3>
-                  </div>
+            {/* Aba Itens */}
+            {activeTab === "itens" && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-800">Itens da Venda</h3>
+                  <span className="text-sm text-gray-500">{vendaSelecionada.itens.length} produto{vendaSelecionada.itens.length !== 1 ? 's' : ''}</span>
+                </div>
 
-                  <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                    {vendaSelecionada.itens.map((item, index) => (
-                      <div key={index} className="form-group-1" style={{
-                        border: '1px solid var(--border-light)',
-                        borderRadius: '8px',
-                        padding: '16px',
-                        marginBottom: '12px',
-                        background: index % 2 === 0 ? 'var(--surface)' : 'transparent'
-                      }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>
-                              {item.produto_nome}
-                            </div>
-                            <div style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
-                              {item.quantidade}x R$ {item.preco_unitario.toFixed(2)} cada
-                            </div>
+                <div className="max-h-96 overflow-y-auto space-y-3">
+                  {vendaSelecionada.itens.map((item, index) => (
+                    <div key={index} className={`p-4 rounded-lg border ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} border-gray-200`}>
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="font-semibold text-gray-900 mb-1">
+                            {item.produto_nome}
                           </div>
-                          <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--success)' }}>
-                            R$ {item.subtotal.toFixed(2)}
+                          <div className="text-sm text-gray-600">
+                            {item.quantidade}x R$ {item.preco_unitario.toFixed(2)} cada
                           </div>
                         </div>
+                        <div className="text-lg font-bold text-green-600">
+                          R$ {item.subtotal.toFixed(2)}
+                        </div>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Aba Pagamento */}
-              {activeTab === "pagamento" && (
-                <div className="form-section">
-                  <div className="form-grid-1">
-                    <div className="form-group-1">
-                      <label className="form-label">Forma de Pagamento</label>
-                      <div className="input-with-icon">
-                        <Printer size={16} className="input-icon" />
+            {/* Aba Pagamento */}
+            {activeTab === "pagamento" && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Forma de Pagamento</label>
+                    <div className="relative">
+                      <Printer size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="text"
+                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-900"
+                        value={formatarFormaPagamento(vendaSelecionada.forma_pagamento)}
+                        readOnly
+                      />
+                    </div>
+                  </div>
+
+                  {vendaSelecionada.desconto_tipo && (Number(vendaSelecionada.desconto_valor) > 0 || Number(vendaSelecionada.desconto_percentual) > 0) && (
+                    <>
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-700">Tipo de Desconto</label>
                         <input
                           type="text"
-                          className="form-input"
-                          value={formatarFormaPagamento(vendaSelecionada.forma_pagamento)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-900"
+                          value={vendaSelecionada.desconto_tipo === 'percent' ? 'Percentual' : 'Valor Fixo'}
                           readOnly
                         />
                       </div>
-                    </div>
 
-                    {vendaSelecionada.desconto_tipo && (Number(vendaSelecionada.desconto_valor) > 0 || Number(vendaSelecionada.desconto_percentual) > 0) && (
-                      <>
-                        <div className="form-group-1">
-                          <label className="form-label">Tipo de Desconto</label>
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-700">Valor do Desconto</label>
+                        <div className="relative">
+                          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-orange-600 font-bold">
+                            -
+                          </div>
                           <input
                             type="text"
-                            className="form-input"
-                            value={vendaSelecionada.desconto_tipo === 'percent' ? 'Percentual' : 'Valor Fixo'}
+                            className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md bg-orange-50 text-orange-700 font-bold"
+                            value={vendaSelecionada.desconto_tipo === 'percent'
+                              ? `${Number(vendaSelecionada.desconto_percentual)}%`
+                              : `R$ ${Number(vendaSelecionada.desconto_valor || 0).toFixed(2)}`
+                            }
                             readOnly
                           />
                         </div>
+                      </div>
+                    </>
+                  )}
+                </div>
 
-                        <div className="form-group-1">
-                          <label className="form-label">Valor do Desconto</label>
-                          <div className="input-with-icon">
-                            <div style={{
-                              color: '#d97706',
-                              fontWeight: 'bold',
-                              marginRight: '8px'
-                            }}>
-                              -
-                            </div>
-                            <input
-                              type="text"
-                              className="form-input"
-                              value={vendaSelecionada.desconto_tipo === 'percent'
-                                ? `${Number(vendaSelecionada.desconto_percentual)}%`
-                                : `R$ ${Number(vendaSelecionada.desconto_valor || 0).toFixed(2)}`
-                              }
-                              readOnly
-                              style={{
-                                paddingLeft: '36px',
-                                color: '#d97706',
-                                fontWeight: 'bold'
-                              }}
-                            />
-                          </div>
-                        </div>
-                      </>
+                {/* Resumo Financeiro */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="text-lg font-semibold text-gray-800 mb-3">Resumo Financeiro</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Valor Bruto:</span>
+                      <span className="font-medium text-gray-900">
+                        R$ {(Number(vendaSelecionada.total) + Number(vendaSelecionada.desconto_valor || 0)).toFixed(2)}
+                      </span>
+                    </div>
+                    {Number(vendaSelecionada.desconto_valor) > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Desconto:</span>
+                        <span className="font-medium text-orange-600">
+                          -R$ {Number(vendaSelecionada.desconto_valor || 0).toFixed(2)}
+                        </span>
+                      </div>
                     )}
-                  </div>
-
-                  {/* Resumo Financeiro */}
-                  <div className="financial-summary">
-                    <h4>Resumo Financeiro</h4>
-                    <div className="summary-grid">
-                      <div className="summary-item">
-                        <span className="summary-label">Valor Bruto:</span>
-                        <span className="summary-value">
-                          R$ {(Number(vendaSelecionada.total) + Number(vendaSelecionada.desconto_valor || 0)).toFixed(2)}
-                        </span>
-                      </div>
-                      {Number(vendaSelecionada.desconto_valor) > 0 && (
-                        <div className="summary-item">
-                          <span className="summary-label">Desconto:</span>
-                          <span className="summary-value warning">
-                            -R$ {Number(vendaSelecionada.desconto_valor || 0).toFixed(2)}
-                          </span>
-                        </div>
-                      )}
-                      <div className="summary-item">
-                        <span className="summary-label">Valor Final:</span>
-                        <span className="summary-value success">
-                          R$ {Number(vendaSelecionada.total || 0).toFixed(2)}
-                        </span>
-                      </div>
+                    <div className="flex justify-between border-t border-gray-300 pt-2">
+                      <span className="text-gray-800 font-medium">Valor Final:</span>
+                      <span className="font-bold text-green-600 text-lg">
+                        R$ {Number(vendaSelecionada.total || 0).toFixed(2)}
+                      </span>
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+          </div>
 
             {/* Footer do Modal */}
-            <div className="modal-footer-1">
-              <div className="footer-actions">
-                <button
-                  type="button"
-                  className="btn btn-outline btn-lg"
-                  onClick={() => setShowModal(false)}
-                >
-                  Fechar
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-primary btn-lg"
-                  onClick={() => imprimirCupom(vendaSelecionada)}
-                >
-                  <Printer size={18} />
-                  Imprimir Cupom
-                </button>
-              </div>
+            <div className="flex justify-end mt-6 pt-4 border-t border-gray-200">
+              <button
+                type="button"
+                className="btn btn-outline hover:bg-gray-50 transition-colors"
+                onClick={() => setShowModal(false)}
+              >
+                <X size={16} className="mr-2" />
+                Fechar
+              </button>
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   )
