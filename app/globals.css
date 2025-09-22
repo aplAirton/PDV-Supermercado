@@ -346,17 +346,6 @@ body.sidebar-open {
   opacity: 0.1;
 }
 
-.nav-link.active {
-  background: var(--sidebar-primary);
-  color: var(--sidebar-primary-foreground);
-  box-shadow: 0 6px 18px rgba(14, 165, 164, 0.25);
-  font-weight: 600;
-}
-
-.nav-link.active::before {
-  opacity: 1;
-}
-
 .main-content {
   flex: 1;
   margin-left: 280px;

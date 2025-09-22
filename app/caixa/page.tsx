@@ -582,9 +582,39 @@ export default function CaixaPage() {
       // Avançar para confirmação
       setEtapaAbertura("confirmacao");
     } else if (etapaAbertura === "confirmacao") {
-      // Abrir caixa com fundos
+      // Verificar se já há caixa aberto no sistema antes de prosseguir
       try {
         setLoadingAbrirCaixa(true);
+        
+        // Buscar caixas para verificar se há algum aberto
+        const checkResponse = await fetch("/api/caixa", {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (checkResponse.ok) {
+          const caixas = await checkResponse.json();
+          const caixaAberto = caixas.find((caixa: any) => caixa.status === "aberto");
+          
+          if (caixaAberto) {
+            toast({
+              title: "Caixa já aberto",
+              description: `Já existe um caixa aberto por ${caixaAberto.funcionario_nome}. Atualize a página para ver o status atual.`,
+              variant: "destructive",
+            });
+            setLoadingAbrirCaixa(false);
+            return;
+          }
+        } else {
+          console.warn("Não foi possível verificar status dos caixas, prosseguindo...");
+        }
+      } catch (error) {
+        console.warn("Erro ao verificar caixas abertos:", error);
+        // Não bloquear abertura se não conseguir verificar
+      }
+
+      // Abrir caixa com fundos
+      try {
         // Preferir o estado local (mais confiável durante fluxo), senão fallback para sessionStorage
         const funcionarioData =
           funcionarioAbertura ||
