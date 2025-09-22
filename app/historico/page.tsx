@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Calendar, Filter, Eye, Printer, Settings, ChevronDown, ChevronUp, Loader2, X } from "lucide-react"
+import { Calendar, Filter, Eye, Printer, Settings, ChevronDown, ChevronUp, Loader2, X, DollarSign, List, Info, LayoutList } from "lucide-react"
 import '../../styles/historico.css'
 import LoadingModal from '../../components/loading-modal'
 import Modal from '@/components/modal'
@@ -864,7 +864,7 @@ export default function HistoricoPage() {
                 <Eye size={20} className="text-blue-600" />
               </div>
               <h2 className="text-2xl font-bold text-gray-800">
-                Detalhes da Venda #{vendaSelecionada.id.toString().padStart(6, '0')}
+                Detalhes #{vendaSelecionada.id.toString().padStart(6, '0')}
               </h2>
             </div>
             <div className="flex gap-2">
@@ -872,8 +872,8 @@ export default function HistoricoPage() {
                 className="btn btn-primary hover:bg-blue-600 transition-colors"
                 onClick={() => imprimirCupom(vendaSelecionada)}
               >
-                <Printer size={16} />
-                Imprimir Cupom
+                <Printer size={18} />
+                Cupom
               </button>
             </div>
           </div>
@@ -889,8 +889,8 @@ export default function HistoricoPage() {
                 }`}
                 onClick={() => setActiveTab("basico")}
               >
-                <Calendar size={16} className="inline mr-2" />
-                Básico
+                <Info size={16} className="inline mr-2" />
+                Info
               </button>
               <button
                 className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
@@ -900,7 +900,7 @@ export default function HistoricoPage() {
                 }`}
                 onClick={() => setActiveTab("itens")}
               >
-                <Settings size={16} className="inline mr-2" />
+                <LayoutList size={16} className="inline mr-2" />
                 Itens
               </button>
               <button
@@ -911,8 +911,8 @@ export default function HistoricoPage() {
                 }`}
                 onClick={() => setActiveTab("pagamento")}
               >
-                <Printer size={16} className="inline mr-2" />
-                Pagamento
+                <DollarSign size={16} className="inline mr-2" />
+                Valores
               </button>
             </div>
           </div>
@@ -921,77 +921,46 @@ export default function HistoricoPage() {
           <div className="space-y-6">
             {/* Aba Básico */}
             {activeTab === "basico" && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">Data da Venda</label>
-                    <div className="relative">
-                      <Calendar size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                      <input
-                        type="text"
-                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-900"
-                        value={formatarData(vendaSelecionada.data_venda)}
-                        readOnly
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">Cliente</label>
-                    <div className="relative">
-                      <div className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-white text-xs font-bold">
-                        {vendaSelecionada.cliente_nome ? vendaSelecionada.cliente_nome.charAt(0).toUpperCase() : 'A'}
-                      </div>
-                      <input
-                        type="text"
-                        className="w-full pl-12 pr-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-900"
-                        value={vendaSelecionada.cliente_nome || "Cliente Avulso"}
-                        readOnly
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">Total da Venda</label>
-                    <div className="relative">
-                      <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-600 font-bold text-base">
-                        R$
-                      </div>
-                      <input
-                        type="text"
-                        className="w-full pl-12 pr-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-green-600 font-bold text-base"
-                        value={Number(vendaSelecionada.total || 0).toFixed(2)}
-                        readOnly
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">Status</label>
-                    <input
-                      type="text"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-green-50 text-green-700 font-medium"
-                      value="Concluída"
-                      readOnly
-                    />
+              <div className="space-y-6">
+                {/* Valor em destaque */}
+                <div className="text-center">
+                  <div className="text-sm font-medium text-gray-600 mb-2">Valor</div>
+                  <div className="text-4xl font-bold text-green-600">
+                    R$ {Number(vendaSelecionada.total || 0).toFixed(2)}
                   </div>
                 </div>
 
-                {/* Resumo da Venda */}
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-gray-800 mb-3">Resumo da Venda</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Produtos:</span>
-                      <span className="font-medium text-gray-900">
-                        {vendaSelecionada.itens.length} item{vendaSelecionada.itens.length !== 1 ? 's' : ''}
-                      </span>
+                {/* Data e Cliente lado a lado em blocos */}
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Bloco Data */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <Calendar size={16} className="text-blue-600" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-medium text-blue-700 uppercase tracking-wide">Data</div>
+                        <div className="text-sm font-semibold text-gray-900">
+                          {formatarData(vendaSelecionada.data_venda)}
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Quantidade Total:</span>
-                      <span className="font-medium text-gray-900">
-                        {vendaSelecionada.itens.reduce((sum, item) => sum + Number(item.quantidade || 0), 0)} unidade{vendaSelecionada.itens.reduce((sum, item) => sum + Number(item.quantidade || 0), 0) !== 1 ? 's' : ''}
-                      </span>
+                  </div>
+
+                  {/* Bloco Cliente */}
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                        <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-white text-xs font-bold">
+                          {vendaSelecionada.cliente_nome ? vendaSelecionada.cliente_nome.charAt(0).toUpperCase() : 'A'}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs font-medium text-green-700 uppercase tracking-wide">Cliente</div>
+                        <div className="text-sm font-semibold text-gray-900">
+                          {vendaSelecionada.cliente_nome || "Cliente Avulso"}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -1694,7 +1694,7 @@ body.sidebar-open {
   .grid-cols-2,
   .grid-cols-3,
   .grid-cols-4 {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr !important;
     gap: 1rem;
   }
 
