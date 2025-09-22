@@ -1595,7 +1595,7 @@
   .modal {
     padding: 1rem;
     margin: 0;
-    max-width: 100%;
+    max-width: 90%;
     border-radius: 0.5rem;
   }
 
@@ -2673,7 +2673,7 @@
     max-width: 90vw;
     height: auto;
     max-height: 95vh;
-    margin: 0 2.5vw;
+    margin: 0 0.5vw;
   }
 
   /* Header do Modal de Pagamento - Mobile - Usa .modal-header-mobile */

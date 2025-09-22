@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Plus, CreditCard, Clock, CheckCircle, DollarSign, FileText, Printer, Trash2, Calculator, Loader2 } from 'lucide-react'
+import { X, Plus, CreditCard, Clock, CheckCircle, DollarSign, FileText, Printer, Trash2, Calculator, Loader2, List } from 'lucide-react'
 import Modal from '@/components/modal'
 import { toast } from '@/hooks/use-toast'
 import '../../styles/components.css'
@@ -732,17 +732,23 @@ export default function FiadosPage() {
                           <div className="field-group">
                             <div className="input-with-icon">
                               <DollarSign size={16} className="input-icon" />
-                              <input 
-                                type="number" 
-                                step="0.01" 
+                              <input
+                                type="number"
+                                step="0.01"
                                 min="0"
                                 max={Number(pagamentoCliente.debito_atual || 0)}
-                                className="form-input w-full" 
-                                value={p.valor} 
-                                onChange={(e) => { 
-                                  const arr = [...pagamentosForm]; 
-                                  arr[idx].valor = e.target.value; 
-                                  setPagamentosForm(arr) 
+                                className="form-input w-full"
+                                value={p.valor}
+                                onChange={(e) => {
+                                  const arr = [...pagamentosForm];
+                                  const inputValue = parseFloat(e.target.value) || 0;
+                                  const maxAllowed = Number(pagamentoCliente.debito_atual || 0);
+
+                                  // Força o valor máximo se exceder o débito atual
+                                  const finalValue = inputValue > maxAllowed ? maxAllowed.toFixed(2) : e.target.value;
+
+                                  arr[idx].valor = finalValue;
+                                  setPagamentosForm(arr);
                                 }}
                                 placeholder="0,00"
                               />
@@ -766,16 +772,36 @@ export default function FiadosPage() {
               {/* Botões de Ação - Fixos no rodapé */}
               <div className="payment-actions-st">
                 <button 
-                  className="btn btn-danger btn-sm" 
+                  className="btn btn-outline btn-sm" 
                   onClick={() => setShowPagamentoModal(false)} 
                   disabled={pagamentoLoading}
                 >
                   Cancelar
                 </button>
                 
-                <button 
-                  className="btn btn-outline btn-sm" 
-                  onClick={() => setShowConfirmacaoModal(true)} 
+                <button
+                  className="btn btn-success btn-sm"
+                  onClick={() => {
+                    // Validação adicional: força o total dos pagamentos a não exceder o débito atual
+                    const debitoAtual = Number(pagamentoCliente.debito_atual || 0);
+                    const totalPagamentos = pagamentosForm.reduce((sum, p) => sum + (Number(p.valor) || 0), 0);
+
+                    if (totalPagamentos > debitoAtual) {
+                      // Distribui o valor máximo proporcionalmente entre as formas de pagamento
+                      const arr = [...pagamentosForm];
+                      const proporcaoTotal = arr.reduce((sum, p) => sum + (Number(p.valor) || 0), 0);
+
+                      arr.forEach((p, idx) => {
+                        const proporcao = (Number(p.valor) || 0) / proporcaoTotal;
+                        const valorAjustado = debitoAtual * proporcao;
+                        arr[idx].valor = valorAjustado.toFixed(2);
+                      });
+
+                      setPagamentosForm(arr);
+                    }
+
+                    setShowConfirmacaoModal(true);
+                  }}
                   disabled={pagamentoLoading || pagamentosForm.reduce((sum, p) => sum + (Number(p.valor) || 0), 0) <= 0}
                 >
                   Revisar
@@ -792,96 +818,126 @@ export default function FiadosPage() {
           <div className="payment-header">
             <div className="payment-header-info">
               <div className="payment-header-icon">
-                <CheckCircle size={24} />
+                <List size={24} />
               </div>
-              <h2 className="payment-header-title">Confirmar Pagamento</h2>
-            </div>
-            <div className="payment-date">
-              {new Date().toLocaleDateString('pt-BR')}
+              <h2 className="payment-header-title">Revisão</h2>
             </div>
           </div>
 
           {pagamentoCliente && (
             <>
               <div className="payment-modal-body">
-                {/* Resumo do Pagamento */}
+                {/* Resumo Compacto do Pagamento */}
                 {(() => {
                   const totalPagamento = pagamentosForm.reduce((sum, p) => sum + (Number(p.valor) || 0), 0)
                   const debitoRestante = Number(pagamentoCliente.debito_atual || 0) - totalPagamento
-                  const isValidPayment = totalPagamento > 0 && totalPagamento <= Number(pagamentoCliente.debito_atual || 0)
 
                   return (
-                    <div className="payment-summary-fiados final">
-                      <div className="summary-header">
-                        <CheckCircle size={20} className="text-green-600" />
-                        <h4 className="summary-title">Resumo do Pagamento</h4>
-                      </div>
-
-                      {/* Cards do Resumo */}
-                      <div className="summary-cards">
-                        {/* Card Débito Atual */}
-                        <div className="summary-card">
-                          <div className="summary-card-header">
-                            <DollarSign size={16} className="summary-card-icon" />
-                            <span className="summary-card-title">Débito Atual</span>
+                    <div className="space-y-4">
+                      {/* Cliente e Valores Principais */}
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
+                              {pagamentoCliente.nome.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <div className="font-semibold text-gray-900">{pagamentoCliente.nome}</div>
+                              <div className="text-sm text-gray-600">Cliente ID: {pagamentoCliente.id}</div>
+                            </div>
                           </div>
-                          <div className="summary-card-value debt">
-                            R$ {Number(pagamentoCliente.debito_atual || 0).toFixed(2)}
-                          </div>
-                        </div>
-
-                        {/* Card Total a Pagar */}
-                        <div className="summary-card">
-                          <div className="summary-card-header">
-                            <CreditCard size={16} className="summary-card-icon" />
-                            <span className="summary-card-title">Total a Pagar</span>
-                          </div>
-                          <div className="summary-card-value payment">
-                            R$ {totalPagamento.toFixed(2)}
+                          <div className="text-right">
+                            <div className="text-sm text-gray-600">Débito Atual</div>
+                            <div className="text-lg font-bold text-red-600">
+                              R$ {Number(pagamentoCliente.debito_atual || 0).toFixed(2)}
+                            </div>
                           </div>
                         </div>
 
-                        {/* Card Restará Devendo */}
-                        <div className="summary-card">
-                          <div className="summary-card-header">
-                            <Calculator size={16} className="summary-card-icon" />
-                            <span className="summary-card-title">Restará Devendo</span>
-                          </div>
-                          <div className={`summary-card-value ${debitoRestante <= 0 ? 'payment' : 'remaining'}`}>
-                            R$ {Math.max(0, debitoRestante).toFixed(2)}
-                          </div>
-                        </div>
+                        {/* Valores do Pagamento - Cards Personalizados */}
+                        <div className="flex justify-center items-center gap-6">
 
-                      </div>
-
-                      {/* Detalhes das Formas de Pagamento */}
-                      <div className="payment-details">
-                        <h5 className="payment-details-title">Formas de Pagamento:</h5>
-                        <div className="payment-methods-cards">
-                          {pagamentosForm.map((pagamento, index) => (
-                            <div key={index} className="payment-method-card">
-                              <div className="payment-method-header">
-                                <span className="payment-method-type">
-                                  {pagamento.tipo === 'dinheiro' && 'Dinheiro'}
-                                  {pagamento.tipo === 'cartao_debito' && 'Cartão Débito'}
-                                  {pagamento.tipo === 'cartao_credito' && 'Cartão Crédito'}
-                                  {pagamento.tipo === 'pix' && 'PIX'}
+                          {/* Card Restará Devendo */}
+                          <div className={`border-2 rounded-xl p-6 text-center shadow-sm ${
+                            debitoRestante <= 0
+                              ? 'bg-green-50 border-green-200'
+                              : 'bg-orange-50 border-orange-200'
+                          }`}>
+                            <div className="flex flex-col items-center">
+                              <div className="flex items-center gap-3 mb-4">
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                                  debitoRestante <= 0 ? 'bg-green-500' : 'bg-orange-500'
+                                }`}>
+                                  {debitoRestante <= 0 ? (
+                                    <CheckCircle size={20} className="text-white" />
+                                  ) : (
+                                    <Clock size={20} className="text-white" />
+                                  )}
+                                </div>
+                                <span className={`text-base font-bold uppercase tracking-wider ${
+                                  debitoRestante <= 0 ? 'text-green-700' : 'text-orange-700'
+                                }`}>
+                                  {debitoRestante <= 0 ? 'Quitado' : 'Restante'}
                                 </span>
-                                <span className="payment-method-number">#{index + 1}</span>
                               </div>
-                              <div className="payment-method-value">
+                              <div className={`text-4xl font-black mb-3 ${
+                                debitoRestante <= 0 ? 'text-green-600' : 'text-orange-600'
+                              }`}>
+                                R$ {Math.max(0, debitoRestante).toFixed(2)}
+                              </div>
+                              <div className={`text-base font-semibold px-4 py-2 rounded-full ${
+                                debitoRestante <= 0
+                                  ? 'bg-green-100 text-green-700'
+                                  : 'bg-orange-100 text-orange-700'
+                              }`}>
+                                {debitoRestante <= 0
+                                  ? 'Débito totalmente quitado'
+                                  : 'Valor restante do débito'
+                                }
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Formas de Pagamento - Versão Compacta */}
+                      <div>
+                        <h5 className="text-sm font-medium text-gray-700 mb-2">Formas de Pagamento:</h5>
+                        <div className="space-y-2">
+                          {pagamentosForm.map((pagamento, index) => (
+                            <div key={index} className="flex items-center justify-between bg-white border border-gray-200 rounded-lg p-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                                  <CreditCard size={14} className="text-gray-600" />
+                                </div>
+                                <div>
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {pagamento.tipo === 'dinheiro' && 'Dinheiro'}
+                                    {pagamento.tipo === 'cartao_debito' && 'Cartão Débito'}
+                                    {pagamento.tipo === 'cartao_credito' && 'Cartão Crédito'}
+                                    {pagamento.tipo === 'pix' && 'PIX'}
+                                  </div>
+                                  <div className="text-xs text-gray-500">#{index + 1}</div>
+                                </div>
+                              </div>
+                              <div className="text-lg font-bold text-green-600">
                                 R$ {Number(pagamento.valor || 0).toFixed(2)}
                               </div>
                             </div>
                           ))}
                         </div>
                       </div>
+
+                      {/* Data do Pagamento */}
+                      <div className="text-center text-sm text-gray-600">
+                        Data do pagamento: {new Date().toLocaleDateString('pt-BR')}
+                      </div>
                     </div>
                   )
                 })()}
               </div>
 
-              {/* Botões de Ação Final - Fixos no rodapé */}
+              {/* Botões de Ação Final - Compactos */}
               <div className="payment-actions-st final">
                 <button
                   className="action-btn back"
@@ -904,7 +960,7 @@ export default function FiadosPage() {
                   ) : (
                     <>
                       <CheckCircle size={16} />
-                      Confirmar Pagamento
+                      Confirmar
                     </>
                   )}
                 </button>
