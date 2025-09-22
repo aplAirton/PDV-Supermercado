@@ -979,35 +979,6 @@ export default function FiadosPage() {
             </div>
             <h2 className="text-2xl font-bold text-gray-800">Extrato de Fiado</h2>
           </div>
-          <div className="flex gap-2">
-            <button 
-              className="btn btn-sm btn-outline hover:bg-blue-50 hover:border-blue-300 transition-colors disabled:opacity-50" 
-              onClick={imprimirExtrato}
-              disabled={extratoLoading || !extratoCliente || imprimindoExtrato}
-              title="Imprimir extrato"
-            >
-              {imprimindoExtrato ? (
-                <>
-                  <Loader2 className="animate-spin" size={16} style={{ marginRight: '8px' }} />
-                  Gerando extrato...
-                </>
-              ) : (
-                <>
-                  <Printer size={16} />
-                  Imprimir
-                </>
-              )}
-            </button>
-            <button 
-              className="btn btn-sm btn-success hover:bg-green-600 transition-colors" 
-              onClick={() => { if (extratoCliente) { setShowExtrato(false); abrirPagamento(extratoCliente) } }} 
-              disabled={!extratoCliente || pagamentoLoading}
-              title="Registrar novo pagamento"
-            >
-              <DollarSign size={16} />
-              Pagamento
-            </button>
-          </div>
         </div>
         
         {extratoCliente && (
@@ -1049,7 +1020,7 @@ export default function FiadosPage() {
         )}
 
         <div className="mb-4">
-          <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+          <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
             <Clock size={18} className="text-gray-600" />
             Histórico de Movimentações
           </h3>
@@ -1063,7 +1034,7 @@ export default function FiadosPage() {
             </div>
           ) : movimentosExtrato.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12">
-              <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-3">
+              <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
                 <FileText size={24} className="text-gray-400" />
               </div>
               <p className="text-gray-500 text-center">Nenhum movimento encontrado</p>
@@ -1072,8 +1043,8 @@ export default function FiadosPage() {
           ) : (
             <div className="space-y-3 p-2">
               {movimentosExtrato.map((movimento, index) => (
-                <div key={movimento.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex justify-between items-start mb-3">
+                <div key={movimento.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow relative">
+                  <div className="flex justify-between items-start">
                     <div className="flex items-start gap-3">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm ${
                         movimento.direcao === 'debito' ? 'bg-red-500' : 'bg-green-500'
@@ -1083,85 +1054,111 @@ export default function FiadosPage() {
                       <div>
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-semibold text-gray-800">
-                            {movimento.tipo === 'lancamento' ? 'Venda a Fiado' : 
-                             movimento.tipo === 'pagamento' ? 'Pagamento Recebido' : 
+                            {movimento.tipo === 'lancamento' ? 'Venda' :
+                             movimento.tipo === 'pagamento' ? 'Pagamento' :
                              movimento.tipo.charAt(0).toUpperCase() + movimento.tipo.slice(1)}
                           </span>
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                            movimento.tipo === 'lancamento' 
-                              ? 'bg-orange-100 text-orange-800' 
-                              : 'bg-green-100 text-green-800'
-                          }`}>
-                            {movimento.tipo === 'lancamento' ? 'Débito' : 'Crédito'}
-                          </span>
-                        </div>
-                        <div className="text-sm text-gray-600 flex items-center gap-1">
-                          <Clock size={12} />
-                          {new Date(movimento.data_movimento).toLocaleString('pt-BR')}
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="text-right">
+                    <div className="text-right">
                         <div className={`text-lg font-bold ${
-                          movimento.direcao === 'debito' ? 'text-red-600' : 'text-green-600'
-                        }`}>
-                          {movimento.direcao === 'debito' ? '+' : '-'}R$ {movimento.valor.toFixed(2)}
-                        </div>
-                        <div className="text-sm text-gray-600 font-medium">
-                          Saldo: R$ {movimento.saldo_corrente.toFixed(2)}
-                        </div>
+                        movimento.direcao === 'debito' ? 'text-red-600' : 'text-green-600'
+                        }`} style={{ fontFamily: '"Courier New", Courier, monospace' }}>
+                        {movimento.direcao === 'debito' ? '+' : '-'}R$ {movimento.valor.toFixed(2)}
                       </div>
-                      <div className="flex gap-1">
-                        {movimento.tipo === 'pagamento' && (
-                          <button
-                            onClick={() => imprimirReciboMovimento(movimento.id)}
-                            className="btn-recibo-small"
-                            title="Imprimir recibo do pagamento"
-                          >
-                            <Printer size={14} />
-                          </button>
-                        )}
-                        {movimento.tipo === 'lancamento' && movimento.venda_id && (
-                          <button
-                            onClick={() => imprimirSegundaViaCupom(movimento.venda_id!)}
-                            className="btn-recibo-small bg-blue-500 hover:bg-blue-600"
-                            title="Imprimir 2ª via do cupom"
-                          >
-                            <FileText size={14} />
-                          </button>
-                        )}
+                      <div className="text-sm text-gray-600 font-medium">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                          movimento.tipo === 'lancamento'
+                            ? 'bg-orange-100 text-orange-800'
+                            : 'bg-green-100 text-green-800'
+                        }`}>
+                          {movimento.tipo === 'lancamento' ? 'Débito' : 'Crédito'}
+                        </span>
                       </div>
                     </div>
                   </div>
-                  {movimento.referencia && (
-                    <div className="text-xs text-gray-500 mt-2 font-mono bg-gray-100 rounded px-2 py-1 inline-block">
-                      {movimento.referencia.includes('venda') || movimento.referencia.includes('Venda') 
-                        ? `Venda ${movimento.referencia.replace(/[^0-9#]/g, '')}`
-                        : movimento.referencia
-                      }
+
+                  {/* Rodapé do card com data/hora, referência e botão */}
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                    <div className="flex items-center gap-3">
+                      {/* Data/Hora */}
+                      <div className="text-sm text-gray-500 font-small">
+                        {new Date(movimento.data_movimento).toLocaleString('pt-BR')}
+                      </div>
+
+                      {/* Tag de referência */}
+                      {movimento.referencia && (
+                        <div className="text-sm text-gray-500 font-small bg-gray-100 rounded px-2 py-1">
+                          {movimento.referencia.includes('venda') || movimento.referencia.includes('Venda')
+                            ? `Venda ${movimento.referencia.replace(/[^0-9#]/g, '')}`
+                            : movimento.referencia
+                          }
+                        </div>
+                      )}
                     </div>
-                  )}
+
+                    {/* Botão de impressão */}
+                    <div>
+                      {movimento.tipo === 'pagamento' && (
+                        <button
+                          onClick={() => imprimirReciboMovimento(movimento.id)}
+                          className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg shadow-sm transition-colors"
+                          title="Imprimir recibo do pagamento"
+                        >
+                          <Printer size={16} />
+                        </button>
+                      )}
+                      {movimento.tipo === 'lancamento' && movimento.venda_id && (
+                        <button
+                          onClick={() => imprimirSegundaViaCupom(movimento.venda_id!)}
+                          className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg shadow-sm transition-colors"
+                          title="Imprimir 2ª via do cupom"
+                        >
+                          <FileText size={16} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-  {/* Total de movimentações e Saldo final removidos conforme solicitado */}
-
-        <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
-          <div className="text-xs text-gray-500">
-            Extrato atualizado em {new Date().toLocaleString('pt-BR')}
+        {/* Rodapé fixo com botões de ação */}
+        <div className="modal-footer-fixed">
+          <div className="modal-footer-content">
+            <button
+              className="btn btn-outline btn-sm modal-btn-imprimir"
+              onClick={imprimirExtrato}
+              disabled={extratoLoading || !extratoCliente || imprimindoExtrato}
+              title="Imprimir extrato"
+            >
+              {imprimindoExtrato ? (
+                <>
+                  <Loader2 className="animate-spin" size={16} style={{ marginRight: '8px' }} />
+                  Gerando extrato...
+                </>
+              ) : (
+                <>
+                  <Printer size={16} />
+                  Imprimir
+                </>
+              )}
+            </button>
+            <button
+              className="btn btn-success btn-sm modal-btn-pagamento"
+              onClick={() => { if (extratoCliente) { setShowExtrato(false); abrirPagamento(extratoCliente) } }}
+              disabled={!extratoCliente || pagamentoLoading}
+              title="Registrar novo pagamento"
+            >
+              <DollarSign size={16} />
+              Pagamento
+            </button>
           </div>
-          <button 
-            className="btn btn-outline hover:bg-gray-50 transition-colors" 
-            onClick={() => setShowExtrato(false)}
-          >
-            <X size={16} className="mr-2" />
-            Fechar
-          </button>
         </div>
+
       </Modal>
 
     </div>
