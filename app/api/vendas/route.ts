@@ -10,13 +10,65 @@ export async function GET(request: Request) {
     const params = url.searchParams
     const data_inicio = params.get('data_inicio')
     const data_fim = params.get('data_fim')
+    const data_atual = params.get('data_atual') // Novo parâmetro para filtro simplificado de "hoje"
     const forma_pagamento = params.get('forma_pagamento')
     const cliente = params.get('cliente')
 
     const where: any = {}
 
+    // Filtro simplificado para "hoje" - compara apenas o dia da data_venda
+    if (data_atual) {
+      // Usar Prisma com condição mais precisa para data
+      const [ano, mes, dia] = data_atual.split('-').map(Number)
+      const dataInicio = new Date(ano, mes - 1, dia, 0, 0, 0, 0)
+      const dataFim = new Date(ano, mes - 1, dia, 23, 59, 59, 999)
+
+      where.data_venda = {
+        gte: dataInicio,
+        lte: dataFim
+      }
+
+      // Adicionar filtros adicionais se presentes
+      if (forma_pagamento) {
+        where.forma_pagamento_json = { contains: forma_pagamento }
+      }
+
+      if (cliente) {
+        const clienteId = Number(cliente)
+        if (!Number.isNaN(clienteId)) {
+          where.cliente_id = clienteId
+        } else {
+          where.cliente = { nome: { contains: cliente, mode: 'insensitive' } }
+        }
+      }
+
+      const vendas = await getCurrentPrismaInstance().vendas.findMany({
+        where,
+        include: {
+          cliente: true,
+          itens: { include: { produto: true } },
+        },
+        orderBy: { data_venda: 'desc' },
+        take: 500,
+      })
+
+      const vendasComItens = vendas.map((v: any) => ({
+        ...v,
+        cliente_nome: v.cliente?.nome ?? null,
+        itens: Array.isArray(v.itens)
+          ? v.itens.map((it: any) => ({
+              produto_nome: it.produto?.nome ?? '',
+              quantidade: Number(it.quantidade || 0),
+              preco_unitario: Number(it.preco_unitario || 0),
+              subtotal: Number(it.subtotal || 0),
+            }))
+          : [],
+      }))
+
+      return NextResponse.json(vendasComItens)
+    }
     // Filtro por período (assume data_venda é armazenada como datetime)
-    if (data_inicio || data_fim) {
+    else if (data_inicio || data_fim) {
       where.data_venda = {}
       if (data_inicio) {
         // data_inicio inclusive at start of day

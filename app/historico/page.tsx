@@ -119,39 +119,80 @@ export default function HistoricoPage() {
     setShowFilterLoading(true)
     setAtalhoAtivo(`${dias}-dias`)
     try {
-      const hoje = new Date()
-      const dataFim = hoje.toISOString().split('T')[0]
-      const dataInicio = new Date(hoje.getTime() - (dias * 24 * 60 * 60 * 1000)).toISOString().split('T')[0]
-      
-      setFiltros({
-        ...filtros,
-        data_inicio: dataInicio,
-        data_fim: dataFim,
-      })
-      
-      const params = new URLSearchParams()
-      params.append('data_inicio', dataInicio)
-      params.append('data_fim', dataFim)
-      if (filtros.forma_pagamento) params.append('forma_pagamento', filtros.forma_pagamento)
-      if (filtros.cliente) params.append('cliente', filtros.cliente)
+      // Para "Hoje" (dias = 0), usar filtro simplificado por data atual
+      if (dias === 0) {
+        // Obter data local sem conversão para UTC
+        const hoje = new Date()
+        const ano = hoje.getFullYear()
+        const mes = String(hoje.getMonth() + 1).padStart(2, '0')
+        const dia = String(hoje.getDate()).padStart(2, '0')
+        const dataAtual = `${ano}-${mes}-${dia}`
 
-      const response = await fetch(`/api/vendas?${params}`)
-      const data = await response.json()
-      const sanitized = Array.isArray(data)
-        ? data.map((v: any) => ({
-            ...v,
-            total: Number(v.total ?? 0),
-            itens: Array.isArray(v.itens)
-              ? v.itens.map((it: any) => ({
-                  ...it,
-                  quantidade: Number(it.quantidade ?? 0),
-                  preco_unitario: Number(it.preco_unitario ?? 0),
-                  subtotal: Number(it.subtotal ?? 0),
-                }))
-              : [],
-          }))
-        : []
-      setVendas(sanitized as Venda[])
+        setFiltros({
+          ...filtros,
+          data_inicio: dataAtual,
+          data_fim: dataAtual,
+        })
+
+        const params = new URLSearchParams()
+        params.append('data_atual', dataAtual) // Parâmetro específico para hoje
+        if (filtros.forma_pagamento) params.append('forma_pagamento', filtros.forma_pagamento)
+        if (filtros.cliente) params.append('cliente', filtros.cliente)
+
+        const response = await fetch(`/api/vendas?${params}`)
+        const data = await response.json()
+        const sanitized = Array.isArray(data)
+          ? data.map((v: any) => ({
+              ...v,
+              total: Number(v.total ?? 0),
+              itens: Array.isArray(v.itens)
+                ? v.itens.map((it: any) => ({
+                    ...it,
+                    quantidade: Number(it.quantidade ?? 0),
+                    preco_unitario: Number(it.preco_unitario ?? 0),
+                    subtotal: Number(it.subtotal ?? 0),
+                  }))
+                : [],
+            }))
+          : []
+        setVendas(sanitized as Venda[])
+      } else {
+        // Para outros períodos, manter lógica existente
+        const hoje = new Date()
+        const dataAtual = hoje.toISOString().split('T')[0]
+        const dataFim = dataAtual
+        const dataInicio = new Date(hoje.getTime() - (dias * 24 * 60 * 60 * 1000)).toISOString().split('T')[0]
+
+        setFiltros({
+          ...filtros,
+          data_inicio: dataInicio,
+          data_fim: dataFim,
+        })
+
+        const params = new URLSearchParams()
+        params.append('data_inicio', dataInicio)
+        params.append('data_fim', dataFim)
+        if (filtros.forma_pagamento) params.append('forma_pagamento', filtros.forma_pagamento)
+        if (filtros.cliente) params.append('cliente', filtros.cliente)
+
+        const response = await fetch(`/api/vendas?${params}`)
+        const data = await response.json()
+        const sanitized = Array.isArray(data)
+          ? data.map((v: any) => ({
+              ...v,
+              total: Number(v.total ?? 0),
+              itens: Array.isArray(v.itens)
+                ? v.itens.map((it: any) => ({
+                    ...it,
+                    quantidade: Number(it.quantidade ?? 0),
+                    preco_unitario: Number(it.preco_unitario ?? 0),
+                    subtotal: Number(it.subtotal ?? 0),
+                  }))
+                : [],
+            }))
+          : []
+        setVendas(sanitized as Venda[])
+      }
     } catch (error) {
       console.error("Erro ao carregar vendas:", error)
     } finally {
