@@ -59,6 +59,22 @@ export default function HistoricoPage() {
   // Estado para controlar qual card de atalho está ativo
   const [atalhoAtivo, setAtalhoAtivo] = useState<string>("0-dias")
 
+  // Estado para controlar quais cards estão expandidos (usando Set de IDs)
+  const [cardsExpandidos, setCardsExpandidos] = useState<Set<number>>(new Set())
+
+  // Função para alternar expansão de um card
+  const toggleCardExpansao = (vendaId: number) => {
+    setCardsExpandidos(prev => {
+      const novoSet = new Set(prev)
+      if (novoSet.has(vendaId)) {
+        novoSet.delete(vendaId)
+      } else {
+        novoSet.add(vendaId)
+      }
+      return novoSet
+    })
+  }
+
   useEffect(() => {
     // Carregar vendas do dia atual por padrão usando a mesma lógica do filtro "Hoje"
     aplicarAtalhoPeriodo(0)
@@ -771,44 +787,54 @@ export default function HistoricoPage() {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {vendas.map((venda) => (
-                <div key={venda.id} className="historico-card">
-                  {/* Layout Mobile */}
-                  <div className="historico-card-content-mobile">
-                    <div className="historico-card-header-mobile">
+              {vendas.map((venda) => {
+                const isExpandido = cardsExpandidos.has(venda.id)
+                return (
+                  <div key={venda.id} className={`historico-card ${isExpandido ? 'expanded' : ''}`}>
+                    {/* Header sempre visível - clicável para expandir/colapsar */}
+                    <div 
+                      className="historico-card-header-mobile"
+                      onClick={() => toggleCardExpansao(venda.id)}
+                      style={{ cursor: 'pointer', userSelect: 'none' }}
+                    >
                       <div className="historico-card-id-mobile">#{venda.id}</div>
                       <div className="historico-card-total-mobile">R$ {(Number(venda.total) || 0).toFixed(2)}</div>
                     </div>
 
-                    <div className="historico-card-fields-mobile">
-                      <div className="historico-field-mobile">
-                        <span className="historico-field-label-mobile">Data/Hora</span>
-                        <span className="historico-field-value-mobile">{formatarData(venda.data_venda)}</span>
-                      </div>
+                    {/* Conteúdo expandido - só mostra quando expandido */}
+                    {isExpandido && (
+                      <>
+                        <div className="historico-card-fields-mobile">
+                          <div className="historico-card-field-item">
+                            <div className="historico-field-label">Data/Hora</div>
+                            <div className="historico-field-value">{formatarData(venda.data_venda)}</div>
+                          </div>
 
-                      <div className="historico-field-mobile">
-                        <span className="historico-field-label-mobile">Cliente</span>
-                        <span className="historico-field-value-mobile">{venda.cliente_nome || "Cliente Avulso"}</span>
-                      </div>
-                    </div>
+                          <div className="historico-card-field-item">
+                            <div className="historico-field-label">Cliente</div>
+                            <div className="historico-field-value">{venda.cliente_nome || "Cliente Avulso"}</div>
+                          </div>
+                        </div>
 
-                    <div className="historico-card-actions-mobile">
-                      <button className="btn btn-sm btn-outline" onClick={() => verDetalhes(venda)}>
-                        <Eye size={14} />
-                        Ver Detalhes
-                      </button>
-                      <button 
-                        className="btn btn-sm btn-primary" 
-                        onClick={() => imprimirCupomSegundaVia(venda.id)}
-                        title="Imprimir 2ª via do cupom"
-                      >
-                        <Printer size={14} />
-                        2ª Via
-                      </button>
-                    </div>
+                        <div className="historico-card-actions-mobile">
+                          <button className="btn btn-sm btn-outline" onClick={() => verDetalhes(venda)}>
+                            <Eye size={14} />
+                            Ver Detalhes
+                          </button>
+                          <button 
+                            className="btn btn-sm btn-primary" 
+                            onClick={() => imprimirCupomSegundaVia(venda.id)}
+                            title="Imprimir 2ª via do cupom"
+                          >
+                            <Printer size={14} />
+                            2ª Via
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
-                </div>
-              ))}
+                )
+              })}
               
               {vendas.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
