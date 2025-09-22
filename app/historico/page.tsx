@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Calendar, Filter, Eye, Printer, Settings, ChevronDown, ChevronUp, Loader2, X } from "lucide-react"
 import '../../styles/historico.css'
+import LoadingModal from '../../components/loading-modal'
 
 interface Venda {
   id: number
@@ -22,11 +23,17 @@ interface Venda {
 }
 
 export default function HistoricoPage() {
+  // Função para obter a data atual no formato YYYY-MM-DD
+  const getDataAtual = () => {
+    const hoje = new Date()
+    return hoje.toISOString().split('T')[0]
+  }
+
   const [vendas, setVendas] = useState<Venda[]>([])
   const [loadingVendas, setLoadingVendas] = useState(false)
   const [filtros, setFiltros] = useState({
-    data_inicio: "",
-    data_fim: "",
+    data_inicio: getDataAtual(),
+    data_fim: getDataAtual(),
     forma_pagamento: "",
     cliente: "",
   })
@@ -44,6 +51,12 @@ export default function HistoricoPage() {
 
   // Estado para controlar a aba ativa do modal de detalhes da venda
   const [activeTab, setActiveTab] = useState("basico")
+
+  // Estado para controlar o modal de loading dos filtros
+  const [showFilterLoading, setShowFilterLoading] = useState(false)
+
+  // Estado para controlar qual card de atalho está ativo
+  const [atalhoAtivo, setAtalhoAtivo] = useState<string>("")
 
   useEffect(() => {
     carregarVendas()
@@ -85,19 +98,132 @@ export default function HistoricoPage() {
     }
   }
 
-  const aplicarFiltros = () => {
-    carregarVendas()
+  const aplicarFiltros = async () => {
+    setShowFilterLoading(true)
+    setAtalhoAtivo("") // Remove atalho ativo quando usa filtros manuais
+    try {
+      await carregarVendas()
+    } finally {
+      setShowFilterLoading(false)
+    }
   }
 
   const limparFiltros = () => {
-    setFiltros({
-      data_inicio: "",
-      data_fim: "",
-      forma_pagamento: "",
-      cliente: "",
-    })
+    aplicarTodoPeriodo()
     setShowFilterOptions(false)
     setShowMobileFilters(false)
+  }
+
+  // Funções para atalhos de período
+  const aplicarAtalhoPeriodo = async (dias: number) => {
+    setShowFilterLoading(true)
+    setAtalhoAtivo(`${dias}-dias`)
+    try {
+      const hoje = new Date()
+      const dataFim = hoje.toISOString().split('T')[0]
+      const dataInicio = new Date(hoje.getTime() - (dias * 24 * 60 * 60 * 1000)).toISOString().split('T')[0]
+      
+      setFiltros({
+        ...filtros,
+        data_inicio: dataInicio,
+        data_fim: dataFim,
+      })
+      
+      const params = new URLSearchParams()
+      params.append('data_inicio', dataInicio)
+      params.append('data_fim', dataFim)
+      if (filtros.forma_pagamento) params.append('forma_pagamento', filtros.forma_pagamento)
+      if (filtros.cliente) params.append('cliente', filtros.cliente)
+
+      const response = await fetch(`/api/vendas?${params}`)
+      const data = await response.json()
+      const sanitized = Array.isArray(data)
+        ? data.map((v: any) => ({
+            ...v,
+            total: Number(v.total ?? 0),
+            itens: Array.isArray(v.itens)
+              ? v.itens.map((it: any) => ({
+                  ...it,
+                  quantidade: Number(it.quantidade ?? 0),
+                  preco_unitario: Number(it.preco_unitario ?? 0),
+                  subtotal: Number(it.subtotal ?? 0),
+                }))
+              : [],
+          }))
+        : []
+      setVendas(sanitized as Venda[])
+    } catch (error) {
+      console.error("Erro ao carregar vendas:", error)
+    } finally {
+      setShowFilterLoading(false)
+    }
+  }
+
+  const aplicarTodoPeriodo = async () => {
+    setShowFilterLoading(true)
+    setAtalhoAtivo("todo-periodo")
+    try {
+      setFiltros({
+        ...filtros,
+        data_inicio: "",
+        data_fim: "",
+      })
+      
+      const params = new URLSearchParams()
+      if (filtros.forma_pagamento) params.append('forma_pagamento', filtros.forma_pagamento)
+      if (filtros.cliente) params.append('cliente', filtros.cliente)
+
+      const response = await fetch(`/api/vendas?${params}`)
+      const data = await response.json()
+      const sanitized = Array.isArray(data)
+        ? data.map((v: any) => ({
+            ...v,
+            total: Number(v.total ?? 0),
+            itens: Array.isArray(v.itens)
+              ? v.itens.map((it: any) => ({
+                  ...it,
+                  quantidade: Number(it.quantidade ?? 0),
+                  preco_unitario: Number(it.preco_unitario ?? 0),
+                  subtotal: Number(it.subtotal ?? 0),
+                }))
+              : [],
+          }))
+        : []
+      setVendas(sanitized as Venda[])
+    } catch (error) {
+      console.error("Erro ao carregar vendas:", error)
+    } finally {
+      setShowFilterLoading(false)
+    }
+  }
+
+  // Função para verificar se há filtros aplicados além do padrão
+  const temFiltrosAplicados = () => {
+    return filtros.forma_pagamento !== "" || filtros.cliente !== ""
+  }
+
+  // Função para formatar o período do filtro
+  const getPeriodoFiltro = () => {
+    const dataInicio = filtros.data_inicio
+    const dataFim = filtros.data_fim
+
+    if (!dataInicio && !dataFim) return "Todo o período"
+
+    if (dataInicio === dataFim) {
+      // Mesmo dia
+      const data = new Date(dataInicio + 'T00:00:00')
+      return data.toLocaleDateString('pt-BR', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+    } else {
+      // Período
+      const inicio = dataInicio ? new Date(dataInicio + 'T00:00:00').toLocaleDateString('pt-BR') : '?'
+      const fim = dataFim ? new Date(dataFim + 'T00:00:00').toLocaleDateString('pt-BR') : '?'
+      return `Período: ${inicio} - ${fim}`
+    }
   }
 
   const formatarData = (data: string) => {
@@ -158,13 +284,23 @@ export default function HistoricoPage() {
 
   const totalVendas = vendas.reduce((sum, venda) => sum + Number(venda.total || 0), 0)
 
-  // Função para verificar se há filtros ativos
+  // Função para verificar se há filtros ativos além do padrão
   const temFiltrosAtivos = () => {
     return Object.values(filtros).some(valor => valor !== "")
   }
 
   return (
     <div className="historico-main-container">
+      {/* Cabeçalho da Página */}
+      <div className="historico-header">
+        <div className="historico-periodo-section">
+          <div className="periodo-display">{getPeriodoFiltro()}</div>
+          {temFiltrosAplicados() && (
+            <span className="filtro-indicator">• Filtros aplicados</span>
+          )}
+        </div>
+      </div>
+
       {/* Desktop: Layout original */}
       <div className="card desktop-layout">
 
@@ -187,6 +323,66 @@ export default function HistoricoPage() {
           {/* Opções de filtro */}
           <div className={`historico-filter-options ${showFilterOptions ? 'expanded' : 'collapsed'}`}>
             <div>
+              {/* Cards de Atalho de Período */}
+              <div className="historico-periodo-atalhos">
+                <div className="atalhos-title">Períodos Rápidos</div>
+                <div className="atalhos-grid">
+                  <button 
+                    className={`atalho-card atalho-hoje ${atalhoAtivo === '0-dias' ? 'ativo' : ''}`}
+                    onClick={() => aplicarAtalhoPeriodo(0)}
+                    title="Vendas realizadas hoje"
+                  >
+                    <div className="atalho-titulo">Hoje</div>
+                    <div className="atalho-subtitulo">Vendas do dia</div>
+                    <div className="atalho-data">{new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</div>
+                  </button>
+                  <button 
+                    className={`atalho-card atalho-3dias ${atalhoAtivo === '3-dias' ? 'ativo' : ''}`}
+                    onClick={() => aplicarAtalhoPeriodo(3)}
+                    title="Últimas 3 dias de vendas"
+                  >
+                    <div className="atalho-titulo">3 Dias</div>
+                    <div className="atalho-subtitulo">Últimas vendas</div>
+                    <div className="atalho-data">
+                      {new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} - {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                    </div>
+                  </button>
+                  <button 
+                    className={`atalho-card atalho-7dias ${atalhoAtivo === '7-dias' ? 'ativo' : ''}`}
+                    onClick={() => aplicarAtalhoPeriodo(7)}
+                    title="Últimos 7 dias de vendas"
+                  >
+                    <div className="atalho-titulo">7 Dias</div>
+                    <div className="atalho-subtitulo">Últimas vendas</div>
+                    <div className="atalho-data">
+                      {new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} - {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                    </div>
+                  </button>
+                  <button 
+                    className={`atalho-card atalho-30dias ${atalhoAtivo === '30-dias' ? 'ativo' : ''}`}
+                    onClick={() => aplicarAtalhoPeriodo(30)}
+                    title="Últimos 30 dias de vendas"
+                  >
+                    <div className="atalho-titulo">30 Dias</div>
+                    <div className="atalho-subtitulo">Últimas vendas</div>
+                    <div className="atalho-data">
+                      {new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} - {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                    </div>
+                  </button>
+                  <button 
+                    className={`atalho-card atalho-todo-periodo ${atalhoAtivo === 'todo-periodo' ? 'ativo' : ''}`}
+                    onClick={aplicarTodoPeriodo}
+                    title="Todo o histórico de vendas"
+                  >
+                    <div className="atalho-titulo">Todo Período</div>
+                    <div className="atalho-subtitulo">Histórico completo</div>
+                    <div className="atalho-data">Desde o início</div>
+                  </button>
+                </div>
+              </div>
+
+              <div className="filter-separator"></div>
+
               <div className="historico-filters-grid">
                 <div className="form-group">
                   <label className="form-label">Data Início</label>
@@ -349,6 +545,66 @@ export default function HistoricoPage() {
           
           <div className={`mobile-filter-content ${showMobileFilters ? 'expanded' : 'collapsed'}`}>
             <div className="mobile-filter-inner">
+              {/* Cards de Atalho de Período Mobile */}
+              <div className="mobile-periodo-atalhos">
+                <div className="mobile-atalhos-title">Períodos Rápidos</div>
+                <div className="mobile-atalhos-grid">
+                  <button 
+                    className={`mobile-atalho-card mobile-atalho-hoje ${atalhoAtivo === '0-dias' ? 'ativo' : ''}`}
+                    onClick={() => aplicarAtalhoPeriodo(0)}
+                    title="Vendas realizadas hoje"
+                  >
+                    <div className="mobile-atalho-titulo">Hoje</div>
+                    <div className="mobile-atalho-subtitulo">Vendas do dia</div>
+                    <div className="mobile-atalho-data">{new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</div>
+                  </button>
+                  <button 
+                    className={`mobile-atalho-card mobile-atalho-3dias ${atalhoAtivo === '3-dias' ? 'ativo' : ''}`}
+                    onClick={() => aplicarAtalhoPeriodo(3)}
+                    title="Últimas 3 dias de vendas"
+                  >
+                    <div className="mobile-atalho-titulo">3 Dias</div>
+                    <div className="mobile-atalho-subtitulo">Últimas vendas</div>
+                    <div className="mobile-atalho-data">
+                      {new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} - {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                    </div>
+                  </button>
+                  <button 
+                    className={`mobile-atalho-card mobile-atalho-7dias ${atalhoAtivo === '7-dias' ? 'ativo' : ''}`}
+                    onClick={() => aplicarAtalhoPeriodo(7)}
+                    title="Últimos 7 dias de vendas"
+                  >
+                    <div className="mobile-atalho-titulo">7 Dias</div>
+                    <div className="mobile-atalho-subtitulo">Últimas vendas</div>
+                    <div className="mobile-atalho-data">
+                      {new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} - {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                    </div>
+                  </button>
+                  <button 
+                    className={`mobile-atalho-card mobile-atalho-30dias ${atalhoAtivo === '30-dias' ? 'ativo' : ''}`}
+                    onClick={() => aplicarAtalhoPeriodo(30)}
+                    title="Últimos 30 dias de vendas"
+                  >
+                    <div className="mobile-atalho-titulo">30 Dias</div>
+                    <div className="mobile-atalho-subtitulo">Últimas vendas</div>
+                    <div className="mobile-atalho-data">
+                      {new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} - {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                    </div>
+                  </button>
+                  <button 
+                    className={`mobile-atalho-card mobile-atalho-todo-periodo ${atalhoAtivo === 'todo-periodo' ? 'ativo' : ''}`}
+                    onClick={aplicarTodoPeriodo}
+                    title="Todo o histórico de vendas"
+                  >
+                    <div className="mobile-atalho-titulo">Todo Período</div>
+                    <div className="mobile-atalho-subtitulo">Histórico completo</div>
+                    <div className="mobile-atalho-data">Desde o início</div>
+                  </button>
+                </div>
+              </div>
+
+              <div className="mobile-filter-separator"></div>
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.75rem' }}>
                 <div className="form-group">
                   <label className="form-label">Data Início</label>
@@ -520,6 +776,15 @@ export default function HistoricoPage() {
           )}
         </div>
       </div>
+
+      {/* Modal de Loading para Filtros */}
+      <LoadingModal
+        isOpen={showFilterLoading}
+        title="Aplicando Filtros"
+        message="Carregando vendas do período selecionado..."
+        size="medium"
+        spinnerSize={40}
+      />
 
       {/* Modal de Detalhes da Venda */}
       {showModal && vendaSelecionada && (
