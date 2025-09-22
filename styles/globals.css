@@ -1112,6 +1112,14 @@
 }
 
 /* Text colors */
+.text-success {
+  color: #2563eb; /* Azul para troco */
+}
+
+.text-danger {
+  color: #dc2626; /* Vermelho para falta pagar */
+}
+
 .text-success-primary {
   color: #10b981;
 }
@@ -1459,4 +1467,13 @@
     width: 100%;
     min-width: unset;
   }
+}
+
+/* Payment status colors */
+.text-danger {
+  color: #dc2626; /* red-600 */
+}
+
+.text-success {
+  color: #2563eb; /* blue-600 */
 }

@@ -1687,7 +1687,7 @@ export default function VendasPage() {
                       onClick={() => setShowVirtualKeyboard(!showVirtualKeyboard)}
                       title={showVirtualKeyboard ? 'Ocultar teclado virtual' : 'Exibir teclado virtual'}
                     >
-                      🔢 {showVirtualKeyboard ? 'Ocultar' : 'Exibir'} Teclado Virtual
+                      {showVirtualKeyboard ? 'Ocultar' : 'Exibir'} Teclado Virtual
                     </button>
                   </div>
                 </div>
@@ -1825,7 +1825,7 @@ export default function VendasPage() {
                       }}
                     >
                       <Plus size={16} />
-                      Adicionar forma de pagamento
+                      Adicionar
                     </button>
                   </div>
                 )}
@@ -1846,7 +1846,7 @@ export default function VendasPage() {
             {/* Resumo de Pagamentos */}
             <div className="payment-summary-box">
               <div className="summary-row">
-                <span>Total dos pagamentos:</span>
+                <span>Pagamentos:</span>
                 <span className="font-semibold">R$ {Number(sumPagamentos).toFixed(2)}</span>
               </div>
 
@@ -2014,8 +2014,8 @@ export default function VendasPage() {
                   </>
                 ) : (
                   <>
-                    <ShoppingCart size={16} />
-                    Confirmar Pagamento
+                    <CheckCircle size={16} />
+                    Confirmar
                   </>
                 )}
               </button>

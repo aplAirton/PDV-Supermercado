@@ -1266,12 +1266,7 @@
   font-size: 0.875rem;
 }
 
-.payment-actions {
-  display: flex;
-  gap: 1rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--border);
-}
+
 
 .action-btn {
   flex: 1;
@@ -1330,7 +1325,7 @@
 
 .modal {
   background: white;
-  border-radius: 0.5rem;
+  border-radius: 1rem;
   padding: 2rem;
   max-width: 48rem;
   width: 100%;
@@ -1601,7 +1596,7 @@
     padding: 1rem;
     margin: 0;
     max-width: 100%;
-    border-radius: 0.25rem;
+    border-radius: 0.5rem;
   }
 
   /* Grid sempre 1 coluna */
@@ -1744,9 +1739,9 @@
 
   /* Modal grande */
   .modal {
-    margin: 2rem;
-    padding: 2rem;
-    max-width: 48rem;
+    margin: 1rem;
+    padding: 1rem;
+    max-width: 32rem;
   }
 }
 
@@ -3707,6 +3702,10 @@
   .modal-busca-header,
   .modal-busca-search-section {
     padding: 16px 20px;
+  }
+
+  .keyboard-toggle-section {
+    display: none;
   }
 
   .modal-busca-title-section {
