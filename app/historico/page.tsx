@@ -11,6 +11,14 @@ interface Venda {
   cliente_nome: string | null
   total: number
   forma_pagamento: string
+  forma_pagamento_json?: any[] | null
+  troco?: number | null
+  valor_pago?: number | null
+  valor_dinheiro?: number | null
+  valor_cartao_debito?: number | null
+  valor_cartao_credito?: number | null
+  valor_pix?: number | null
+  valor_fiado?: number | null
   data_venda: string
   desconto_tipo?: string | null
   desconto_valor?: number | null
@@ -999,53 +1007,137 @@ export default function HistoricoPage() {
 
             {/* Aba Pagamento */}
             {activeTab === "pagamento" && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">Forma de Pagamento</label>
-                    <div className="relative">
-                      <Printer size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                      <input
-                        type="text"
-                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-900"
-                        value={formatarFormaPagamento(vendaSelecionada.forma_pagamento)}
-                        readOnly
-                      />
-                    </div>
-                  </div>
+              <div className="space-y-6">
+                {/* Formas de Pagamento */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-800">Formas de Pagamento</h3>
 
-                  {vendaSelecionada.desconto_tipo && (Number(vendaSelecionada.desconto_valor) > 0 || Number(vendaSelecionada.desconto_percentual) > 0) && (
-                    <>
-                      <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700">Tipo de Desconto</label>
-                        <input
-                          type="text"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-900"
-                          value={vendaSelecionada.desconto_tipo === 'percent' ? 'Percentual' : 'Valor Fixo'}
-                          readOnly
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700">Valor do Desconto</label>
-                        <div className="relative">
-                          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-orange-600 font-bold">
-                            -
+                  {/* Exibir formas de pagamento do JSON se existir */}
+                  {vendaSelecionada.forma_pagamento_json && Array.isArray(vendaSelecionada.forma_pagamento_json) && vendaSelecionada.forma_pagamento_json.length > 0 ? (
+                    <div className="grid gap-3">
+                      {vendaSelecionada.forma_pagamento_json.map((pagamento: any, index: number) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                              <DollarSign size={16} className="text-blue-600" />
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-900">
+                                {formatarFormaPagamento(pagamento.tipo)}
+                              </div>
+                            </div>
                           </div>
-                          <input
-                            type="text"
-                            className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md bg-orange-50 text-orange-700 font-bold"
-                            value={vendaSelecionada.desconto_tipo === 'percent'
-                              ? `${Number(vendaSelecionada.desconto_percentual)}%`
-                              : `R$ ${Number(vendaSelecionada.desconto_valor || 0).toFixed(2)}`
-                            }
-                            readOnly
-                          />
+                          <div className="text-lg font-bold text-green-600">
+                            R$ {Number(pagamento.valor || 0).toFixed(2)}
+                          </div>
                         </div>
-                      </div>
-                    </>
+                      ))}
+                    </div>
+                  ) : (
+                    /* Fallback para formas individuais se JSON não existir */
+                    <div className="grid gap-3">
+                      {vendaSelecionada.valor_dinheiro && Number(vendaSelecionada.valor_dinheiro) > 0 && (
+                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                              <DollarSign size={16} className="text-green-600" />
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-900">Dinheiro</div>
+                            </div>
+                          </div>
+                          <div className="text-lg font-bold text-green-600">
+                            R$ {Number(vendaSelecionada.valor_dinheiro).toFixed(2)}
+                          </div>
+                        </div>
+                      )}
+
+                      {vendaSelecionada.valor_cartao_debito && Number(vendaSelecionada.valor_cartao_debito) > 0 && (
+                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                              <DollarSign size={16} className="text-blue-600" />
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-900">Cartão Débito</div>
+                            </div>
+                          </div>
+                          <div className="text-lg font-bold text-green-600">
+                            R$ {Number(vendaSelecionada.valor_cartao_debito).toFixed(2)}
+                          </div>
+                        </div>
+                      )}
+
+                      {vendaSelecionada.valor_cartao_credito && Number(vendaSelecionada.valor_cartao_credito) > 0 && (
+                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                              <DollarSign size={16} className="text-purple-600" />
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-900">Cartão Crédito</div>
+                            </div>
+                          </div>
+                          <div className="text-lg font-bold text-green-600">
+                            R$ {Number(vendaSelecionada.valor_cartao_credito).toFixed(2)}
+                          </div>
+                        </div>
+                      )}
+
+                      {vendaSelecionada.valor_pix && Number(vendaSelecionada.valor_pix) > 0 && (
+                        <div className="flex items-center justify-between p-3 bg-orange-100 rounded-lg border">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                              <DollarSign size={16} className="text-orange-600" />
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-900">PIX</div>
+                            </div>
+                          </div>
+                          <div className="text-lg font-bold text-green-600">
+                            R$ {Number(vendaSelecionada.valor_pix).toFixed(2)}
+                          </div>
+                        </div>
+                      )}
+
+                      {vendaSelecionada.valor_fiado && Number(vendaSelecionada.valor_fiado) > 0 && (
+                        <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg border">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                              <DollarSign size={16} className="text-red-600" />
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-900">Fiado</div>
+                            </div>
+                          </div>
+                          <div className="text-lg font-bold text-green-600">
+                            R$ {Number(vendaSelecionada.valor_fiado).toFixed(2)}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
+
+                {/* Troco */}
+                {vendaSelecionada.troco && Number(vendaSelecionada.troco) > 0 && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                          <DollarSign size={16} className="text-yellow-600" />
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900">Troco</div>
+                          <div className="text-sm text-gray-600">Valor devolvido ao cliente</div>
+                        </div>
+                      </div>
+                      <div className="text-lg font-bold text-yellow-600">
+                        R$ {Number(vendaSelecionada.troco).toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Resumo Financeiro */}
                 <div className="bg-gray-50 rounded-lg p-4">
@@ -1057,7 +1149,7 @@ export default function HistoricoPage() {
                         R$ {(Number(vendaSelecionada.total) + Number(vendaSelecionada.desconto_valor || 0)).toFixed(2)}
                       </span>
                     </div>
-                    {Number(vendaSelecionada.desconto_valor) > 0 && (
+                    {Number(vendaSelecionada.desconto_valor || 0) > 0 && (
                       <div className="flex justify-between">
                         <span className="text-gray-600">Desconto:</span>
                         <span className="font-medium text-orange-600">
@@ -1071,6 +1163,14 @@ export default function HistoricoPage() {
                         R$ {Number(vendaSelecionada.total || 0).toFixed(2)}
                       </span>
                     </div>
+                    {vendaSelecionada.valor_pago && Number(vendaSelecionada.valor_pago) > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Valor Pago:</span>
+                        <span className="font-medium text-blue-600">
+                          R$ {Number(vendaSelecionada.valor_pago).toFixed(2)}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
