@@ -12,7 +12,7 @@
   transition: all 0.2s ease-in-out;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  background-color: rgb(247, 213, 213);
+  background-color: rgb(255, 255, 255);
   color: rgb(70, 70, 70);
   border-left: 4px solid;
 }

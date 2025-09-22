@@ -831,7 +831,7 @@ export default function VendasPage() {
       const caixaResponse = await fetch('/api/caixa/status')
       if (caixaResponse.ok) {
         const caixaStatus = await caixaResponse.json()
-        if (!caixaStatus.aberto) {
+        if (!caixaStatus.caixaAberto) {
           toast({ 
             title: 'Caixa fechado!', 
             description: 'O caixa foi fechado durante a transação. Abra um caixa para finalizar a venda.', 
@@ -842,7 +842,7 @@ export default function VendasPage() {
         }
         // Atualizar o status do caixa e dados
         setCaixaAberto(true)
-        setDadosCaixa(caixaStatus.dados || null)
+        setDadosCaixa(caixaStatus.caixa || null)
       }
     } catch (error) {
       console.error('Erro ao verificar status do caixa:', error)

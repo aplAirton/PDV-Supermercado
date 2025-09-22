@@ -153,16 +153,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Itens da venda inválidos' }, { status: 400 })
     }
 
-    // Buscar caixa aberto para atribuir à venda
+    // Buscar caixa aberto para atribuir à venda (lógica simplificada)
     let caixaId = null
     try {
-      const caixaAberto = await executeQuery(`
-        SELECT id FROM caixas WHERE status = 'aberto' 
-        ORDER BY data_abertura DESC LIMIT 1
+      // Verificar apenas o último registro da tabela caixa
+      // Se status !== 'fechado', então há um caixa aberto
+      const ultimoCaixa = await executeQuery(`
+        SELECT id, status FROM caixas
+        ORDER BY id DESC
+        LIMIT 1
       `) as any[]
-      
-      if (caixaAberto.length > 0) {
-        caixaId = caixaAberto[0].id
+
+      if (ultimoCaixa.length > 0 && ultimoCaixa[0].status !== 'fechado') {
+        caixaId = ultimoCaixa[0].id
         console.log(`[vendas][${requestId}] Caixa aberto encontrado: ${caixaId}`)
       } else {
         console.warn(`[vendas][${requestId}] Nenhum caixa aberto encontrado`)
