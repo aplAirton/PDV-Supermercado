@@ -510,10 +510,10 @@ export default function FiadosPage() {
   }
 
   // Componente Card para Fiado
-  const FiadoCard = ({ 
-    cliente, 
-    onAbrirExtrato, 
-    onAbrirPagamento, 
+  const FiadoCard = ({
+    cliente,
+    onAbrirExtrato,
+    onAbrirPagamento,
     pagamentoLoading
   }: {
     cliente: Cliente
@@ -535,82 +535,118 @@ export default function FiadosPage() {
     }, [cliente.id])
 
     return (
-      <div 
-        className="fiado-card"
-      >
-        {/* Cabeçalho do Card */}
-        <div className="card-header">
-          <div className="cliente-info">
-            <h3 className="cliente-nome">{cliente.nome}</h3>
-            {diasDesdeUltimoPagamento !== null ? (
-              <span className={`dias-badge ${diasDesdeUltimoPagamento > 30 ? 'atraso' : diasDesdeUltimoPagamento > 7 ? 'alerta' : 'normal'}`}>
-                <Clock size={12} />
-                {diasDesdeUltimoPagamento === 0 ? 'Hoje' : `${diasDesdeUltimoPagamento} dias`}
+      <div className="fiado-card">
+        {/* Layout Desktop: Lista simples */}
+        <div className="fiado-card-desktop">
+          <div className="fiado-info">
+            <div className="cliente-nome">{cliente.nome}</div>
+            <div className="cliente-detalhes">
+              <span className="debito-atual">R$ {Number(cliente.debito_atual || 0).toFixed(2)}</span>
+              <span className="ultimo-pagamento">
+                {loadingDias ? (
+                  'Calculando...'
+                ) : diasDesdeUltimoPagamento !== null ? (
+                  diasDesdeUltimoPagamento === 0 ? 'Hoje' : `${diasDesdeUltimoPagamento} dias`
+                ) : (
+                  'Nunca'
+                )}
               </span>
-            ) : (
-              <span className="dias-badge nunca">
-                <Clock size={12} />
-                Nunca
-              </span>
-            )}
-            {loadingDias && (
-              <div className="dias-badge-loading">
-                <div className="loading-dots">
-                  <div className="dot dot1"></div>
-                  <div className="dot dot2"></div>
-                  <div className="dot dot3"></div>
+            </div>
+          </div>
+          <div className="fiado-actions">
+            <button
+              className="btn btn-outline btn-sm"
+              onClick={() => onAbrirExtrato(cliente)}
+              title="Ver extrato completo"
+            >
+              <FileText size={14} />
+              Extrato
+            </button>
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={() => onAbrirPagamento(cliente)}
+              disabled={pagamentoLoading}
+              title="Registrar novo pagamento"
+            >
+              <DollarSign size={14} />
+              {pagamentoLoading ? 'Processando...' : 'Pagar'}
+            </button>
+          </div>
+        </div>
+
+        {/* Layout Mobile: Card expansível */}
+        <div className="fiado-card-mobile">
+          <div className="card-header">
+            <div className="cliente-info">
+              <h3 className="cliente-nome">{cliente.nome}</h3>
+              {diasDesdeUltimoPagamento !== null ? (
+                <span className={`dias-badge ${diasDesdeUltimoPagamento > 30 ? 'atraso' : diasDesdeUltimoPagamento > 7 ? 'alerta' : 'normal'}`}>
+                  <Clock size={12} />
+                  {diasDesdeUltimoPagamento === 0 ? 'Hoje' : `${diasDesdeUltimoPagamento} dias`}
+                </span>
+              ) : (
+                <span className="dias-badge nunca">
+                  <Clock size={12} />
+                  Nunca
+                </span>
+              )}
+              {loadingDias && (
+                <div className="dias-badge-loading">
+                  <div className="loading-dots">
+                    <div className="dot dot1"></div>
+                    <div className="dot dot2"></div>
+                    <div className="dot dot3"></div>
+                  </div>
+                  <span>Calculando...</span>
                 </div>
-                <span>Calculando...</span>
+              )}
+            </div>
+          </div>
+
+          <div className="card-body">
+            <div className="card-grid">
+              <div className="card-item">
+                <span className="item-label">
+                  <DollarSign size={14} />
+                  Débito Atual
+                </span>
+                <span className="item-value debito">
+                  R$ {Number(cliente.debito_atual || 0).toFixed(2)}
+                </span>
               </div>
-            )}
-          </div>
-        </div>
 
-        {/* Corpo do Card */}
-        <div className="card-body">
-          <div className="card-grid">
-            <div className="card-item">
-              <span className="item-label">
-                <DollarSign size={14} />
-                Débito Atual
-              </span>
-              <span className="item-value debito">
-                R$ {Number(cliente.debito_atual || 0).toFixed(2)}
-              </span>
-            </div>
-
-            <div className="card-item">
-              <span className="item-label">
-                <CreditCard size={14} />
-                Status
-              </span>
-              <span className="item-value status">
-                <CheckCircle size={12} className="value-icon" />
-                Ativo
-              </span>
+              <div className="card-item">
+                <span className="item-label">
+                  <CreditCard size={14} />
+                  Status
+                </span>
+                <span className="item-value status">
+                  <CheckCircle size={12} className="value-icon" />
+                  Ativo
+                </span>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Rodapé com Botões de Ação */}
-        <div className="card-footer-actions">
-          <button
-            className="btn btn-outline btn-sm"
-            onClick={() => onAbrirExtrato(cliente)}
-            title="Ver extrato completo"
-          >
-            <FileText size={14} />
-            Extrato
-          </button>
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={() => onAbrirPagamento(cliente)}
-            disabled={pagamentoLoading}
-            title="Registrar novo pagamento"
-          >
-            <DollarSign size={14} />
-            {pagamentoLoading ? 'Processando...' : 'Pagar'}
-          </button>
+          <div className="card-footer-actions">
+            <button
+              className="btn btn-outline btn-sm"
+              onClick={() => onAbrirExtrato(cliente)}
+              title="Ver extrato completo"
+            >
+              <FileText size={14} />
+              Extrato
+            </button>
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={() => onAbrirPagamento(cliente)}
+              disabled={pagamentoLoading}
+              title="Registrar novo pagamento"
+            >
+              <DollarSign size={14} />
+              {pagamentoLoading ? 'Processando...' : 'Pagar'}
+            </button>
+          </div>
         </div>
       </div>
     )

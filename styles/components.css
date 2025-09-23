@@ -1266,8 +1266,6 @@
   font-size: 0.875rem;
 }
 
-
-
 .action-btn {
   flex: 1;
   padding: 0.875rem 1.5rem;
@@ -3129,13 +3127,17 @@
 
 .cart-modal-total::before {
   font-size: 14px;
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+  background: linear-gradient(
+    90deg,
+    var(--primary-color),
+    var(--success-color)
+  );
 }
 
 .cart-modal-total > div:first-child {
@@ -3234,7 +3236,7 @@
   .produtos-table td:first-child {
     width: 62%;
   }
-  
+
   .produtos-table th:first-child {
     width: 62%;
   }
@@ -3322,7 +3324,7 @@
 }
 
 .modal-busca-header::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: 0;
   left: 0;
@@ -3400,7 +3402,7 @@
 }
 
 .modal-busca-search-section::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 24px;
@@ -3422,7 +3424,8 @@
 
 .modal-busca-input-wrapper:focus-within {
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 2px 8px rgba(59, 130, 246, 0.15);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1),
+    0 2px 8px rgba(59, 130, 246, 0.15);
   transform: translateY(-1px);
 }
 
@@ -3507,8 +3510,12 @@
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .busca-avancada-empty,
@@ -3829,13 +3836,18 @@
 }
 
 .btn-remove-discount::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
   transition: left 0.5s ease;
 }
 
@@ -4206,7 +4218,8 @@
   max-width: 400px;
   width: 90%;
   text-align: center;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
 .processing-content,
@@ -4336,5 +4349,226 @@
     min-width: 120px;
     padding: 0.5rem 1rem;
     font-size: 0.875rem;
+  }
+}
+
+/* ===========================================
+   FIADO CARD RESPONSIVO
+   =========================================== */
+
+.fiado-card {
+  background: var(--card-background);
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+
+/* Desktop (>= 768px): Layout de lista simples */
+.fiado-card-desktop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border: 1px solid var(--border);
+}
+
+.fiado-info {
+  display: flex;
+  flex-direction: row;
+  gap: 0.25rem;
+  justify-content: flex-start;
+  align-items: flex-start;
+  flex-wrap: nowrap;
+  gap: 1.5rem;
+}
+
+.cliente-nome {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cliente-detalhes {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.debito-atual {
+  font-weight: 600;
+  color: #dc2626;
+}
+
+.ultimo-pagamento {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.fiado-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+/* Mobile (< 768px): Card tradicional */
+.fiado-card-mobile {
+  display: none;
+}
+
+/* Responsividade */
+@media (max-width: 767px) {
+  .fiado-card-desktop {
+    display: none;
+  }
+
+  .fiado-card-mobile {
+    display: block;
+  }
+
+  /* Estilos do card mobile (mantidos do original) */
+  .card-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .cliente-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .cliente-nome {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  .dias-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .dias-badge.normal {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .dias-badge.alerta {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .dias-badge.atraso {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+
+  .dias-badge.nunca {
+    background: #f3f4f6;
+    color: #6b7280;
+  }
+
+  .dias-badge-loading {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    background: #f3f4f6;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    color: #6b7280;
+  }
+
+  .loading-dots {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  .dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #6b7280;
+    animation: loadingDot 1.4s ease-in-out infinite both;
+  }
+
+  .dot.dot1 {
+    animation-delay: -0.32s;
+  }
+  .dot.dot2 {
+    animation-delay: -0.16s;
+  }
+
+  @keyframes loadingDot {
+    0%,
+    80%,
+    100% {
+      transform: scale(0);
+      opacity: 0.5;
+    }
+    40% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  .card-body {
+    padding: 1rem 1.5rem;
+  }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .card-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .item-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .item-value {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .item-value.debito {
+    color: #dc2626;
+  }
+
+  .item-value.status {
+    color: #059669;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .value-icon {
+    flex-shrink: 0;
+  }
+
+  .card-footer-actions {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 0.75rem;
   }
 }

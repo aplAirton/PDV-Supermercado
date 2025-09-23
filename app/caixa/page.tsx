@@ -1692,25 +1692,6 @@ export default function CaixaPage() {
       {/* Header */}
       <div className="page-header">
         <div className="header-actions">
-          {caixaAtual && (
-            <div className="funcionario-info">
-              <div className="funcionario-avatar">
-                <User size={20} />
-              </div>
-              <div className="funcionario-details">
-                <span className="funcionario-name">
-                  {caixaAtual.funcionario_nome}
-                </span>
-                <small className="funcionario-role">
-                  {caixaAtual.funcionario_cargo}
-                </small>
-              </div>
-              <div className="status-indicator">
-                <div className="status-dot active"></div>
-                <span className="status-text">Caixa Aberto</span>
-              </div>
-            </div>
-          )}
 
           <button
             onClick={() => setShowNovoModal(true)}

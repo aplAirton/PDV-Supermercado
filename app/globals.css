@@ -3290,7 +3290,6 @@ body.sidebar-open {
 }
 
 .fiados-cards {
-  display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 20px;
   padding: 20px 0;
@@ -3490,6 +3489,12 @@ body.sidebar-open {
 }
 
 /* Responsividade */
+@media (min-width: 768px) {
+  .cliente-detalhes {
+    display: none;
+  }
+}
+
 @media (max-width: 768px) {
   .fiados-cards {
     grid-template-columns: 1fr;
